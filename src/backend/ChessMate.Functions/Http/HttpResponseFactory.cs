@@ -12,6 +12,11 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
     private const string SchemaVersion = "1.0";
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
+    public async Task<HttpResponseData> CreateOkAsync<TPayload>(HttpRequestData request, TPayload payload)
+    {
+        return await WriteJsonAsync(request, HttpStatusCode.OK, payload);
+    }
+
     public async Task<HttpResponseData> CreateValidationErrorAsync(HttpRequestData request, RequestValidationException exception)
     {
         var envelope = new ErrorResponseEnvelope(
@@ -35,12 +40,12 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
         return await WriteJsonAsync(request, HttpStatusCode.NotImplemented, envelope);
     }
 
-    private static async Task<HttpResponseData> WriteJsonAsync(HttpRequestData request, HttpStatusCode statusCode, ErrorResponseEnvelope envelope)
+    private static async Task<HttpResponseData> WriteJsonAsync<TPayload>(HttpRequestData request, HttpStatusCode statusCode, TPayload payload)
     {
         var response = request.CreateResponse(statusCode);
         response.Headers.Add("Content-Type", "application/json; charset=utf-8");
-        var payload = JsonSerializer.Serialize(envelope, SerializerOptions);
-        await response.WriteStringAsync(payload);
+        var body = JsonSerializer.Serialize(payload, SerializerOptions);
+        await response.WriteStringAsync(body);
         return response;
     }
 }

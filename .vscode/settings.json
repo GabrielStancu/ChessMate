@@ -1,3 +1,13 @@
 {
-    "azureFunctions.projectSubpath": "src\\backend\\src\\ChessMate.Functions"
+    "azureFunctions.projectSubpath": "src\\backend\\src\\ChessMate.Functions",
+    "chat.tools.terminal.autoApprove": {
+        "/^Set-Location \"d:\\\\Projects\\\\ChessMate\\\\src\\\\backend\"; dotnet new xunit -n ChessMate\\.Functions\\.Tests; dotnet sln ChessMate\\.Backend\\.sln add \\.\\\\ChessMate\\.Functions\\.Tests\\\\ChessMate\\.Functions\\.Tests\\.csproj; dotnet add \\.\\\\ChessMate\\.Functions\\.Tests\\\\ChessMate\\.Functions\\.Tests\\.csproj reference \\.\\\\ChessMate\\.Functions\\\\ChessMate\\.Functions\\.csproj$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^dotnet build ChessMate\\.Backend\\.sln; dotnet test \\.\\\\ChessMate\\.Functions\\.Tests\\\\ChessMate\\.Functions\\.Tests\\.csproj$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }

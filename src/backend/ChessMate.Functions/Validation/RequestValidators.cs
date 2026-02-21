@@ -18,8 +18,30 @@ public static partial class RequestValidators
         Guard.AgainstFalse(pageSize == LockedPageSize, nameof(pageSize), "pageSize must be exactly 12.");
     }
 
+    public static int ParseOptionalIntegerQuery(string? value, string fieldName, int fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallback;
+        }
+
+        return int.TryParse(value, out var parsedValue)
+            ? parsedValue
+            : throw CreateInvalidIntegerException(fieldName);
+    }
+
     public static void ValidateBatchCoachRequest(string payload)
     {
         Guard.AgainstNullOrWhiteSpace(payload, "body");
+    }
+
+    private static RequestValidationException CreateInvalidIntegerException(string fieldName)
+    {
+        var errors = new Dictionary<string, string[]>
+        {
+            [fieldName] = [$"{fieldName} must be a valid integer."]
+        };
+
+        return new RequestValidationException("Validation failed.", errors);
     }
 }
