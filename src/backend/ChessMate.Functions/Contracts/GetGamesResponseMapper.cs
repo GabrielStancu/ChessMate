@@ -1,3 +1,5 @@
+using ChessMate.Application.ChessCom;
+
 namespace ChessMate.Functions.Contracts;
 
 public static class GetGamesResponseMapper
@@ -17,5 +19,29 @@ public static class GetGamesResponseMapper
             sourceTimestamp,
             CacheStatus,
             CacheTtlMinutes);
+    }
+
+    public static GetGamesResponseEnvelope Create(GetGamesPageResult pageResult)
+    {
+        var items = pageResult.Items
+            .Select(item => new GetGamesItemEnvelope(
+                item.GameId,
+                item.PlayedAtUtc,
+                item.Opponent,
+                item.Result,
+                item.Opening,
+                item.TimeControl,
+                item.Url))
+            .ToArray();
+
+        return new GetGamesResponseEnvelope(
+            SchemaVersion,
+            items,
+            pageResult.Page,
+            pageResult.PageSize,
+            pageResult.HasMore,
+            pageResult.SourceTimestamp,
+            pageResult.CacheStatus,
+            pageResult.CacheTtlMinutes);
     }
 }

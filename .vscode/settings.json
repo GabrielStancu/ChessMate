@@ -8,6 +8,7 @@
         "/^dotnet build ChessMate\\.Backend\\.sln; dotnet test \\.\\\\ChessMate\\.Functions\\.Tests\\\\ChessMate\\.Functions\\.Tests\\.csproj$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "dotnet test": true
     }
 }

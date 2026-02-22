@@ -19,7 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ChessMate.Application\ChessMate.Application.csproj" />
     <ProjectReference Include="..\ChessMate.Functions\ChessMate.Functions.csproj" />
+    <ProjectReference Include="..\ChessMate.Infrastructure\ChessMate.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -40,6 +40,17 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
         return await WriteJsonAsync(request, HttpStatusCode.NotImplemented, envelope);
     }
 
+    public async Task<HttpResponseData> CreateUpstreamUnavailableAsync(HttpRequestData request, string message)
+    {
+        var envelope = new ErrorResponseEnvelope(
+            SchemaVersion,
+            correlationAccessor.CorrelationId,
+            "UpstreamUnavailable",
+            message);
+
+        return await WriteJsonAsync(request, HttpStatusCode.BadGateway, envelope);
+    }
+
     private static async Task<HttpResponseData> WriteJsonAsync<TPayload>(HttpRequestData request, HttpStatusCode statusCode, TPayload payload)
     {
         var response = request.CreateResponse(statusCode);
