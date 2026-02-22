@@ -29,5 +29,7 @@ public sealed class GameIndexEntity : ITableEntity
 
     public DateTimeOffset IngestedAtUtc { get; set; }
 
-    public string SchemaVersion { get; set; } = "1.0";
+    public DateTimeOffset ExpiresAtUtc { get; set; }
+
+    public string SchemaVersion { get; set; } = "v1";
 }

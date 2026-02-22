@@ -54,6 +54,12 @@ var host = new HostBuilder()
             return new TableOperationStateStore(serviceClient.GetTableClient("OperationState"));
         });
 
+        services.AddSingleton<IAnalysisBatchStore>(serviceProvider =>
+        {
+            var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
+            return new TableAnalysisBatchStore(serviceClient.GetTableClient("AnalysisBatch"));
+        });
+
         services.AddSingleton<IRequestHashProvider, CanonicalRequestHashProvider>();
         services.AddSingleton<BatchCoachIdempotencyService>();
         services.AddHttpClient<ICoachMoveGenerator, AzureOpenAiCoachMoveGenerator>()

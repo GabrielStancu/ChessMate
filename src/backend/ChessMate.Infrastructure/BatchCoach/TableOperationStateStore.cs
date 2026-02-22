@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Data.Tables;
+using ChessMate.Infrastructure.Configuration;
 
 namespace ChessMate.Infrastructure.BatchCoach;
 
@@ -83,7 +84,9 @@ public sealed class TableOperationStateStore : IOperationStateStore
             StartedAtUtc = startedAtUtc,
             CompletedAtUtc = null,
             ResponsePayloadJson = string.Empty,
-            ErrorCode = string.Empty
+            ErrorCode = string.Empty,
+            ExpiresAtUtc = PersistencePolicy.CalculateExpiresAtUtc(startedAtUtc),
+            SchemaVersion = PersistencePolicy.SchemaVersion
         };
 
         try
@@ -106,7 +109,9 @@ public sealed class TableOperationStateStore : IOperationStateStore
             StartedAtUtc = startedAtUtc,
             CompletedAtUtc = null,
             ResponsePayloadJson = string.Empty,
-            ErrorCode = string.Empty
+            ErrorCode = string.Empty,
+            ExpiresAtUtc = PersistencePolicy.CalculateExpiresAtUtc(startedAtUtc),
+            SchemaVersion = PersistencePolicy.SchemaVersion
         };
 
         await _tableClient.UpsertEntityAsync(lookupEntity, TableUpdateMode.Replace, cancellationToken);
@@ -167,7 +172,9 @@ public sealed class TableOperationStateStore : IOperationStateStore
             StartedAtUtc = entity.StartedAtUtc,
             CompletedAtUtc = entity.CompletedAtUtc,
             ResponsePayloadJson = entity.ResponsePayloadJson,
-            ErrorCode = entity.ErrorCode
+            ErrorCode = entity.ErrorCode,
+            ExpiresAtUtc = entity.ExpiresAtUtc,
+            SchemaVersion = entity.SchemaVersion
         };
 
         await _tableClient.UpsertEntityAsync(lookupEntity, TableUpdateMode.Replace, cancellationToken);

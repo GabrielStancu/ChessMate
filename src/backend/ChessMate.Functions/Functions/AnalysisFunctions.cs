@@ -3,6 +3,8 @@ using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Http;
 using ChessMate.Functions.Validation;
+using ChessMate.Infrastructure.BatchCoach;
+using ChessMate.Infrastructure.Configuration;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -18,15 +20,21 @@ public sealed class AnalysisFunctions
 
     private readonly HttpResponseFactory _responseFactory;
     private readonly BatchCoachIdempotencyService _idempotencyService;
+    private readonly IAnalysisBatchStore _analysisBatchStore;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<AnalysisFunctions> _logger;
 
     public AnalysisFunctions(
         HttpResponseFactory responseFactory,
         BatchCoachIdempotencyService idempotencyService,
+        IAnalysisBatchStore analysisBatchStore,
+        TimeProvider timeProvider,
         ILogger<AnalysisFunctions> logger)
     {
         _responseFactory = responseFactory;
         _idempotencyService = idempotencyService;
+        _analysisBatchStore = analysisBatchStore;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -157,6 +165,22 @@ public sealed class AnalysisFunctions
                 request,
                 "Batch coaching orchestration produced no output.");
         }
+
+        var createdAtUtc = _timeProvider.GetUtcNow();
+        var payloadJson = JsonSerializer.Serialize(responseEnvelope, SerializerOptions);
+
+        var artifact = new AnalysisBatchArtifact(
+            responseEnvelope.Summary.GameId,
+            responseEnvelope.OperationId,
+            PersistencePolicy.SchemaVersion,
+            createdAtUtc,
+            PersistencePolicy.CalculateExpiresAtUtc(createdAtUtc),
+            PersistencePolicy.SchemaVersion,
+            responseEnvelope.Summary.AnalysisMode,
+            responseEnvelope.Coaching.Count,
+            payloadJson);
+
+        await _analysisBatchStore.UpsertAsync(artifact, functionContext.CancellationToken);
 
         await _idempotencyService.MarkCompletedAsync(
             idempotencyDecision.OperationId,

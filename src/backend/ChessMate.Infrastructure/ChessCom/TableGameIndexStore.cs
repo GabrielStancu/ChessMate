@@ -1,5 +1,6 @@
 using Azure.Data.Tables;
 using ChessMate.Application.ChessCom;
+using ChessMate.Infrastructure.Configuration;
 
 namespace ChessMate.Infrastructure.ChessCom;
 
@@ -60,7 +61,9 @@ public sealed class TableGameIndexStore : IGameIndexStore
                 Opening = game.Opening,
                 TimeControl = game.TimeControl,
                 Url = game.Url,
-                IngestedAtUtc = ingestedAtUtc
+                IngestedAtUtc = ingestedAtUtc,
+                ExpiresAtUtc = PersistencePolicy.CalculateExpiresAtUtc(ingestedAtUtc),
+                SchemaVersion = PersistencePolicy.SchemaVersion
             };
 
             await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);

@@ -14,8 +14,7 @@ namespace ChessMate.Infrastructure.BatchCoach;
 public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
-    private static readonly TokenRequestContext CognitiveServiceTokenContext =
-        new(["https://cognitiveservices.azure.com/.default"]);
+    private static readonly TokenRequestContext CognitiveServiceTokenContext = new( new string[] { "https://cognitiveservices.azure.com/.default"});
 
     private readonly HttpClient _httpClient;
     private readonly IOptions<BackendOptions> _backendOptions;
@@ -154,11 +153,11 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
         string userPrompt,
         CancellationToken cancellationToken)
     {
-        var body = new AzureOpenAiCompletionRequest(
-            [
-                new AzureOpenAiChatMessage("system", systemPrompt),
-                new AzureOpenAiChatMessage("user", userPrompt)
-            ],
+        var body = new AzureOpenAiCompletionRequest(new List<AzureOpenAiChatMessage>
+            {
+                new("system", systemPrompt),
+                new("user", userPrompt)
+            },
             options.MaxOutputTokens,
             options.Temperature,
             new AzureOpenAiResponseFormat("json_object"));
