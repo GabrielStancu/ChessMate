@@ -17,7 +17,6 @@ var host = new HostBuilder()
     {
         builder
             .SetBasePath(context.HostingEnvironment.ContentRootPath)
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
             .AddJsonFile("local.settings.json", optional: true, reloadOnChange: false)
             .AddEnvironmentVariables();
     })

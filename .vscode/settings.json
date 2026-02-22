@@ -9,6 +9,15 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "dotnet test": true
+        "dotnet test": true,
+        "/^Set-Location d:\\\\Projects\\\\ChessMate\\\\src\\\\backend\\\\ChessMate\\.Functions; func start --verbose$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^Get-Command func \\| Format-List \\*$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "func": true
     }
 }

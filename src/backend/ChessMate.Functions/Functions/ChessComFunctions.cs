@@ -30,7 +30,7 @@ public sealed class ChessComFunctions
 
     [Function("GetChessComGames")]
     public async Task<HttpResponseData> GetGamesAsync(
-        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "api/chesscom/users/{username}/games")]
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "chesscom/users/{username}/games")]
         HttpRequestData request,
         string username)
     {

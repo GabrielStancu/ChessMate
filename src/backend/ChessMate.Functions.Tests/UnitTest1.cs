@@ -1,4 +1,5 @@
 ﻿using ChessMate.Application.Validation;
+using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Validation;
 
@@ -73,5 +74,61 @@ public sealed class GetGamesResponseMapperTests
         Assert.Equal(sourceTimestamp, response.SourceTimestamp);
         Assert.Equal("miss", response.CacheStatus);
         Assert.Equal(15, response.CacheTtlMinutes);
+    }
+}
+
+public sealed class BatchCoachClassificationPolicyTests
+{
+    [Fact]
+    public void SelectEligibleMoves_ReturnsOnlyMistakeMissBlunder()
+    {
+        var moves = new List<BatchCoachMoveEnvelope>
+        {
+            new(1, "Best", true, "e4"),
+            new(2, "Mistake", false, "...Nc6"),
+            new(3, "Miss", true, "Nf3"),
+            new(4, "Excellent", false, "...d6"),
+            new(5, "Blunder", true, "Bb5")
+        };
+
+        var eligible = BatchCoachClassificationPolicy.SelectEligibleMoves(moves);
+
+        Assert.Equal(3, eligible.Count);
+        Assert.All(eligible, move => Assert.True(BatchCoachClassificationPolicy.IsEligible(move.Classification)));
+        Assert.Equal([2, 3, 5], eligible.Select(move => move.Ply).ToArray());
+    }
+}
+
+public sealed class BatchCoachResponseMapperTests
+{
+    [Fact]
+    public void Create_MapsUnifiedEnvelopeWithSummaryAndMetadata()
+    {
+        var request = new BatchCoachRequestEnvelope(
+            "game-123",
+            [
+                new BatchCoachMoveEnvelope(1, "Best", true, "e4"),
+                new BatchCoachMoveEnvelope(2, "Mistake", true, "Nf3")
+            ],
+            "Deep");
+
+        var activityResults = new List<CoachMoveActivityResult>
+        {
+            new(2, "Mistake", true, "Nf3", "Explanation")
+        };
+
+        var completedAtUtc = new DateTimeOffset(2026, 2, 22, 12, 0, 0, TimeSpan.Zero);
+
+        var response = BatchCoachResponseMapper.Create(request, "op-123", activityResults, completedAtUtc);
+
+        Assert.Equal("1.0", response.SchemaVersion);
+        Assert.Equal("op-123", response.OperationId);
+        Assert.Equal("game-123", response.Summary.GameId);
+        Assert.Equal(2, response.Summary.TotalMoves);
+        Assert.Equal(1, response.Summary.EligibleMoves);
+        Assert.Equal("Deep", response.Summary.AnalysisMode);
+        Assert.Single(response.Coaching);
+        Assert.Equal(completedAtUtc, response.Metadata.CompletedAtUtc);
+        Assert.Equal(BatchCoachClassificationPolicy.EligibleClassifications, response.Metadata.EligibleClassifications);
     }
 }
