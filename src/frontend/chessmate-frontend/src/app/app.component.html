@@ -1,0 +1,90 @@
+<main class="shell">
+  <section
+    class="search-hero"
+    [class.with-background]="searchBackgroundImageUrl"
+    [style.--search-bg-image]="searchBackgroundImageUrl ? 'url(' + searchBackgroundImageUrl + ')' : 'none'">
+    <h1>Modern Chess Analyzer</h1>
+    <p>Search a Chess.com username and browse games from the backend API.</p>
+
+    <form class="search-form" (submit)="$event.preventDefault()">
+      <mat-form-field appearance="outline" class="username-field">
+        <mat-label>Chess.com Username</mat-label>
+        <input matInput type="text" [formControl]="usernameControl" placeholder="e.g. hikaru" />
+        <mat-error *ngIf="getControlError() as controlError">{{ controlError }}</mat-error>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" (click)="search()" [disabled]="loading()">
+        Search
+      </button>
+    </form>
+  </section>
+
+  <section class="games-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Games</mat-card-title>
+        <mat-card-subtitle>
+          Page {{ page() }} · {{ pageSize }} items per page
+        </mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div *ngIf="loading(); else loadedState" class="loading-state">
+          <mat-spinner diameter="44"></mat-spinner>
+        </div>
+
+        <ng-template #loadedState>
+          <div *ngIf="errorMessage() as currentError" class="error-state">
+            <p>{{ currentError }}</p>
+            <ul *ngIf="fieldErrors() as currentFieldErrors">
+              <li *ngFor="let entry of currentFieldErrors | keyvalue">
+                {{ entry.key }}: {{ entry.value.join(', ') }}
+              </li>
+            </ul>
+          </div>
+
+          <mat-list *ngIf="games().length > 0; else emptyState">
+            <mat-list-item *ngFor="let game of games(); trackBy: trackByGameId">
+              <div class="game-row">
+                <div>
+                  <strong>{{ game.opening || 'Unknown opening' }}</strong>
+                  <p>Opponent: {{ game.opponent }} · Result: {{ game.result }}</p>
+                </div>
+                <div class="game-meta">
+                  <span>{{ game.playedAtUtc | date: 'medium' }}</span>
+                  <a [href]="game.url" target="_blank" rel="noreferrer">View</a>
+                </div>
+              </div>
+            </mat-list-item>
+          </mat-list>
+
+          <ng-template #emptyState>
+            <p *ngIf="searched(); else firstLoadState" class="empty-state">No games were returned for this page.</p>
+          </ng-template>
+
+          <ng-template #firstLoadState>
+            <p class="empty-state">Run a search to load games.</p>
+          </ng-template>
+        </ng-template>
+      </mat-card-content>
+
+      <mat-card-actions class="pager-actions">
+        <button mat-stroked-button type="button" (click)="previousPage()" [disabled]="!canGoPrevious()">
+          Previous
+        </button>
+        <button mat-stroked-button type="button" (click)="nextPage()" [disabled]="!canGoNext()">
+          Next
+        </button>
+      </mat-card-actions>
+
+      <mat-card-footer class="card-footer">
+        <span *ngIf="cacheStatus()">
+          <span>Cache: {{ cacheStatus() }}</span>
+        </span>
+        <span *ngIf="sourceTimestamp()">
+          <span>Source: {{ sourceTimestamp() | date: 'medium' }}</span>
+        </span>
+      </mat-card-footer>
+    </mat-card>
+  </section>
+</main>
