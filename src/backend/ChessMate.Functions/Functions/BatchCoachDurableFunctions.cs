@@ -10,6 +10,8 @@ namespace ChessMate.Functions.Functions;
 
 public sealed class BatchCoachDurableFunctions
 {
+    private const int QuickTimeoutSeconds = 12;
+    private const int DeepTimeoutSeconds = 30;
     private const string LatencyMetricName = "batchcoach.coachmove.latency.ms";
     private const string PromptTokensMetricName = "batchcoach.coachmove.tokens.prompt";
     private const string CompletionTokensMetricName = "batchcoach.coachmove.tokens.completion";
@@ -38,17 +40,21 @@ public sealed class BatchCoachDurableFunctions
             ?? throw new InvalidOperationException("Batch coach orchestration input is required.");
 
         var eligibleMoves = BatchCoachClassificationPolicy.SelectEligibleMoves(input.Request.Moves);
+        var timeoutBudget = ResolveTimeoutBudget(input.Request.AnalysisMode);
 
         logger.LogInformation(
-            "Batch coach orchestration started. operationId {OperationId}, totalMoves {TotalMoves}, eligibleMoves {EligibleMoves}.",
+            "Batch coach orchestration started. operationId {OperationId}, totalMoves {TotalMoves}, eligibleMoves {EligibleMoves}, timeoutBudgetSeconds {TimeoutBudgetSeconds}.",
             input.OperationId,
             input.Request.Moves.Count,
-            eligibleMoves.Count);
+            eligibleMoves.Count,
+            timeoutBudget.TotalSeconds);
 
         var activityTasks = eligibleMoves
-            .Select(move => orchestrationContext.CallActivityAsync<CoachMoveActivityResult>(
-                nameof(CoachMoveActivityAsync),
-                new CoachMoveActivityInput(input.OperationId, input.Request.GameId, input.Request.AnalysisMode, move)))
+            .Select(move => ExecuteActivityWithTimeoutAsync(
+                orchestrationContext,
+                input,
+                move,
+                timeoutBudget))
             .ToArray();
 
         var coachingItems = activityTasks.Length == 0
@@ -62,11 +68,51 @@ public sealed class BatchCoachDurableFunctions
             orchestrationContext.CurrentUtcDateTime);
 
         logger.LogInformation(
-            "Batch coach orchestration completed. operationId {OperationId}, coachingCount {CoachingCount}.",
+            "Batch coach orchestration completed. operationId {OperationId}, coachingCount {CoachingCount}, warningsCount {WarningsCount}, failureCode {FailureCode}.",
             input.OperationId,
-            response.Coaching.Count);
+            response.Coaching.Count,
+            response.Metadata.Warnings?.Count ?? 0,
+            response.Metadata.FailureCode ?? "None");
 
         return response;
+    }
+
+    private static async Task<CoachMoveActivityResult> ExecuteActivityWithTimeoutAsync(
+        TaskOrchestrationContext orchestrationContext,
+        BatchCoachOrchestrationInput input,
+        BatchCoachMoveEnvelope move,
+        TimeSpan timeoutBudget)
+    {
+        var activityInput = new CoachMoveActivityInput(
+            input.OperationId,
+            input.Request.GameId,
+            input.Request.AnalysisMode,
+            move);
+
+        var activityTask = orchestrationContext.CallActivityAsync<CoachMoveActivityResult>(
+            nameof(CoachMoveActivityAsync),
+            activityInput);
+
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var timeoutAt = orchestrationContext.CurrentUtcDateTime.Add(timeoutBudget);
+        var timeoutTask = orchestrationContext.CreateTimer(timeoutAt, cancellationTokenSource.Token);
+
+        var completedTask = await Task.WhenAny(activityTask, timeoutTask);
+        if (completedTask == activityTask)
+        {
+            cancellationTokenSource.Cancel();
+            return await activityTask;
+        }
+
+        var moveText = string.IsNullOrWhiteSpace(move.Move)
+            ? move.To
+            : move.Move;
+
+        return CoachMoveActivityResult.CreateFailure(
+            move,
+            moveText,
+            BatchCoachFailureCodes.Timeout,
+            $"Coach generation exceeded timeout budget of {(int)timeoutBudget.TotalSeconds}s.");
     }
 
     [Function(nameof(CoachMoveActivityAsync))]
@@ -92,40 +138,70 @@ public sealed class BatchCoachDurableFunctions
             input.Move.From,
             input.Move.To);
 
-        var generationResult = await _coachMoveGenerator.GenerateAsync(
-            generationRequest,
-            CancellationToken.None);
-
         var moveText = string.IsNullOrWhiteSpace(input.Move.Move)
             ? CoachMovePromptComposer.CreateMoveText(generationRequest)
             : input.Move.Move.Trim();
 
-        var result = new CoachMoveActivityResult(
-            input.Move.Ply,
-            input.Move.Classification,
-            input.Move.IsUserMove,
-            moveText,
-            generationResult.Explanation,
-            generationResult.WhyWrong,
-            generationResult.ExploitPath,
-            generationResult.SuggestedPlan,
-            generationResult.PromptTokens,
-            generationResult.CompletionTokens,
-            generationResult.TotalTokens,
-            generationResult.LatencyMs,
-            generationResult.Model);
+        try
+        {
+            var generationResult = await _coachMoveGenerator.GenerateAsync(
+                generationRequest,
+                CancellationToken.None);
 
-        EmitTelemetry(input, result);
+            var result = new CoachMoveActivityResult(
+                input.Move.Ply,
+                input.Move.Classification,
+                input.Move.IsUserMove,
+                moveText,
+                generationResult.Explanation,
+                generationResult.WhyWrong,
+                generationResult.ExploitPath,
+                generationResult.SuggestedPlan,
+                generationResult.PromptTokens,
+                generationResult.CompletionTokens,
+                generationResult.TotalTokens,
+                generationResult.LatencyMs,
+                generationResult.Model);
 
-        _logger.LogInformation(
-            "Coach move activity completed. operationId {OperationId}, ply {Ply}, model {Model}, latencyMs {LatencyMs}, totalTokens {TotalTokens}.",
-            input.OperationId,
-            result.Ply,
-            result.Model,
-            result.LatencyMs,
-            result.TotalTokens);
+            EmitTelemetry(input, result);
 
-        return result;
+            _logger.LogInformation(
+                "Coach move activity completed. operationId {OperationId}, ply {Ply}, model {Model}, latencyMs {LatencyMs}, totalTokens {TotalTokens}.",
+                input.OperationId,
+                result.Ply,
+                result.Model,
+                result.LatencyMs,
+                result.TotalTokens);
+
+            return result;
+        }
+        catch (Exception exception)
+        {
+            var failureCode = BatchCoachFailureCodeMapper.Map(exception);
+
+            _logger.LogWarning(
+                exception,
+                "Coach move activity failed. operationId {OperationId}, ply {Ply}, failureCode {FailureCode}.",
+                input.OperationId,
+                input.Move.Ply,
+                failureCode);
+
+            return CoachMoveActivityResult.CreateFailure(
+                input.Move,
+                moveText,
+                failureCode,
+                "Coach generation failed for this move.");
+        }
+    }
+
+    private static TimeSpan ResolveTimeoutBudget(string? analysisMode)
+    {
+        if (string.Equals(analysisMode, "Deep", StringComparison.OrdinalIgnoreCase))
+        {
+            return TimeSpan.FromSeconds(DeepTimeoutSeconds);
+        }
+
+        return TimeSpan.FromSeconds(QuickTimeoutSeconds);
     }
 
     private void EmitTelemetry(CoachMoveActivityInput input, CoachMoveActivityResult result)

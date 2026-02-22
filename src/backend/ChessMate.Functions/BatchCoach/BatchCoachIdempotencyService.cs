@@ -58,10 +58,17 @@ public sealed class BatchCoachIdempotencyService
         BatchCoachResponseEnvelope responseEnvelope,
         CancellationToken cancellationToken)
     {
+        var status = string.Equals(
+            responseEnvelope.Metadata.FailureCode,
+            BatchCoachFailureCodes.PartialCoaching,
+            StringComparison.Ordinal)
+            ? OperationStateStatus.PartialCoaching
+            : OperationStateStatus.Completed;
+
         var responseJson = JsonSerializer.Serialize(responseEnvelope, SerializerOptions);
         await _operationStateStore.TrySetTerminalStatusAsync(
             operationId,
-            OperationStateStatus.Completed,
+            status,
             _timeProvider.GetUtcNow(),
             responseJson,
             errorCode: null,
@@ -85,7 +92,10 @@ public sealed class BatchCoachIdempotencyService
             ? fallbackOperationId
             : existing.OperationId;
 
-        if (string.Equals(existing.Status, OperationStateStatus.Completed, StringComparison.Ordinal) &&
+        var canReplay = string.Equals(existing.Status, OperationStateStatus.Completed, StringComparison.Ordinal) ||
+                        string.Equals(existing.Status, OperationStateStatus.PartialCoaching, StringComparison.Ordinal);
+
+        if (canReplay &&
             !string.IsNullOrWhiteSpace(existing.ResponsePayloadJson))
         {
             var response = JsonSerializer.Deserialize<BatchCoachResponseEnvelope>(existing.ResponsePayloadJson, SerializerOptions);

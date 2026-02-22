@@ -14,24 +14,43 @@ public static class BatchCoachResponseMapper
         DateTimeOffset completedAtUtc)
     {
         var coaching = activityResults
+            .Where(item => item.IsSuccessful)
             .OrderBy(item => item.Ply)
             .Select(item => new BatchCoachCoachingItemEnvelope(
                 item.Ply,
                 item.Classification,
                 item.IsUserMove,
-                item.Move,
-                item.Explanation))
+                item.Move ?? string.Empty,
+                item.Explanation ?? string.Empty))
             .ToArray();
+
+        var warnings = activityResults
+            .Where(item => !item.IsSuccessful)
+            .OrderBy(item => item.Ply)
+            .Select(item => new BatchCoachWarningEnvelope(
+                item.Ply,
+                item.Classification,
+                item.Move,
+                item.FailureCode ?? BatchCoachFailureCodes.OrchestrationFailed,
+                item.FailureMessage ?? "Coach generation failed."))
+            .ToArray();
+
+        var eligibleMoveCount = BatchCoachClassificationPolicy.SelectEligibleMoves(request.Moves).Count;
+        var responseFailureCode = warnings.Length > 0
+            ? BatchCoachFailureCodes.PartialCoaching
+            : null;
 
         var summary = new BatchCoachSummaryEnvelope(
             request.GameId,
             request.Moves.Count,
-            coaching.Length,
+            eligibleMoveCount,
             string.IsNullOrWhiteSpace(request.AnalysisMode) ? DefaultAnalysisMode : request.AnalysisMode);
 
         var metadata = new BatchCoachMetadataEnvelope(
             completedAtUtc,
-            BatchCoachClassificationPolicy.EligibleClassifications);
+            BatchCoachClassificationPolicy.EligibleClassifications,
+            warnings,
+            responseFailureCode);
 
         return new BatchCoachResponseEnvelope(
             SchemaVersion,

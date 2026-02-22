@@ -2,6 +2,7 @@
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Validation;
+using System.Net;
 
 namespace ChessMate.Functions.Tests;
 
@@ -130,5 +131,66 @@ public sealed class BatchCoachResponseMapperTests
         Assert.Single(response.Coaching);
         Assert.Equal(completedAtUtc, response.Metadata.CompletedAtUtc);
         Assert.Equal(BatchCoachClassificationPolicy.EligibleClassifications, response.Metadata.EligibleClassifications);
+        Assert.Empty(response.Metadata.Warnings ?? Array.Empty<BatchCoachWarningEnvelope>());
+        Assert.Null(response.Metadata.FailureCode);
+    }
+
+    [Fact]
+    public void Create_WithFailedMoves_MapsWarningsWithoutBreakingBasePayload()
+    {
+        var request = new BatchCoachRequestEnvelope(
+            "game-123",
+            [
+                new BatchCoachMoveEnvelope(1, "Mistake", true, "Nf3"),
+                new BatchCoachMoveEnvelope(2, "Blunder", false, "...Qh4")
+            ],
+            "Quick");
+
+        var activityResults = new List<CoachMoveActivityResult>
+        {
+            new(1, "Mistake", true, "Nf3", "Explanation"),
+            CoachMoveActivityResult.CreateFailure(
+                new BatchCoachMoveEnvelope(2, "Blunder", false, "...Qh4"),
+                "...Qh4",
+                BatchCoachFailureCodes.Timeout,
+                "Coach generation exceeded timeout budget of 12s.")
+        };
+
+        var completedAtUtc = new DateTimeOffset(2026, 2, 22, 12, 30, 0, TimeSpan.Zero);
+
+        var response = BatchCoachResponseMapper.Create(request, "op-124", activityResults, completedAtUtc);
+
+        Assert.Equal("1.0", response.SchemaVersion);
+        Assert.Equal("op-124", response.OperationId);
+        Assert.Equal("game-123", response.Summary.GameId);
+        Assert.Equal(2, response.Summary.EligibleMoves);
+        Assert.Single(response.Coaching);
+
+        var warnings = Assert.IsType<BatchCoachWarningEnvelope[]>(response.Metadata.Warnings);
+        Assert.Single(warnings);
+        Assert.Equal(2, warnings[0].Ply);
+        Assert.Equal(BatchCoachFailureCodes.Timeout, warnings[0].Code);
+        Assert.Equal(BatchCoachFailureCodes.PartialCoaching, response.Metadata.FailureCode);
+    }
+}
+
+public sealed class BatchCoachFailureCodeMapperTests
+{
+    [Fact]
+    public void Map_With429HttpRequestException_ReturnsRateLimited()
+    {
+        var exception = new HttpRequestException("rate limited", null, HttpStatusCode.TooManyRequests);
+
+        var code = BatchCoachFailureCodeMapper.Map(exception);
+
+        Assert.Equal(BatchCoachFailureCodes.RateLimited, code);
+    }
+
+    [Fact]
+    public void Map_WithTaskCanceledException_ReturnsTimeout()
+    {
+        var code = BatchCoachFailureCodeMapper.Map(new TaskCanceledException("timeout"));
+
+        Assert.Equal(BatchCoachFailureCodes.Timeout, code);
     }
 }

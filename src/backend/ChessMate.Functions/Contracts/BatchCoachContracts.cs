@@ -37,7 +37,16 @@ public sealed record BatchCoachCoachingItemEnvelope(
 
 public sealed record BatchCoachMetadataEnvelope(
     DateTimeOffset CompletedAtUtc,
-    IReadOnlyList<string> EligibleClassifications);
+    IReadOnlyList<string> EligibleClassifications,
+    IReadOnlyList<BatchCoachWarningEnvelope>? Warnings = null,
+    string? FailureCode = null);
+
+public sealed record BatchCoachWarningEnvelope(
+    int Ply,
+    string Classification,
+    string? Move,
+    string Code,
+    string Message);
 
 public sealed record BatchCoachOrchestrationInput(
     string OperationId,
@@ -53,8 +62,8 @@ public sealed record CoachMoveActivityResult(
     int Ply,
     string Classification,
     bool IsUserMove,
-    string Move,
-    string Explanation,
+    string? Move,
+    string? Explanation,
     string? WhyWrong = null,
     string? ExploitPath = null,
     string? SuggestedPlan = null,
@@ -62,4 +71,30 @@ public sealed record CoachMoveActivityResult(
     int CompletionTokens = 0,
     int TotalTokens = 0,
     double LatencyMs = 0,
-    string? Model = null);
+    string? Model = null,
+    bool IsSuccessful = true,
+    string? FailureCode = null,
+    string? FailureMessage = null)
+{
+    public static CoachMoveActivityResult CreateFailure(
+        BatchCoachMoveEnvelope move,
+        string? moveText,
+        string failureCode,
+        string failureMessage)
+    {
+        return new CoachMoveActivityResult(
+            move.Ply,
+            move.Classification,
+            move.IsUserMove,
+            moveText,
+            Explanation: null,
+            PromptTokens: 0,
+            CompletionTokens: 0,
+            TotalTokens: 0,
+            LatencyMs: 0,
+            Model: null,
+            IsSuccessful: false,
+            FailureCode: failureCode,
+            FailureMessage: failureMessage);
+    }
+}

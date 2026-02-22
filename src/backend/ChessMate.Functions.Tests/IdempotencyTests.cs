@@ -121,6 +121,43 @@ public sealed class BatchCoachIdempotencyServiceTests
     }
 
     [Fact]
+    public async Task BeginAsync_WithExistingPartialCoaching_ReturnsReplayDecision()
+    {
+        var response = new BatchCoachResponseEnvelope(
+            "1.0",
+            "op-123",
+            new BatchCoachSummaryEnvelope("game-1", 40, 3, "Quick"),
+            Array.Empty<BatchCoachCoachingItemEnvelope>(),
+            new BatchCoachMetadataEnvelope(
+                DateTimeOffset.UtcNow,
+                Array.Empty<string>(),
+                new[] { new BatchCoachWarningEnvelope(5, "Mistake", "Nf3", BatchCoachFailureCodes.Timeout, "timeout") },
+                BatchCoachFailureCodes.PartialCoaching));
+
+        var responseJson = JsonSerializer.Serialize(response);
+        var existing = new OperationStateSnapshot(
+            "op-123",
+            "key1",
+            "hash-abc",
+            OperationStateStatus.PartialCoaching,
+            DateTimeOffset.UnixEpoch,
+            DateTimeOffset.UnixEpoch.AddSeconds(10),
+            responseJson,
+            null);
+
+        var store = new FakeOperationStateStore { ExistingState = existing };
+        var hashProvider = new CanonicalRequestHashProvider();
+        var timeProvider = new StubTimeProvider(DateTimeOffset.UnixEpoch);
+        var service = new BatchCoachIdempotencyService(store, hashProvider, timeProvider);
+
+        var decision = await service.BeginAsync("key1", """{"gameId":"123"}""", CancellationToken.None);
+
+        Assert.Equal(IdempotencyDecisionKind.Replay, decision.Kind);
+        Assert.NotNull(decision.ReplayResponse);
+        Assert.Equal("op-123", decision.ReplayResponse.OperationId);
+    }
+
+    [Fact]
     public async Task BeginAsync_WithExistingRunning_ReturnsConflict()
     {
         var existing = new OperationStateSnapshot(
@@ -164,6 +201,31 @@ public sealed class BatchCoachIdempotencyServiceTests
         Assert.True(store.TerminalStatusSet);
         Assert.Equal(OperationStateStatus.Completed, store.LastTerminalStatus);
         Assert.NotNull(store.LastResponsePayload);
+    }
+
+    [Fact]
+    public async Task MarkCompletedAsync_WithPartialFailureCode_PersistsPartialCoachingStatus()
+    {
+        var store = new FakeOperationStateStore();
+        var hashProvider = new CanonicalRequestHashProvider();
+        var timeProvider = new StubTimeProvider(DateTimeOffset.UnixEpoch);
+        var service = new BatchCoachIdempotencyService(store, hashProvider, timeProvider);
+
+        var response = new BatchCoachResponseEnvelope(
+            "1.0",
+            "op-123",
+            new BatchCoachSummaryEnvelope("game-1", 40, 3, "Quick"),
+            Array.Empty<BatchCoachCoachingItemEnvelope>(),
+            new BatchCoachMetadataEnvelope(
+                DateTimeOffset.UtcNow,
+                Array.Empty<string>(),
+                new[] { new BatchCoachWarningEnvelope(6, "Blunder", "Qh5", BatchCoachFailureCodes.Timeout, "timeout") },
+                BatchCoachFailureCodes.PartialCoaching));
+
+        await service.MarkCompletedAsync("op-123", response, CancellationToken.None);
+
+        Assert.True(store.TerminalStatusSet);
+        Assert.Equal(OperationStateStatus.PartialCoaching, store.LastTerminalStatus);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using ChessMate.Application.Abstractions;
 using ChessMate.Application.Validation;
+using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using Microsoft.Azure.Functions.Worker.Http;
 
@@ -22,7 +23,7 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
         var envelope = new ErrorResponseEnvelope(
             SchemaVersion,
             correlationAccessor.CorrelationId,
-            "ValidationError",
+            BatchCoachFailureCodes.ValidationError,
             exception.Message,
             exception.Errors);
 
@@ -45,7 +46,7 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
         var envelope = new ErrorResponseEnvelope(
             SchemaVersion,
             correlationAccessor.CorrelationId,
-            "UpstreamUnavailable",
+            BatchCoachFailureCodes.UpstreamUnavailable,
             message);
 
         return await WriteJsonAsync(request, HttpStatusCode.BadGateway, envelope);

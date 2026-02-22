@@ -132,7 +132,7 @@ public sealed class AnalysisFunctions
 
             await _idempotencyService.MarkFailedAsync(
                 idempotencyDecision.OperationId,
-                "OrchestrationFailed",
+                BatchCoachFailureCodes.OrchestrationFailed,
                 functionContext.CancellationToken);
 
             return await _responseFactory.CreateUpstreamUnavailableAsync(
@@ -150,7 +150,7 @@ public sealed class AnalysisFunctions
 
             await _idempotencyService.MarkFailedAsync(
                 idempotencyDecision.OperationId,
-                "NoOutput",
+                BatchCoachFailureCodes.OrchestrationFailed,
                 functionContext.CancellationToken);
 
             return await _responseFactory.CreateUpstreamUnavailableAsync(
