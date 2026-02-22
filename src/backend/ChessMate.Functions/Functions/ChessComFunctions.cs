@@ -3,6 +3,7 @@ using ChessMate.Application.ChessCom;
 using ChessMate.Application.Validation;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Http;
+using ChessMate.Functions.Security;
 using ChessMate.Functions.Validation;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
@@ -15,16 +16,19 @@ public sealed class ChessComFunctions
     private readonly HttpResponseFactory _responseFactory;
     private readonly ICorrelationContextAccessor _correlationAccessor;
     private readonly IChessComGamesService _chessComGamesService;
+    private readonly CorsPolicy _corsPolicy;
     private readonly ILogger<ChessComFunctions> _logger;
 
     public ChessComFunctions(HttpResponseFactory responseFactory,
         ICorrelationContextAccessor correlationAccessor,
         IChessComGamesService chessComGamesService,
+        CorsPolicy corsPolicy,
         ILogger<ChessComFunctions> logger)
     {
         _responseFactory = responseFactory;
         _correlationAccessor = correlationAccessor;
         _chessComGamesService = chessComGamesService;
+        _corsPolicy = corsPolicy;
         _logger = logger;
     }
 
@@ -34,6 +38,15 @@ public sealed class ChessComFunctions
         HttpRequestData request,
         string username)
     {
+        if (!_corsPolicy.IsOriginAllowed(request))
+        {
+            _logger.LogWarning("GET games blocked by CORS allowlist.");
+            return await _responseFactory.CreateForbiddenAsync(
+                request,
+                "CorsForbidden",
+                "Origin is not allowed.");
+        }
+
         var query = System.Web.HttpUtility.ParseQueryString(request.Url.Query);
         int page;
         int pageSize;

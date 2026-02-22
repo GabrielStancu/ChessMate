@@ -2,6 +2,7 @@ using ChessMate.Application.Validation;
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Http;
+using ChessMate.Functions.Security;
 using ChessMate.Functions.Validation;
 using ChessMate.Infrastructure.BatchCoach;
 using ChessMate.Infrastructure.Configuration;
@@ -22,6 +23,7 @@ public sealed class AnalysisFunctions
     private readonly BatchCoachIdempotencyService _idempotencyService;
     private readonly IAnalysisBatchStore _analysisBatchStore;
     private readonly TimeProvider _timeProvider;
+    private readonly CorsPolicy _corsPolicy;
     private readonly ILogger<AnalysisFunctions> _logger;
 
     public AnalysisFunctions(
@@ -29,12 +31,14 @@ public sealed class AnalysisFunctions
         BatchCoachIdempotencyService idempotencyService,
         IAnalysisBatchStore analysisBatchStore,
         TimeProvider timeProvider,
+        CorsPolicy corsPolicy,
         ILogger<AnalysisFunctions> logger)
     {
         _responseFactory = responseFactory;
         _idempotencyService = idempotencyService;
         _analysisBatchStore = analysisBatchStore;
         _timeProvider = timeProvider;
+        _corsPolicy = corsPolicy;
         _logger = logger;
     }
 
@@ -45,6 +49,15 @@ public sealed class AnalysisFunctions
         [DurableClient] DurableTaskClient durableTaskClient,
         FunctionContext functionContext)
     {
+        if (!_corsPolicy.IsOriginAllowed(request))
+        {
+            _logger.LogWarning("POST batch-coach blocked by CORS allowlist.");
+            return await _responseFactory.CreateForbiddenAsync(
+                request,
+                "CorsForbidden",
+                "Origin is not allowed.");
+        }
+
         var idempotencyKey = ExtractIdempotencyKey(request);
         if (string.IsNullOrWhiteSpace(idempotencyKey))
         {
@@ -59,7 +72,18 @@ public sealed class AnalysisFunctions
                     }));
         }
 
-        var payload = await new StreamReader(request.Body).ReadToEndAsync();
+        var redactedIdempotencyKey = LogRedactor.RedactIdempotencyKey(idempotencyKey);
+
+        string payload;
+        try
+        {
+            payload = await ReadBodyWithSizeLimitAsync(request.Body, functionContext.CancellationToken);
+        }
+        catch (RequestValidationException exception)
+        {
+            _logger.LogWarning(exception, "POST batch-coach request body limit validation failed.");
+            return await _responseFactory.CreateValidationErrorAsync(request, exception);
+        }
 
         try
         {
@@ -75,6 +99,7 @@ public sealed class AnalysisFunctions
         try
         {
             batchCoachRequest = DeserializeBatchCoachRequest(payload);
+            RequestValidators.ValidateBatchCoachEnvelope(batchCoachRequest);
         }
         catch (RequestValidationException exception)
         {
@@ -95,8 +120,9 @@ public sealed class AnalysisFunctions
         if (idempotencyDecision.Kind == IdempotencyDecisionKind.Replay)
         {
             _logger.LogInformation(
-                "POST batch-coach replaying existing completed response. operationId {OperationId}.",
-                idempotencyDecision.OperationId);
+                "POST batch-coach replaying existing completed response. operationId {OperationId}, idempotencyKey {RedactedIdempotencyKey}.",
+                idempotencyDecision.OperationId,
+                redactedIdempotencyKey);
             return await _responseFactory.CreateOkAsync(request, idempotencyDecision.ReplayResponse!);
         }
 
@@ -201,6 +227,28 @@ public sealed class AnalysisFunctions
         return request.Headers.TryGetValues("Idempotency-Key", out var values)
             ? values.FirstOrDefault()
             : null;
+    }
+
+    private static async Task<string> ReadBodyWithSizeLimitAsync(Stream body, CancellationToken cancellationToken)
+    {
+        await using var copyStream = new MemoryStream();
+        var buffer = new byte[8192];
+        var totalRead = 0;
+
+        while (true)
+        {
+            var read = await body.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+            {
+                break;
+            }
+
+            totalRead += read;
+            RequestValidators.ValidatePayloadSize(totalRead);
+            await copyStream.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+
+        return System.Text.Encoding.UTF8.GetString(copyStream.ToArray());
     }
 
     private static BatchCoachRequestEnvelope DeserializeBatchCoachRequest(string payload)

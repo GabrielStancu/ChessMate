@@ -2,6 +2,7 @@ using ChessMate.Application.Abstractions;
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Http;
 using ChessMate.Functions.Middleware;
+using ChessMate.Functions.Security;
 using ChessMate.Infrastructure.BatchCoach;
 using ChessMate.Infrastructure.ChessCom;
 using ChessMate.Infrastructure.Configuration;
@@ -29,6 +30,15 @@ var host = new HostBuilder()
     .ConfigureServices((context, services) =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
+
+        var allowedOrigins = CorsPolicy.ParseAndValidateAllowedOrigins(
+            context.Configuration[ApiSecurityOptions.CorsAllowedOriginsEnvironmentVariable]);
+
+        services.AddSingleton(new ApiSecurityOptions
+        {
+            CorsAllowedOrigins = allowedOrigins
+        });
+        services.AddSingleton<CorsPolicy>();
 
         services.AddSingleton<ICorrelationContextAccessor, CorrelationContextAccessor>();
         services.AddSingleton<HttpResponseFactory>();

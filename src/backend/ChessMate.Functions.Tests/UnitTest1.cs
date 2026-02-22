@@ -1,6 +1,7 @@
 ﻿using ChessMate.Application.Validation;
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
+using ChessMate.Functions.Security;
 using ChessMate.Functions.Validation;
 using System.Net;
 
@@ -55,6 +56,58 @@ public sealed class RequestValidatorsTests
             RequestValidators.ValidateGetGamesRequest("valid_user", 1, 20));
 
         Assert.Equal("pageSize must be exactly 12.", exception.Errors["pageSize"][0]);
+    }
+
+    [Fact]
+    public void ValidatePayloadSize_ThrowsValidation_WhenBodyExceedsLimit()
+    {
+        var exception = Assert.Throws<RequestValidationException>(() =>
+            RequestValidators.ValidatePayloadSize(ApiSecurityOptions.MaxBatchCoachRequestBytes + 1));
+
+        Assert.Equal("body", exception.Errors.Keys.Single());
+    }
+
+    [Fact]
+    public void ValidateBatchCoachEnvelope_ThrowsValidation_WhenMovesExceedLimit()
+    {
+        var moves = Enumerable.Range(1, ApiSecurityOptions.MaxBatchCoachMoves + 1)
+            .Select(index => new BatchCoachMoveEnvelope(index, "Mistake", true, $"m{index}"))
+            .ToArray();
+
+        var request = new BatchCoachRequestEnvelope("game-1", moves, "Quick");
+
+        var exception = Assert.Throws<RequestValidationException>(() =>
+            RequestValidators.ValidateBatchCoachEnvelope(request));
+
+        Assert.Equal($"moves must contain at most {ApiSecurityOptions.MaxBatchCoachMoves} items.", exception.Errors["moves"][0]);
+    }
+
+    [Fact]
+    public void ValidateBatchCoachEnvelope_ThrowsValidation_WhenAnalysisModeIsInvalid()
+    {
+        var request = new BatchCoachRequestEnvelope(
+            "game-1",
+            [new BatchCoachMoveEnvelope(1, "Mistake", true, "Nf3")],
+            "Turbo");
+
+        var exception = Assert.Throws<RequestValidationException>(() =>
+            RequestValidators.ValidateBatchCoachEnvelope(request));
+
+        Assert.Equal("analysisMode must be one of: Quick, Deep.", exception.Errors["AnalysisMode"][0]);
+    }
+
+    [Fact]
+    public void ValidateBatchCoachEnvelope_ThrowsValidation_WhenClassificationIsInvalid()
+    {
+        var request = new BatchCoachRequestEnvelope(
+            "game-1",
+            [new BatchCoachMoveEnvelope(1, "Legendary", true, "Nf3")],
+            "Quick");
+
+        var exception = Assert.Throws<RequestValidationException>(() =>
+            RequestValidators.ValidateBatchCoachEnvelope(request));
+
+        Assert.Equal("classification is invalid.", exception.Errors["moves[0].classification"][0]);
     }
 }
 

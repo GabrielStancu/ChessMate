@@ -1,11 +1,32 @@
 using System.Text.RegularExpressions;
 using ChessMate.Application.Validation;
+using ChessMate.Functions.Contracts;
+using ChessMate.Functions.Security;
 
 namespace ChessMate.Functions.Validation;
 
 public static partial class RequestValidators
 {
     private const int LockedPageSize = 12;
+    private static readonly HashSet<string> AllowedClassifications = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Brilliant",
+        "Great",
+        "Best",
+        "Excellent",
+        "Good",
+        "Inaccuracy",
+        "Mistake",
+        "Miss",
+        "Blunder",
+        "Book"
+    };
+
+    private static readonly HashSet<string> AllowedAnalysisModes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Quick",
+        "Deep"
+    };
 
     [GeneratedRegex("^[a-zA-Z0-9_-]{3,30}$", RegexOptions.CultureInvariant)]
     private static partial Regex UsernameRegex();
@@ -33,6 +54,52 @@ public static partial class RequestValidators
     public static void ValidateBatchCoachRequest(string payload)
     {
         Guard.AgainstNullOrWhiteSpace(payload, "body");
+    }
+
+    public static void ValidatePayloadSize(int payloadBytes)
+    {
+        Guard.AgainstFalse(
+            payloadBytes <= ApiSecurityOptions.MaxBatchCoachRequestBytes,
+            "body",
+            $"body must be at most {ApiSecurityOptions.MaxBatchCoachRequestBytes} bytes.");
+    }
+
+    public static void ValidateBatchCoachEnvelope(BatchCoachRequestEnvelope request)
+    {
+        Guard.AgainstNullOrWhiteSpace(request.GameId, nameof(request.GameId));
+
+        if (request.Moves is null)
+        {
+            throw new RequestValidationException(
+                "Validation failed.",
+                new Dictionary<string, string[]>
+                {
+                    ["moves"] = ["moves is required."]
+                });
+        }
+
+        Guard.AgainstFalse(
+            request.Moves.Count <= ApiSecurityOptions.MaxBatchCoachMoves,
+            "moves",
+            $"moves must contain at most {ApiSecurityOptions.MaxBatchCoachMoves} items.");
+
+        if (!string.IsNullOrWhiteSpace(request.AnalysisMode))
+        {
+            Guard.AgainstFalse(
+                AllowedAnalysisModes.Contains(request.AnalysisMode),
+                nameof(request.AnalysisMode),
+                "analysisMode must be one of: Quick, Deep.");
+        }
+
+        for (var index = 0; index < request.Moves.Count; index++)
+        {
+            var move = request.Moves[index];
+
+            Guard.AgainstFalse(
+                AllowedClassifications.Contains(move.Classification),
+                $"moves[{index}].classification",
+                "classification is invalid.");
+        }
     }
 
     public static void ValidateIdempotencyKey(string? idempotencyKey)
