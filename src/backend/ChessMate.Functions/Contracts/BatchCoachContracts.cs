@@ -45,6 +45,8 @@ public sealed record BatchCoachOrchestrationInput(
 
 public sealed record CoachMoveActivityInput(
     string OperationId,
+    string GameId,
+    string? AnalysisMode,
     BatchCoachMoveEnvelope Move);
 
 public sealed record CoachMoveActivityResult(
@@ -52,4 +54,12 @@ public sealed record CoachMoveActivityResult(
     string Classification,
     bool IsUserMove,
     string Move,
-    string Explanation);
+    string Explanation,
+    string? WhyWrong = null,
+    string? ExploitPath = null,
+    string? SuggestedPlan = null,
+    int PromptTokens = 0,
+    int CompletionTokens = 0,
+    int TotalTokens = 0,
+    double LatencyMs = 0,
+    string? Model = null);

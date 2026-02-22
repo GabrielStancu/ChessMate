@@ -10,6 +10,8 @@ public sealed class BackendOptions
 
     public StorageOptions Storage { get; init; } = new();
 
+    public AzureOpenAiOptions AzureOpenAi { get; init; } = new();
+
     public TelemetryOptions Telemetry { get; init; } = new();
 }
 
@@ -26,6 +28,34 @@ public sealed class ChessComOptions
 public sealed class StorageOptions
 {
     public string TableServiceUri { get; init; } = string.Empty;
+}
+
+public sealed class AzureOpenAiOptions
+{
+    public string Endpoint { get; init; } = string.Empty;
+
+    public string DeploymentName { get; init; } = string.Empty;
+
+    public string ApiVersion { get; init; } = "2024-10-21";
+
+    public string? ApiKey { get; init; }
+
+    public string ModelName { get; init; } = "gpt-4o";
+
+    public int MaxOutputTokens { get; init; } = 450;
+
+    public decimal Temperature { get; init; } = 0.2m;
+
+    public AzureOpenAiRetryOptions Retry { get; init; } = new();
+}
+
+public sealed class AzureOpenAiRetryOptions
+{
+    public int MaxAttempts { get; init; } = 3;
+
+    public int BaseDelayMilliseconds { get; init; } = 300;
+
+    public int MaxDelayMilliseconds { get; init; } = 2_000;
 }
 
 public sealed class TelemetryOptions

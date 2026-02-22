@@ -47,7 +47,7 @@ public sealed class AnalysisFunctions
                     "Validation failed.",
                     new Dictionary<string, string[]>
                     {
-                        ["idempotencyKey"] = ["Idempotency-Key header is required."]
+                        ["idempotencyKey"] = new[] { "Idempotency-Key header is required." }
                     }));
         }
 

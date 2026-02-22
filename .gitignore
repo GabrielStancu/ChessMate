@@ -245,6 +245,10 @@ _pkginfo.txt
 # but keep track of directories ending in .cache
 !?*.[Cc]ache/
 
+# Azure Functions local development settings
+local.settings.json
+**/local.settings.json
+
 # Others
 ClientBin/
 ~$*

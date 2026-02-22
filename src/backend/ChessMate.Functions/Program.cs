@@ -56,6 +56,8 @@ var host = new HostBuilder()
 
         services.AddSingleton<IRequestHashProvider, CanonicalRequestHashProvider>();
         services.AddSingleton<BatchCoachIdempotencyService>();
+        services.AddHttpClient<ICoachMoveGenerator, AzureOpenAiCoachMoveGenerator>()
+            .AddStandardResilienceHandler();
 
         services.AddSingleton<IChessComGamesService, ChessComGamesService>();
         services
