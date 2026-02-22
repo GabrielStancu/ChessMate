@@ -11,6 +11,7 @@
 - Coaching triggers: Mistake, Miss, Blunder.
 - Single payload response for `POST /api/analysis/batch-coach` (always inline for MVP).
 - Retention target: 30 days.
+- UI style lock for frontend artifacts: thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, white border around the shape.
 
 ## 3) Locked Architecture Decisions
 1. Compute: Azure Functions (Consumption) + Durable Functions orchestration.

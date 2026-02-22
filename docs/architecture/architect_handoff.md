@@ -9,6 +9,7 @@
 - Response contract: analysis + coaching in a single payload.
 - Retention: 30 days.
 - Cloud baseline: Azure Functions + Durable Functions, Azure Table Storage, Azure OpenAI GPT-4o.
+- UI style direction: thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, white border around the shape.
 
 Source: [docs/prd/draft_prd.md](../prd/draft_prd.md)
 

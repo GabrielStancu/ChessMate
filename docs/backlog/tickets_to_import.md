@@ -7,6 +7,7 @@
 - Scope lock: MVP web-only flow
 - Discipline lock: implement exactly one ticket at a time
 - Contract lock: keep `GET /api/chesscom/users/{username}/games?page={n}&pageSize=12` and `POST /api/analysis/batch-coach` stable
+- UI style lock (future frontend tickets): Thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, white border around the shape
 
 ---
 
@@ -164,6 +165,7 @@ Create Angular 18 standalone application shell (signals-first) with username inp
 - Angular app uses standalone components and signal-based state for search/list.
 - UI calls locked GET endpoint and renders 12 items/page with next/previous paging.
 - Validation errors from API are surfaced with user-friendly fail-fast messaging.
+- Any new iconography/illustration assets in shell states follow locked style (thick dark outlines, rounded edges, minimalist facial features where applicable, flat vibrant colors, white border around the shape).
 - Environment config supports Azure Static Web Apps deployment settings.
 
 ---
@@ -194,6 +196,7 @@ Implement client-side move classification using defined MVP classes and threshol
 - Classification pipeline outputs per-ply label and confidence/score metadata.
 - Overlay rendering matches MVP rules for eligible move classes and icon placement.
 - Color mapping follows PRD locked palette semantics for listed classes.
+- Classification icon visuals follow locked style (thick dark outlines, rounded edges, flat vibrant colors, white border around the shape; minimalist facial features only for pieces/mascot-like/icon character assets).
 - Classification artifacts are packaged for `POST /api/analysis/batch-coach` input.
 
 ---
@@ -210,6 +213,7 @@ Wire Angular client to submit flagged moves and analysis metadata to `POST /api/
 - Unified payload is rendered without secondary polling contract.
 - UI distinguishes user/opponent explanations correctly.
 - Partial coaching warnings are visible but do not block successful items.
+- Coach panel avatar and related helper graphics (as well as pieces) align to locked style direction (thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, white border around the shape).
 
 ---
 

@@ -25,6 +25,11 @@ Primary value proposition:
 - GPT coaching generated for each Mistake/Miss/Blunder.
 - Batch response contract: analysis + coaching returned in one payload.
 
+### Visual style lock (MVP web)
+- UI and chess-themed illustrations/icons must follow this style direction: **Thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, white border around the shape**.
+- This style applies to coach avatar treatment, move classification iconography, helper/empty-state illustrations, chess pieces, and any mascot-like UI graphics.
+- Keep visual rendering flat (no skeuomorphic textures), modern, and consistent with the attached reference style.
+
 ## 3) Clarifications Captured
 1. MVP user flow: import recent games → analyze one full game → review coach insights.
 2. Runtime preference: Azure Functions + Durable Functions (serverless-first).
@@ -56,7 +61,7 @@ Primary value proposition:
 - Persist classification result per ply.
 
 ### FR-4 Visual interaction
-- Board supports SVG piece sets and flat, modern styling.
+- Board supports SVG piece sets and flat, modern styling aligned to the locked style direction: thick dark outlines, rounded edges, minimalist facial features where applicable, flat vibrant colors, and white border around icon/shape assets.
 - Show dimmed origin/destination markers and best-move arrows (if the move is classified as Good, Inaccuracy, Mistake, Miss, Blunder).
 - Show classification status icon near destination square (with the color specified in the list below).
 - Classification color mapping (MVP):

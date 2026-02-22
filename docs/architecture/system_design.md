@@ -10,7 +10,7 @@ MVP flow in scope:
 4. Client sends classified Mistake/Miss/Blunder moves for coaching.
 5. Backend returns single payload with analysis metadata + coaching.
 
-UI target: the final experience should mirror the attached reference style (board-dominant layout, right-side analysis/coaching panel, move list timeline, and evaluation graph) while keeping MVP scope unchanged.
+UI target: the final experience should mirror the attached reference style (board-dominant layout, right-side analysis/coaching panel, move list timeline, and evaluation graph) while keeping MVP scope unchanged. Visual style lock: thick dark outlines, rounded edges, minimalist facial features, flat vibrant colors, and a white border around the shape for pieces/mascot-like/icon assets.
 
 ---
 
@@ -20,6 +20,7 @@ UI target: the final experience should mirror the attached reference style (boar
 - **Web Client (Angular 18, standalone + signals)**
   - Username search + game pagination UI.
   - Board rendering with overlays (origin/destination dim, arrows, classification marker).
+  - Iconography/illustrations and coach avatar treatment conform to locked visual style direction from PRD.
   - Local Stockfish.js worker pool and analysis controller.
   - Coach panel rendering from backend batch payload.
 - **Mobile Access (Angular 18, browser-based application)**
