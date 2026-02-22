@@ -17,11 +17,16 @@ public sealed class AnalysisFunctions
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpResponseFactory _responseFactory;
+    private readonly BatchCoachIdempotencyService _idempotencyService;
     private readonly ILogger<AnalysisFunctions> _logger;
 
-    public AnalysisFunctions(HttpResponseFactory responseFactory, ILogger<AnalysisFunctions> logger)
+    public AnalysisFunctions(
+        HttpResponseFactory responseFactory,
+        BatchCoachIdempotencyService idempotencyService,
+        ILogger<AnalysisFunctions> logger)
     {
         _responseFactory = responseFactory;
+        _idempotencyService = idempotencyService;
         _logger = logger;
     }
 
@@ -32,6 +37,20 @@ public sealed class AnalysisFunctions
         [DurableClient] DurableTaskClient durableTaskClient,
         FunctionContext functionContext)
     {
+        var idempotencyKey = ExtractIdempotencyKey(request);
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            _logger.LogWarning("POST batch-coach missing idempotency key.");
+            return await _responseFactory.CreateValidationErrorAsync(
+                request,
+                new RequestValidationException(
+                    "Validation failed.",
+                    new Dictionary<string, string[]>
+                    {
+                        ["idempotencyKey"] = ["Idempotency-Key header is required."]
+                    }));
+        }
+
         var payload = await new StreamReader(request.Body).ReadToEndAsync();
 
         try
@@ -55,8 +74,39 @@ public sealed class AnalysisFunctions
             return await _responseFactory.CreateValidationErrorAsync(request, exception);
         }
 
-        var operationId = Guid.NewGuid().ToString("N");
-        var orchestrationInput = new BatchCoachOrchestrationInput(operationId, batchCoachRequest);
+        var idempotencyDecision = await _idempotencyService.BeginAsync(
+            idempotencyKey,
+            payload,
+            functionContext.CancellationToken);
+
+        _logger.LogInformation(
+            "POST batch-coach idempotency check completed. operationId {OperationId}, decision {Decision}.",
+            idempotencyDecision.OperationId,
+            idempotencyDecision.Kind);
+
+        if (idempotencyDecision.Kind == IdempotencyDecisionKind.Replay)
+        {
+            _logger.LogInformation(
+                "POST batch-coach replaying existing completed response. operationId {OperationId}.",
+                idempotencyDecision.OperationId);
+            return await _responseFactory.CreateOkAsync(request, idempotencyDecision.ReplayResponse!);
+        }
+
+        if (idempotencyDecision.Kind == IdempotencyDecisionKind.Conflict)
+        {
+            _logger.LogWarning(
+                "POST batch-coach duplicate request detected. operationId {OperationId}, existingStatus {ExistingStatus}.",
+                idempotencyDecision.OperationId,
+                idempotencyDecision.ExistingStatus);
+            return await _responseFactory.CreateConflictAsync(
+                request,
+                "DuplicateInFlight",
+                "A request with the same Idempotency-Key is already in flight. Please retry after the original operation completes.");
+        }
+
+        var orchestrationInput = new BatchCoachOrchestrationInput(
+            idempotencyDecision.OperationId,
+            batchCoachRequest);
 
         var instanceId = await durableTaskClient.ScheduleNewOrchestrationInstanceAsync(
             nameof(BatchCoachDurableFunctions.BatchCoachOrchestratorAsync),
@@ -64,7 +114,7 @@ public sealed class AnalysisFunctions
 
         _logger.LogInformation(
             "POST batch-coach orchestration scheduled with operationId {OperationId} and instanceId {InstanceId}.",
-            operationId,
+            idempotencyDecision.OperationId,
             instanceId);
 
         var completion = await durableTaskClient.WaitForInstanceCompletionAsync(
@@ -76,9 +126,14 @@ public sealed class AnalysisFunctions
         {
             _logger.LogError(
                 "POST batch-coach orchestration failed to complete successfully. operationId {OperationId}, instanceId {InstanceId}, runtimeStatus {RuntimeStatus}.",
-                operationId,
+                idempotencyDecision.OperationId,
                 instanceId,
                 completion?.RuntimeStatus);
+
+            await _idempotencyService.MarkFailedAsync(
+                idempotencyDecision.OperationId,
+                "OrchestrationFailed",
+                functionContext.CancellationToken);
 
             return await _responseFactory.CreateUpstreamUnavailableAsync(
                 request,
@@ -90,21 +145,38 @@ public sealed class AnalysisFunctions
         {
             _logger.LogError(
                 "POST batch-coach orchestration completed without output. operationId {OperationId}, instanceId {InstanceId}.",
-                operationId,
+                idempotencyDecision.OperationId,
                 instanceId);
+
+            await _idempotencyService.MarkFailedAsync(
+                idempotencyDecision.OperationId,
+                "NoOutput",
+                functionContext.CancellationToken);
 
             return await _responseFactory.CreateUpstreamUnavailableAsync(
                 request,
                 "Batch coaching orchestration produced no output.");
         }
 
+        await _idempotencyService.MarkCompletedAsync(
+            idempotencyDecision.OperationId,
+            responseEnvelope,
+            functionContext.CancellationToken);
+
         _logger.LogInformation(
-            "POST batch-coach orchestration completed. operationId {OperationId}, instanceId {InstanceId}, coachingCount {CoachingCount}.",
+            "POST batch-coach orchestration completed and persisted. operationId {OperationId}, instanceId {InstanceId}, coachingCount {CoachingCount}.",
             responseEnvelope.OperationId,
             instanceId,
             responseEnvelope.Coaching.Count);
 
         return await _responseFactory.CreateOkAsync(request, responseEnvelope);
+    }
+
+    private static string? ExtractIdempotencyKey(HttpRequestData request)
+    {
+        return request.Headers.TryGetValues("Idempotency-Key", out var values)
+            ? values.FirstOrDefault()
+            : null;
     }
 
     private static BatchCoachRequestEnvelope DeserializeBatchCoachRequest(string payload)

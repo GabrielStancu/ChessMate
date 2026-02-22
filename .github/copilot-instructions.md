@@ -10,7 +10,7 @@
 - **Method Design:** Keep methods short, clear, and focused on a single responsibility (SRP).
 - **Reduced Nesting:** Use guard clauses and "fail-fast" patterns to avoid deeply nested `if/else` blocks.
 - **Separation of Concerns:** Strictly separate Domain Logic from Infrastructure and UI. 
-- **Modern C#:** Use file-scoped namespaces, primary constructors, and required members where appropriate.
+- **Modern C#:** Use file-scoped namespaces, standard constructors, and required members where appropriate. Do not use python-styled list initializers (i.e. do not use [] syntax).
 - **Angular Patterns:** Favor Signals over manual RxJS subscriptions where possible; use input/output transforms.
 
 ## 🛑 Process Control

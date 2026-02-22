@@ -1,6 +1,8 @@
 using ChessMate.Application.Abstractions;
+using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Http;
 using ChessMate.Functions.Middleware;
+using ChessMate.Infrastructure.BatchCoach;
 using ChessMate.Infrastructure.ChessCom;
 using ChessMate.Infrastructure.Configuration;
 using ChessMate.Infrastructure.Correlation;
@@ -37,11 +39,24 @@ var host = new HostBuilder()
         {
             var options = serviceProvider.GetRequiredService<IOptions<BackendOptions>>().Value;
             var tableServiceUri = new Uri(options.Storage.TableServiceUri);
-            var serviceClient = new TableServiceClient(tableServiceUri, new DefaultAzureCredential());
-            return serviceClient.GetTableClient("GameIndex");
+            return new TableServiceClient(tableServiceUri, new DefaultAzureCredential());
         });
 
-        services.AddSingleton<IGameIndexStore, TableGameIndexStore>();
+        services.AddSingleton<IGameIndexStore>(serviceProvider =>
+        {
+            var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
+            return new TableGameIndexStore(serviceClient.GetTableClient("GameIndex"));
+        });
+
+        services.AddSingleton<IOperationStateStore>(serviceProvider =>
+        {
+            var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
+            return new TableOperationStateStore(serviceClient.GetTableClient("OperationState"));
+        });
+
+        services.AddSingleton<IRequestHashProvider, CanonicalRequestHashProvider>();
+        services.AddSingleton<BatchCoachIdempotencyService>();
+
         services.AddSingleton<IChessComGamesService, ChessComGamesService>();
         services
             .AddHttpClient<IChessComArchiveClient, ChessComArchiveClient>((serviceProvider, client) =>

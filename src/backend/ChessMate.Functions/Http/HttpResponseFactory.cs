@@ -51,6 +51,17 @@ public sealed class HttpResponseFactory(ICorrelationContextAccessor correlationA
         return await WriteJsonAsync(request, HttpStatusCode.BadGateway, envelope);
     }
 
+    public async Task<HttpResponseData> CreateConflictAsync(HttpRequestData request, string code, string message)
+    {
+        var envelope = new ErrorResponseEnvelope(
+            SchemaVersion,
+            correlationAccessor.CorrelationId,
+            code,
+            message);
+
+        return await WriteJsonAsync(request, HttpStatusCode.Conflict, envelope);
+    }
+
     private static async Task<HttpResponseData> WriteJsonAsync<TPayload>(HttpRequestData request, HttpStatusCode statusCode, TPayload payload)
     {
         var response = request.CreateResponse(statusCode);

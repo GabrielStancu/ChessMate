@@ -35,6 +35,11 @@ public static partial class RequestValidators
         Guard.AgainstNullOrWhiteSpace(payload, "body");
     }
 
+    public static void ValidateIdempotencyKey(string? idempotencyKey)
+    {
+        Guard.AgainstNullOrWhiteSpace(idempotencyKey, "idempotencyKey");
+    }
+
     private static RequestValidationException CreateInvalidIntegerException(string fieldName)
     {
         var errors = new Dictionary<string, string[]>
