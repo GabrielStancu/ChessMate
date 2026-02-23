@@ -176,11 +176,17 @@ Implement local browser analysis modes and engine parameter controls
 
 **Description**
 Add Stockfish.js (WASM) worker orchestration in the Angular client with Quick/Deep presets and advanced controls (depth, threads, time-per-move). Ensure responsive UX with cancellation support and no backend engine compute.
+Selecting a game must open an analysis board view. Users must be able to navigate between positions/moves on that board, and each navigated position must be analyzed by Stockfish.js in the browser.
 
 **Definition of Done (.NET/Azure)**
 - Engine runs in Web Worker(s) only; UI thread remains responsive during analysis.
 - Quick/Deep presets apply deterministic parameter values.
 - Advanced parameter guard clauses prevent invalid values.
+- Selecting a game opens a board analysis screen with move/position navigation controls.
+- Navigating to any position triggers (or serves cached) Stockfish.js evaluation for that exact board state.
+- Navigation controls are limited to first/previous/next/last move (no jump-to-move input in MVP).
+- Evaluation cache key uses `FEN + engineConfig` to reuse prior position analysis results deterministically.
+- Fast navigation cancels/ignores stale in-flight evaluations so only the latest selected position result is rendered.
 - Analysis metadata includes selected mode/config for batch payload submission.
 
 ---

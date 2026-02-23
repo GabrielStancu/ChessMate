@@ -8,6 +8,8 @@ public sealed record ChessGameSummary(
     string Opening,
     string TimeControl,
     string Url,
+    string? Pgn,
+    string? InitialFen,
     DateTimeOffset IngestedAtUtc);
 
 public sealed record GetGamesPageResult(

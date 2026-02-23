@@ -1,0 +1,104 @@
+<main class="analysis-shell" *ngIf="game() as activeGame">
+  <section class="analysis-header">
+    <button mat-stroked-button type="button" routerLink="/">Back</button>
+    <div>
+      <h1>Game Analysis</h1>
+      <p>{{ activeGame.opening || 'Unknown opening' }} · Opponent: {{ activeGame.opponent }} · {{ activeGame.result }}</p>
+    </div>
+  </section>
+
+  <section class="analysis-layout">
+    <mat-card class="board-card">
+      <mat-card-content>
+        <div #boardHost class="board-host" aria-label="Chessboard"></div>
+      </mat-card-content>
+
+      <mat-card-actions class="navigation-actions">
+        <button mat-stroked-button type="button" (click)="goFirst()" [disabled]="!canGoPrevious()">First</button>
+        <button mat-stroked-button type="button" (click)="goPrevious()" [disabled]="!canGoPrevious()">Previous</button>
+        <button mat-stroked-button type="button" (click)="goNext()" [disabled]="!canGoNext()">Next</button>
+        <button mat-stroked-button type="button" (click)="goLast()" [disabled]="!canGoNext()">Last</button>
+      </mat-card-actions>
+
+      <p class="timeline-warning" *ngIf="timelineWarning() as warning">{{ warning }}</p>
+
+      <mat-card-footer class="board-footer">
+        <span>Position {{ selectedPositionIndex() }} / {{ positionTimeline().length - 1 }}</span>
+        <span>{{ moveLabel() }}</span>
+      </mat-card-footer>
+    </mat-card>
+
+    <mat-card class="control-card">
+      <mat-card-header>
+        <mat-card-title>Engine Controls</mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Mode</mat-label>
+          <mat-select [ngModel]="mode()" (ngModelChange)="setMode($event)">
+            <mat-option *ngFor="let modeOption of availableModes" [value]="modeOption.value">
+              {{ modeOption.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Depth</mat-label>
+          <input
+            matInput
+            type="number"
+            [ngModel]="engineConfig().depth"
+            (ngModelChange)="updateDepth($event)"
+            min="6"
+            max="24" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Threads</mat-label>
+          <input
+            matInput
+            type="number"
+            [ngModel]="engineConfig().threads"
+            (ngModelChange)="updateThreads($event)"
+            min="1"
+            max="1" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Time per move (ms)</mat-label>
+          <input
+            matInput
+            type="number"
+            [ngModel]="engineConfig().timePerMoveMs"
+            (ngModelChange)="updateTimePerMove($event)"
+            min="50"
+            max="10000" />
+        </mat-form-field>
+
+        <p class="error" *ngIf="configError() as cfgError">{{ cfgError }}</p>
+        <p class="engine-warning" *ngIf="engineWarning() as warning">{{ warning }}</p>
+
+        <div class="evaluation-state" *ngIf="evaluating()">Evaluating current position...</div>
+        <p class="error" *ngIf="evaluationError() as err">{{ err }}</p>
+
+        <div *ngIf="evaluation() as evalResult" class="evaluation-panel">
+          <p>Best move: <strong>{{ formatBestMoveForDisplay(evalResult.bestMove, evalResult.fen) }}</strong></p>
+          <p>Depth: {{ evalResult.depth ?? 'N/A' }}</p>
+          <p>Centipawn: {{ evalResult.centipawn ?? 'N/A' }}</p>
+          <p>Mate: {{ evalResult.mate ?? 'N/A' }}</p>
+          <p>From cache: {{ evalResult.cached ? 'Yes' : 'No' }}</p>
+          <p class="pv">PV: {{ evalResult.principalVariation || 'N/A' }}</p>
+        </div>
+
+        <div class="metadata-panel">
+          <p>Mode: {{ analysisMetadata().mode }}</p>
+          <p>
+            Config: depth={{ analysisMetadata().engineConfig.depth }}, threads={{ analysisMetadata().engineConfig.threads }},
+            time={{ analysisMetadata().engineConfig.timePerMoveMs }}ms
+          </p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+</main>

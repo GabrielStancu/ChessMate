@@ -27,6 +27,10 @@ public sealed class GameIndexEntity : ITableEntity
 
     public string Url { get; set; } = string.Empty;
 
+    public string? Pgn { get; set; }
+
+    public string? InitialFen { get; set; }
+
     public DateTimeOffset IngestedAtUtc { get; set; }
 
     public DateTimeOffset ExpiresAtUtc { get; set; }

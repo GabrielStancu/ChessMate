@@ -149,6 +149,8 @@ internal static class ChessGameSummaryFactory
                 "C20",
                 "600",
                 $"https://www.chess.com/game/live/{index}",
+                "1. e4 e5 2. Nf3 Nc6",
+                null,
                 ingestedAtUtc));
         }
 

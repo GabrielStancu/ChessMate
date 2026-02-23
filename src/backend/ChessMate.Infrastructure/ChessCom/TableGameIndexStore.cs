@@ -61,6 +61,8 @@ public sealed class TableGameIndexStore : IGameIndexStore
                 Opening = game.Opening,
                 TimeControl = game.TimeControl,
                 Url = game.Url,
+                Pgn = game.Pgn,
+                InitialFen = game.InitialFen,
                 IngestedAtUtc = ingestedAtUtc,
                 ExpiresAtUtc = PersistencePolicy.CalculateExpiresAtUtc(ingestedAtUtc),
                 SchemaVersion = PersistencePolicy.SchemaVersion
@@ -96,6 +98,8 @@ public sealed class TableGameIndexStore : IGameIndexStore
             entity.Opening,
             entity.TimeControl,
             entity.Url,
+            entity.Pgn,
+            entity.InitialFen,
             entity.IngestedAtUtc);
     }
 }

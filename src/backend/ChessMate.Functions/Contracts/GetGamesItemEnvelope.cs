@@ -7,4 +7,6 @@ public sealed record GetGamesItemEnvelope(
     string Result,
     string Opening,
     string TimeControl,
-    string Url);
+    string Url,
+    string? Pgn,
+    string? InitialFen);

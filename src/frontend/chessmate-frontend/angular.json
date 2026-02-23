@@ -47,7 +47,22 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/cm-chessboard/assets",
+                "output": "/assets/cm-chessboard"
+              },
+              {
+                "glob": "stockfish-18-single.js",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18-single.wasm",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              }
             ],
             "styles": [
               "src/styles.css"
@@ -115,7 +130,22 @@
             "tsConfig": "tsconfig.spec.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/cm-chessboard/assets",
+                "output": "/assets/cm-chessboard"
+              },
+              {
+                "glob": "stockfish-18-single.js",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18-single.wasm",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              }
             ],
             "styles": [
               "src/styles.css"

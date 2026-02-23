@@ -116,6 +116,8 @@ public sealed class ChessComArchiveClient : IChessComArchiveClient
             game.Eco ?? string.Empty,
             game.TimeControl ?? string.Empty,
             game.Url ?? string.Empty,
+            game.Pgn,
+            game.InitialFen,
             DateTimeOffset.MinValue);
     }
 
@@ -138,6 +140,8 @@ public sealed class ChessComArchiveClient : IChessComArchiveClient
         [property: JsonPropertyName("url")] string? Url,
         [property: JsonPropertyName("eco")] string? Eco,
         [property: JsonPropertyName("time_control")] string? TimeControl,
+        [property: JsonPropertyName("pgn")] string? Pgn,
+        [property: JsonPropertyName("fen")] string? InitialFen,
         [property: JsonPropertyName("end_time")] long EndTime,
         [property: JsonPropertyName("white")] ChessComPlayer? White,
         [property: JsonPropertyName("black")] ChessComPlayer? Black);

@@ -31,7 +31,9 @@ public static class GetGamesResponseMapper
                 item.Result,
                 item.Opening,
                 item.TimeControl,
-                item.Url))
+                item.Url,
+                item.Pgn,
+                item.InitialFen))
             .ToArray();
 
         return new GetGamesResponseEnvelope(

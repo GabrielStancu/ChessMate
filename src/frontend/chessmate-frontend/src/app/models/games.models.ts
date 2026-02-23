@@ -6,6 +6,8 @@ export interface GetGamesItemEnvelope {
   opening: string;
   timeControl: string;
   url: string;
+  pgn?: string;
+  initialFen?: string;
 }
 
 export interface GetGamesResponseEnvelope {
