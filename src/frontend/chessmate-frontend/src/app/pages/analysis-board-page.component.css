@@ -112,3 +112,58 @@
     grid-template-columns: 1fr;
   }
 }
+
+.classification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  border: 3px solid #1f1f1f;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.classification-symbol {
+  font-size: 1.25rem;
+}
+
+.classification-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.move-detail-panel {
+  border: 3px solid #1f1f1f;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.move-detail-panel p {
+  margin: 0 0 0.25rem;
+}
+
+.we-loss {
+  color: #EF5350;
+  font-weight: 600;
+}
+
+.analysis-meta {
+  border: 3px solid #1f1f1f;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #f5f5f5;
+}
+
+.analysis-meta p {
+  margin: 0 0 0.25rem;
+}
+
+.initial-position-hint {
+  color: #666;
+  font-style: italic;
+}

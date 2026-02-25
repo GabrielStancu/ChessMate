@@ -1,18 +1,21 @@
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Chess } from 'chess.js';
-import { BORDER_TYPE, Chessboard, FEN } from 'cm-chessboard/src/Chessboard.js';
-import { AnalysisMetadata, AnalysisMode, EngineConfig, PositionEvaluation, StaleEvaluationError } from '../models/analysis.models';
+import { ArrowType, BORDER_TYPE, Chessboard, COLOR, FEN, MarkerType } from 'cm-chessboard/src/Chessboard.js';
+import { Markers } from 'cm-chessboard/src/extensions/markers/Markers.js';
+import { Arrows } from 'cm-chessboard/src/extensions/arrows/Arrows.js';
+import {
+  ClassifiedMove,
+  FullGameAnalysisResult,
+  CLASSIFICATION_COLORS,
+  CLASSIFICATION_SYMBOLS,
+  OVERLAY_ELIGIBLE_CLASSES
+} from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
 import { AnalysisSessionService } from '../services/analysis-session.service';
-import { StockfishAnalysisControllerService } from '../services/stockfish-analysis-controller.service';
 
 interface MoveStep {
   moveNumber: number;
@@ -22,7 +25,7 @@ interface MoveStep {
 @Component({
   selector: 'app-analysis-board-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule],
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
@@ -31,40 +34,44 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly analysisSessionService = inject(AnalysisSessionService);
-  private readonly analysisController = inject(StockfishAnalysisControllerService);
 
   @ViewChild('boardHost')
   private boardHost?: ElementRef<HTMLDivElement>;
 
   private chessboard: Chessboard | null = null;
   private readonly gameId = this.route.snapshot.paramMap.get('gameId') ?? '';
-  private currentEvaluationRequest = 0;
 
-  protected readonly availableModes: ReadonlyArray<{ label: string; value: AnalysisMode }> = [
-    { label: 'Quick', value: 'quick' },
-    { label: 'Deep', value: 'deep' }
-  ];
-  protected readonly mode = signal<AnalysisMode>('quick');
-  protected readonly engineConfig = signal<EngineConfig>(this.analysisController.getPreset('quick'));
   protected readonly game = signal<GetGamesItemEnvelope | null>(this.resolveGame());
+  protected readonly fullAnalysis = signal<FullGameAnalysisResult | null>(this.resolveFullAnalysis());
   protected readonly moveSteps = signal<MoveStep[]>([]);
   protected readonly positionTimeline = signal<string[]>([FEN.start]);
   protected readonly selectedPositionIndex = signal(0);
-  protected readonly evaluating = signal(false);
-  protected readonly evaluationError = signal<string | null>(null);
-  protected readonly evaluation = signal<PositionEvaluation | null>(null);
-  protected readonly configError = signal<string | null>(null);
   protected readonly timelineWarning = signal<string | null>(null);
-  protected readonly engineWarning = signal<string | null>(null);
+
   protected readonly currentFen = computed(
     () => this.positionTimeline()[Math.min(this.selectedPositionIndex(), this.positionTimeline().length - 1)]
   );
+  protected readonly previousFen = computed(() => {
+    const index = this.selectedPositionIndex();
+    if (index === 0) {
+      return this.positionTimeline()[0];
+    }
+    return this.positionTimeline()[index - 1];
+  });
   protected readonly canGoPrevious = computed(() => this.selectedPositionIndex() > 0);
   protected readonly canGoNext = computed(() => this.selectedPositionIndex() < this.positionTimeline().length - 1);
-  protected readonly analysisMetadata = computed<AnalysisMetadata>(() => ({
-    mode: this.mode(),
-    engineConfig: this.engineConfig()
-  }));
+
+  protected readonly currentClassifiedMove = computed<ClassifiedMove | null>(() => {
+    const index = this.selectedPositionIndex();
+    const analysis = this.fullAnalysis();
+    if (index === 0 || !analysis) {
+      return null;
+    }
+    return analysis.classifiedMoves[index - 1] ?? null;
+  });
+
+  protected readonly classificationColors = CLASSIFICATION_COLORS;
+  protected readonly classificationSymbols = CLASSIFICATION_SYMBOLS;
 
   public constructor() {
     const activeGame = this.game();
@@ -80,12 +87,8 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
 
     effect(() => {
       const fen = this.currentFen();
-      void this.syncBoardPosition(fen);
-      void this.runEvaluation(fen);
-    }, { allowSignalWrites: true });
-
-    this.destroyRef.onDestroy(() => {
-      this.analysisController.cancelInFlightEvaluation();
+      const classifiedMove = this.currentClassifiedMove();
+      void this.syncBoardAndOverlays(fen, classifiedMove);
     });
   }
 
@@ -97,10 +100,15 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     this.chessboard = new Chessboard(this.boardHost.nativeElement, {
       position: this.currentFen(),
       assetsUrl: 'assets/cm-chessboard/',
+      orientation: this.fullAnalysis()?.playerColor === 'black' ? COLOR.black : COLOR.white,
       style: {
         borderType: BORDER_TYPE.frame,
         showCoordinates: true
-      }
+      },
+      extensions: [
+        { class: Markers },
+        { class: Arrows }
+      ]
     });
   }
 
@@ -109,25 +117,7 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     this.chessboard = null;
   }
 
-  protected setMode(mode: AnalysisMode): void {
-    this.mode.set(mode);
-    this.engineConfig.set(this.analysisController.getPreset(mode));
-    this.configError.set(null);
-    this.evaluation.set(null);
-    void this.runEvaluation(this.currentFen());
-  }
 
-  protected updateDepth(value: number): void {
-    this.tryUpdateEngineConfig({ depth: Number(value) });
-  }
-
-  protected updateThreads(value: number): void {
-    this.tryUpdateEngineConfig({ threads: Number(value) });
-  }
-
-  protected updateTimePerMove(value: number): void {
-    this.tryUpdateEngineConfig({ timePerMoveMs: Number(value) });
-  }
 
   protected goFirst(): void {
     this.selectedPositionIndex.set(0);
@@ -315,8 +305,6 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
         pgn
       });
       this.selectedPositionIndex.set(0);
-      this.evaluation.set(null);
-      this.evaluationError.set(null);
     } catch {
       this.timelineWarning.set('Move navigation is unavailable because PGN could not be loaded.');
     }
@@ -330,85 +318,70 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     return `${gameUrl.replace(/\/+$/, '')}/pgn`;
   }
 
-  private tryUpdateEngineConfig(partial: Partial<EngineConfig>): void {
-    this.evaluationError.set(null);
-    this.configError.set(null);
-
-    try {
-      const merged = {
-        ...this.engineConfig(),
-        ...partial
-      };
-      const validated = this.analysisController.validateEngineConfig(merged);
-      this.engineConfig.set(validated);
-      this.evaluation.set(null);
-      void this.runEvaluation(this.currentFen());
-    } catch (error) {
-      this.configError.set(error instanceof Error ? error.message : 'Engine configuration is invalid.');
+  private resolveFullAnalysis(): FullGameAnalysisResult | null {
+    if (!this.gameId) {
+      return null;
     }
+
+    return this.analysisSessionService.getFullGameAnalysis(this.gameId);
   }
 
-  private async runEvaluation(fen: string): Promise<void> {
-    this.evaluating.set(true);
-    this.evaluationError.set(null);
-    this.engineWarning.set(null);
-    const requestId = ++this.currentEvaluationRequest;
-    const selectedConfig = this.engineConfig();
-
-    try {
-      const result = await this.analysisController.evaluatePosition(fen, selectedConfig);
-      if (requestId !== this.currentEvaluationRequest) {
-        return;
-      }
-
-      this.evaluation.set(result);
-    } catch (error) {
-      if (error instanceof StaleEvaluationError) {
-        return;
-      }
-
-      const shouldFallback =
-        selectedConfig.depth > 12 &&
-        error instanceof Error &&
-        /runtime|unreachable|timed out|failed/i.test(error.message);
-
-      if (shouldFallback) {
-        try {
-          const fallbackConfig: EngineConfig = {
-            ...selectedConfig,
-            depth: 12
-          };
-          const fallbackResult = await this.analysisController.evaluatePosition(fen, fallbackConfig);
-          if (requestId !== this.currentEvaluationRequest) {
-            return;
-          }
-
-          this.engineWarning.set(
-            `Engine became unstable at depth ${selectedConfig.depth} for this position. Showing fallback evaluation at depth 12.`
-          );
-          this.evaluation.set(fallbackResult);
-          return;
-        } catch {
-        }
-      }
-
-      if (requestId !== this.currentEvaluationRequest) {
-        return;
-      }
-
-      this.evaluationError.set(error instanceof Error ? error.message : 'Unable to evaluate this position.');
-    } finally {
-      if (requestId === this.currentEvaluationRequest) {
-        this.evaluating.set(false);
-      }
-    }
-  }
-
-  private async syncBoardPosition(fen: string): Promise<void> {
+  private async syncBoardAndOverlays(fen: string, classifiedMove: ClassifiedMove | null): Promise<void> {
     if (!this.chessboard) {
       return;
     }
 
     await this.chessboard.setPosition(fen, true);
+    this.clearOverlays();
+
+    if (!classifiedMove) {
+      return;
+    }
+
+    const isEligible = (OVERLAY_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(classifiedMove.classification);
+    if (!isEligible) {
+      return;
+    }
+
+    const classKey = classifiedMove.classification.toLowerCase();
+
+    const dimMarker: MarkerType = { class: 'marker-dim-highlight', slice: 'markerSquare' };
+    this.chessboard.addMarker(dimMarker, classifiedMove.from);
+    this.chessboard.addMarker(dimMarker, classifiedMove.to);
+
+    const classificationMarker: MarkerType = {
+      class: `marker-classification-${classKey}`,
+      slice: 'markerCircle'
+    };
+    this.chessboard.addMarker(classificationMarker, classifiedMove.to);
+
+    if (classifiedMove.bestMove) {
+      const parsed = this.parseUciMove(classifiedMove.bestMove);
+      if (parsed) {
+        const arrowType: ArrowType = { class: `arrow-bestmove-${classKey}` };
+        this.chessboard.addArrow(arrowType, parsed.from, parsed.to);
+      }
+    }
+  }
+
+  private clearOverlays(): void {
+    if (!this.chessboard) {
+      return;
+    }
+
+    this.chessboard.removeMarkers();
+    this.chessboard.removeArrows();
+  }
+
+  private parseUciMove(uci: string): { from: string; to: string } | null {
+    const normalized = uci.trim().toLowerCase();
+    if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(normalized)) {
+      return null;
+    }
+
+    return {
+      from: normalized.slice(0, 2),
+      to: normalized.slice(2, 4)
+    };
   }
 }

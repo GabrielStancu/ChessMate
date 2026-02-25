@@ -30,74 +30,47 @@
 
     <mat-card class="control-card">
       <mat-card-header>
-        <mat-card-title>Engine Controls</mat-card-title>
+        <mat-card-title>Move Classification</mat-card-title>
       </mat-card-header>
 
       <mat-card-content>
-        <mat-form-field appearance="outline" class="field">
-          <mat-label>Mode</mat-label>
-          <mat-select [ngModel]="mode()" (ngModelChange)="setMode($event)">
-            <mat-option *ngFor="let modeOption of availableModes" [value]="modeOption.value">
-              {{ modeOption.label }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+        <ng-container *ngIf="fullAnalysis() as analysis">
+          <div class="analysis-meta">
+            <p>Playing as: <strong>{{ analysis.playerColor }}</strong></p>
+            <p>Mode: {{ analysis.analysisMode }} · Depth: {{ analysis.engineConfig.depth }}</p>
+          </div>
 
-        <mat-form-field appearance="outline" class="field">
-          <mat-label>Depth</mat-label>
-          <input
-            matInput
-            type="number"
-            [ngModel]="engineConfig().depth"
-            (ngModelChange)="updateDepth($event)"
-            min="6"
-            max="24" />
-        </mat-form-field>
+          <ng-container *ngIf="currentClassifiedMove() as move; else initialPosition">
+            <div
+              class="classification-badge"
+              [style.background-color]="classificationColors[move.classification]">
+              <span class="classification-symbol">{{ classificationSymbols[move.classification] }}</span>
+              <span class="classification-label">{{ move.classification }}</span>
+            </div>
 
-        <mat-form-field appearance="outline" class="field">
-          <mat-label>Threads</mat-label>
-          <input
-            matInput
-            type="number"
-            [ngModel]="engineConfig().threads"
-            (ngModelChange)="updateThreads($event)"
-            min="1"
-            max="1" />
-        </mat-form-field>
+            <div class="move-detail-panel">
+              <p>Move: <strong>{{ move.san }}</strong> ({{ move.piece }})</p>
+              <p>{{ move.isUserMove ? 'Your move' : "Opponent's move" }}</p>
+              <p *ngIf="move.bestMove">
+                Best move: <strong>{{ formatBestMoveForDisplay(move.bestMove, previousFen()) }}</strong>
+              </p>
+              <p>Centipawn: {{ move.centipawnAfter ?? 'N/A' }}
+                <span *ngIf="move.centipawnLoss > 0"> (Δ −{{ move.centipawnLoss }})</span>
+              </p>
+              <p>Win expectancy: {{ move.winExpectancyAfter | number:'1.1-1' }}%
+                <span *ngIf="move.winExpectancyLoss > 0" class="we-loss">(−{{ move.winExpectancyLoss | number:'1.1-1' }}%)</span>
+              </p>
+            </div>
+          </ng-container>
 
-        <mat-form-field appearance="outline" class="field">
-          <mat-label>Time per move (ms)</mat-label>
-          <input
-            matInput
-            type="number"
-            [ngModel]="engineConfig().timePerMoveMs"
-            (ngModelChange)="updateTimePerMove($event)"
-            min="50"
-            max="10000" />
-        </mat-form-field>
+          <ng-template #initialPosition>
+            <p class="initial-position-hint">Navigate to a move to see its classification.</p>
+          </ng-template>
+        </ng-container>
 
-        <p class="error" *ngIf="configError() as cfgError">{{ cfgError }}</p>
-        <p class="engine-warning" *ngIf="engineWarning() as warning">{{ warning }}</p>
-
-        <div class="evaluation-state" *ngIf="evaluating()">Evaluating current position...</div>
-        <p class="error" *ngIf="evaluationError() as err">{{ err }}</p>
-
-        <div *ngIf="evaluation() as evalResult" class="evaluation-panel">
-          <p>Best move: <strong>{{ formatBestMoveForDisplay(evalResult.bestMove, evalResult.fen) }}</strong></p>
-          <p>Depth: {{ evalResult.depth ?? 'N/A' }}</p>
-          <p>Centipawn: {{ evalResult.centipawn ?? 'N/A' }}</p>
-          <p>Mate: {{ evalResult.mate ?? 'N/A' }}</p>
-          <p>From cache: {{ evalResult.cached ? 'Yes' : 'No' }}</p>
-          <p class="pv">PV: {{ evalResult.principalVariation || 'N/A' }}</p>
-        </div>
-
-        <div class="metadata-panel">
-          <p>Mode: {{ analysisMetadata().mode }}</p>
-          <p>
-            Config: depth={{ analysisMetadata().engineConfig.depth }}, threads={{ analysisMetadata().engineConfig.threads }},
-            time={{ analysisMetadata().engineConfig.timePerMoveMs }}ms
-          </p>
-        </div>
+        <p *ngIf="!fullAnalysis()" class="error">
+          No analysis data found. Please run analysis from the search page first.
+        </p>
       </mat-card-content>
     </mat-card>
   </section>

@@ -24,7 +24,12 @@
       <mat-card-header>
         <mat-card-title>Games</mat-card-title>
         <mat-card-subtitle>
-          Page {{ page() }} · {{ pageSize }} items per page
+          Page {{ page() }} · {{ pageSize }} items per page ·
+          Analysis mode:
+          <select class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
+            <option value="quick">Quick</option>
+            <option value="deep">Deep</option>
+          </select>
         </mat-card-subtitle>
       </mat-card-header>
 
@@ -54,7 +59,13 @@
                   <span>{{ game.playedAtUtc | date: 'medium' }}</span>
                   <div class="game-actions">
                     <a [href]="game.url" target="_blank" rel="noreferrer">View</a>
-                    <button mat-stroked-button type="button" (click)="openAnalysis(game)">Analyze</button>
+                    <button
+                      mat-stroked-button
+                      type="button"
+                      (click)="openAnalysis(game)"
+                      [disabled]="analyzingGameId() !== null">
+                      Analyze
+                    </button>
                   </div>
                 </div>
               </div>
