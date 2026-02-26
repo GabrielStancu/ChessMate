@@ -22,9 +22,12 @@ export interface ClassifiedMove {
   winExpectancyAfter: number;
   winExpectancyLoss: number;
   bestMove: string | null;
+  opponentBestResponse: string | null;
   centipawnBefore: number | null;
   centipawnAfter: number | null;
   centipawnLoss: number;
+  fenBefore: string;
+  fenAfter: string;
 }
 
 export interface FullGameAnalysisResult {
@@ -118,6 +121,7 @@ export const OVERLAY_ELIGIBLE_CLASSES: ReadonlyArray<MoveClassification> = [
  * Move classes eligible for coaching (sent to batch-coach API).
  */
 export const COACHING_ELIGIBLE_CLASSES: ReadonlyArray<MoveClassification> = [
+  'Inaccuracy',
   'Mistake',
   'Miss',
   'Blunder'

@@ -42,9 +42,9 @@ public sealed class AzureOpenAiOptions
 
     public string ModelName { get; init; } = "gpt-4o";
 
-    public int MaxOutputTokens { get; init; } = 450;
+    public int MaxOutputTokens { get; init; } = 250;
 
-    public decimal Temperature { get; init; } = 0.2m;
+    public decimal Temperature { get; init; } = 0.1m;
 
     public AzureOpenAiRetryOptions Retry { get; init; } = new();
 }

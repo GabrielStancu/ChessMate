@@ -13,7 +13,14 @@ public sealed record BatchCoachMoveEnvelope(
     string? Move = null,
     string? Piece = null,
     string? From = null,
-    string? To = null);
+    string? To = null,
+    string? FenBefore = null,
+    string? FenAfter = null,
+    int? CentipawnBefore = null,
+    int? CentipawnAfter = null,
+    int? CentipawnLoss = null,
+    string? BestMove = null,
+    string? OpponentBestResponse = null);
 
 public sealed record BatchCoachResponseEnvelope(
     string SchemaVersion,

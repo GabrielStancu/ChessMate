@@ -4,7 +4,7 @@ namespace ChessMate.Functions.BatchCoach;
 
 public static class BatchCoachClassificationPolicy
 {
-    public static readonly IReadOnlyList<string> EligibleClassifications = ["Mistake", "Miss", "Blunder"];
+    public static readonly IReadOnlyList<string> EligibleClassifications = ["Inaccuracy", "Mistake", "Miss", "Blunder"];
 
     public static IReadOnlyList<BatchCoachMoveEnvelope> SelectEligibleMoves(IReadOnlyList<BatchCoachMoveEnvelope> moves)
     {

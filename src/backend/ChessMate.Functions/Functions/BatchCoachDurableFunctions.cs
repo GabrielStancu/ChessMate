@@ -10,8 +10,8 @@ namespace ChessMate.Functions.Functions;
 
 public sealed class BatchCoachDurableFunctions
 {
-    private const int QuickTimeoutSeconds = 12;
-    private const int DeepTimeoutSeconds = 30;
+    private const int QuickTimeoutSeconds = 60;
+    private const int DeepTimeoutSeconds = 60;
     private const string LatencyMetricName = "batchcoach.coachmove.latency.ms";
     private const string PromptTokensMetricName = "batchcoach.coachmove.tokens.prompt";
     private const string CompletionTokensMetricName = "batchcoach.coachmove.tokens.completion";
@@ -136,7 +136,14 @@ public sealed class BatchCoachDurableFunctions
             input.Move.Move,
             input.Move.Piece,
             input.Move.From,
-            input.Move.To);
+            input.Move.To,
+            input.Move.FenBefore,
+            input.Move.FenAfter,
+            input.Move.CentipawnBefore,
+            input.Move.CentipawnAfter,
+            input.Move.CentipawnLoss,
+            input.Move.BestMove,
+            input.Move.OpponentBestResponse);
 
         var moveText = string.IsNullOrWhiteSpace(input.Move.Move)
             ? CoachMovePromptComposer.CreateMoveText(generationRequest)

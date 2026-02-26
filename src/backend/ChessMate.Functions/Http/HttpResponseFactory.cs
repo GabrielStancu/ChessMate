@@ -79,6 +79,22 @@ public sealed class HttpResponseFactory(
         return await WriteJsonAsync(request, HttpStatusCode.Forbidden, envelope);
     }
 
+    public Task<HttpResponseData> CreatePreflightAsync(HttpRequestData request)
+    {
+        var response = request.CreateResponse(HttpStatusCode.NoContent);
+
+        if (corsPolicy.TryGetAllowedOrigin(request, out var allowedOrigin))
+        {
+            response.Headers.Add("Access-Control-Allow-Origin", allowedOrigin!);
+            response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
+            response.Headers.Add("Access-Control-Max-Age", "3600");
+            response.Headers.Add("Vary", "Origin");
+        }
+
+        return Task.FromResult(response);
+    }
+
     private async Task<HttpResponseData> WriteJsonAsync<TPayload>(HttpRequestData request, HttpStatusCode statusCode, TPayload payload)
     {
         var response = request.CreateResponse(statusCode);
@@ -87,6 +103,7 @@ public sealed class HttpResponseFactory(
         if (corsPolicy.TryGetAllowedOrigin(request, out var allowedOrigin))
         {
             response.Headers.Add("Access-Control-Allow-Origin", allowedOrigin!);
+            response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
             response.Headers.Add("Vary", "Origin");
         }
 

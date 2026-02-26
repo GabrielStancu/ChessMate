@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { BatchCoachResponseEnvelope } from '../models/batch-coach.models';
 import { FullGameAnalysisResult } from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
 
@@ -6,6 +7,7 @@ import { GetGamesItemEnvelope } from '../models/games.models';
 export class AnalysisSessionService {
   private static readonly selectedGameStorageKey = 'chessmate.selectedGame';
   private static readonly fullAnalysisStorageKey = 'chessmate.fullAnalysis';
+  private static readonly batchCoachStorageKey = 'chessmate.batchCoach';
 
   public setSelectedGame(game: GetGamesItemEnvelope): void {
     sessionStorage.setItem(AnalysisSessionService.selectedGameStorageKey, JSON.stringify(game));
@@ -53,5 +55,32 @@ export class AnalysisSessionService {
 
   public clearFullGameAnalysis(): void {
     sessionStorage.removeItem(AnalysisSessionService.fullAnalysisStorageKey);
+  }
+
+  public setBatchCoachResponse(response: BatchCoachResponseEnvelope): void {
+    sessionStorage.setItem(AnalysisSessionService.batchCoachStorageKey, JSON.stringify(response));
+  }
+
+  public getBatchCoachResponse(expectedGameId: string): BatchCoachResponseEnvelope | null {
+    const rawValue = sessionStorage.getItem(AnalysisSessionService.batchCoachStorageKey);
+    if (!rawValue) {
+      return null;
+    }
+
+    try {
+      const response = JSON.parse(rawValue) as BatchCoachResponseEnvelope;
+
+      if (response.summary.gameId !== expectedGameId) {
+        return null;
+      }
+
+      return response;
+    } catch {
+      return null;
+    }
+  }
+
+  public clearBatchCoachResponse(): void {
+    sessionStorage.removeItem(AnalysisSessionService.batchCoachStorageKey);
   }
 }

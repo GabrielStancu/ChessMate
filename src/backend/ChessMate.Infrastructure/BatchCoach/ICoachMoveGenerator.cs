@@ -15,7 +15,14 @@ public sealed record CoachMoveGenerationRequest(
     string? Move,
     string? Piece,
     string? From,
-    string? To);
+    string? To,
+    string? FenBefore = null,
+    string? FenAfter = null,
+    int? CentipawnBefore = null,
+    int? CentipawnAfter = null,
+    int? CentipawnLoss = null,
+    string? BestMove = null,
+    string? OpponentBestResponse = null);
 
 public sealed record CoachGenerationResult(
     string WhyWrong,

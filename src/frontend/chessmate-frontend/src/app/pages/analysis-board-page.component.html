@@ -28,50 +28,67 @@
       </mat-card-footer>
     </mat-card>
 
-    <mat-card class="control-card">
-      <mat-card-header>
-        <mat-card-title>Move Classification</mat-card-title>
-      </mat-card-header>
+    <div class="right-panel">
+      <mat-card class="control-card">
+        <mat-card-header>
+          <mat-card-title>Move Classification</mat-card-title>
+        </mat-card-header>
 
-      <mat-card-content>
-        <ng-container *ngIf="fullAnalysis() as analysis">
-          <div class="analysis-meta">
-            <p>Playing as: <strong>{{ analysis.playerColor }}</strong></p>
-            <p>Mode: {{ analysis.analysisMode }} · Depth: {{ analysis.engineConfig.depth }}</p>
-          </div>
-
-          <ng-container *ngIf="currentClassifiedMove() as move; else initialPosition">
-            <div
-              class="classification-badge"
-              [style.background-color]="classificationColors[move.classification]">
-              <span class="classification-symbol">{{ classificationSymbols[move.classification] }}</span>
-              <span class="classification-label">{{ move.classification }}</span>
+        <mat-card-content>
+          <ng-container *ngIf="fullAnalysis() as analysis">
+            <div class="analysis-meta">
+              <p>Playing as: <strong>{{ analysis.playerColor }}</strong></p>
+              <p>Mode: {{ analysis.analysisMode }} · Depth: {{ analysis.engineConfig.depth }}</p>
             </div>
 
-            <div class="move-detail-panel">
-              <p>Move: <strong>{{ move.san }}</strong> ({{ move.piece }})</p>
-              <p>{{ move.isUserMove ? 'Your move' : "Opponent's move" }}</p>
-              <p *ngIf="move.bestMove">
-                Best move: <strong>{{ formatBestMoveForDisplay(move.bestMove, previousFen()) }}</strong>
-              </p>
-              <p>Centipawn: {{ move.centipawnAfter ?? 'N/A' }}
-                <span *ngIf="move.centipawnLoss > 0"> (Δ −{{ move.centipawnLoss }})</span>
-              </p>
-              <p>Win expectancy: {{ move.winExpectancyAfter | number:'1.1-1' }}%
-                <span *ngIf="move.winExpectancyLoss > 0" class="we-loss">(−{{ move.winExpectancyLoss | number:'1.1-1' }}%)</span>
-              </p>
-            </div>
+            <ng-container *ngIf="currentClassifiedMove() as move; else initialPosition">
+              <div
+                class="classification-badge"
+                [style.background-color]="classificationColors[move.classification]">
+                <span class="classification-symbol">{{ classificationSymbols[move.classification] }}</span>
+                <span class="classification-label">{{ move.classification }}</span>
+              </div>
+
+              <div class="move-detail-panel">
+                <p>Move: <strong>{{ move.san }}</strong> ({{ move.piece }})</p>
+                <p>{{ move.isUserMove ? 'Your move' : "Opponent's move" }}</p>
+                <p *ngIf="move.bestMove">
+                  Best move: <strong>{{ formatBestMoveForDisplay(move.bestMove, previousFen()) }}</strong>
+                </p>
+                <p>Centipawn: {{ move.centipawnAfter ?? 'N/A' }}
+                  <span *ngIf="move.centipawnLoss > 0"> (Δ −{{ move.centipawnLoss }})</span>
+                </p>
+                <p>Win expectancy: {{ move.winExpectancyAfter | number:'1.1-1' }}%
+                  <span *ngIf="move.winExpectancyLoss > 0" class="we-loss">(−{{ move.winExpectancyLoss | number:'1.1-1' }}%)</span>
+                </p>
+              </div>
+            </ng-container>
+
+            <ng-template #initialPosition>
+              <p class="initial-position-hint">Navigate to a move to see its classification.</p>
+            </ng-template>
           </ng-container>
 
-          <ng-template #initialPosition>
-            <p class="initial-position-hint">Navigate to a move to see its classification.</p>
-          </ng-template>
-        </ng-container>
+          <p *ngIf="!fullAnalysis()" class="error">
+            No analysis data found. Please run analysis from the search page first.
+          </p>
+        </mat-card-content>
+      </mat-card>
 
-        <p *ngIf="!fullAnalysis()" class="error">
-          No analysis data found. Please run analysis from the search page first.
-        </p>
-      </mat-card-content>
-    </mat-card>
+      <ng-container *ngIf="fullAnalysis() as analysis">
+        <app-move-list
+          [moves]="analysis.classifiedMoves"
+          [selectedPly]="selectedPly()"
+          [coachingLookup]="coachingLookup()"
+          (plySelected)="onPlySelected($event)">
+        </app-move-list>
+      </ng-container>
+
+      <app-coach-panel
+        [currentMove]="currentClassifiedMove()"
+        [coachingLookup]="coachingLookup()"
+        [batchCoachResponse]="batchCoachResponse()">
+      </app-coach-panel>
+    </div>
   </section>
 </main>

@@ -16,7 +16,10 @@ import { environment } from '../../environments/environment';
 import { AnalysisMode, EngineConfig } from '../models/analysis.models';
 import { ErrorResponseEnvelope, GetGamesItemEnvelope } from '../models/games.models';
 import { AnalysisLoadingDialogComponent, AnalysisLoadingDialogData } from './analysis-loading-dialog.component';
+import { buildBatchCoachPayload, generateIdempotencyKey } from '../models/batch-coach.models';
+import { COACHING_ELIGIBLE_CLASSES } from '../models/classification.models';
 import { AnalysisSessionService } from '../services/analysis-session.service';
+import { BatchCoachApiService } from '../services/batch-coach-api.service';
 import { FullGameAnalysisService } from '../services/full-game-analysis.service';
 import { GamesApiService } from '../services/games-api.service';
 import { StockfishAnalysisControllerService } from '../services/stockfish-analysis-controller.service';
@@ -43,6 +46,7 @@ export class GameSearchPageComponent {
   private readonly gamesApiService = inject(GamesApiService);
   private readonly analysisSessionService = inject(AnalysisSessionService);
   private readonly fullGameAnalysisService = inject(FullGameAnalysisService);
+  private readonly batchCoachApiService = inject(BatchCoachApiService);
   private readonly stockfishController = inject(StockfishAnalysisControllerService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
@@ -163,6 +167,10 @@ export class GameSearchPageComponent {
       );
 
       this.analysisSessionService.setFullGameAnalysis(result);
+
+      // Submit coaching request for eligible moves (non-blocking on failure)
+      await this.submitCoachingRequest(result, mode, config);
+
       dialogRef.close();
       this.analyzingGameId.set(null);
       void this.router.navigate(['/analysis', game.gameId]);
@@ -211,5 +219,35 @@ export class GameSearchPageComponent {
     }
 
     this.errorMessage.set('Unable to retrieve games right now.');
+  }
+
+  private async submitCoachingRequest(
+    result: import('../models/classification.models').FullGameAnalysisResult,
+    mode: AnalysisMode,
+    config: EngineConfig
+  ): Promise<void> {
+    const payload = buildBatchCoachPayload(result);
+
+    const hasEligibleMoves = result.classifiedMoves.some(
+      (m) => (COACHING_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(m.classification)
+    );
+
+    if (!hasEligibleMoves) {
+      return;
+    }
+
+    this.fullGameAnalysisService.progress.set({
+      current: 0,
+      total: 0,
+      phase: 'coaching'
+    });
+
+    try {
+      const idempotencyKey = generateIdempotencyKey(result.gameId, mode, config);
+      const coachResponse = await this.batchCoachApiService.submitBatchCoach(payload, idempotencyKey);
+      this.analysisSessionService.setBatchCoachResponse(coachResponse);
+    } catch (error) {
+      console.warn('[ChessMate] Coaching request failed (non-blocking):', error);
+    }
   }
 }

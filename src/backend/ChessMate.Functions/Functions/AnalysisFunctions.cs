@@ -42,6 +42,14 @@ public sealed class AnalysisFunctions
         _logger = logger;
     }
 
+    [Function("BatchCoachPreflight")]
+    public async Task<HttpResponseData> BatchCoachPreflightAsync(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "options", Route = "analysis/batch-coach")]
+        HttpRequestData request)
+    {
+        return await _responseFactory.CreatePreflightAsync(request);
+    }
+
     [Function("BatchCoach")]
     public async Task<HttpResponseData> BatchCoachAsync(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "analysis/batch-coach")]

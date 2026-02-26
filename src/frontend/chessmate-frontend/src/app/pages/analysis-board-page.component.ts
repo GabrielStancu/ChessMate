@@ -8,6 +8,11 @@ import { ArrowType, BORDER_TYPE, Chessboard, COLOR, FEN, MarkerType } from 'cm-c
 import { Markers } from 'cm-chessboard/src/extensions/markers/Markers.js';
 import { Arrows } from 'cm-chessboard/src/extensions/arrows/Arrows.js';
 import {
+  BatchCoachCoachingItemEnvelope,
+  BatchCoachResponseEnvelope,
+  buildCoachingLookup
+} from '../models/batch-coach.models';
+import {
   ClassifiedMove,
   FullGameAnalysisResult,
   CLASSIFICATION_COLORS,
@@ -15,6 +20,8 @@ import {
   OVERLAY_ELIGIBLE_CLASSES
 } from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
+import { CoachPanelComponent } from '../components/coach-panel.component';
+import { MoveListComponent } from '../components/move-list.component';
 import { AnalysisSessionService } from '../services/analysis-session.service';
 
 interface MoveStep {
@@ -25,7 +32,7 @@ interface MoveStep {
 @Component({
   selector: 'app-analysis-board-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, MoveListComponent],
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
@@ -73,6 +80,17 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
   protected readonly classificationColors = CLASSIFICATION_COLORS;
   protected readonly classificationSymbols = CLASSIFICATION_SYMBOLS;
 
+  protected readonly batchCoachResponse = signal<BatchCoachResponseEnvelope | null>(this.resolveBatchCoachResponse());
+  protected readonly coachingLookup = computed(() => {
+    const response = this.batchCoachResponse();
+    const lookup = buildCoachingLookup(response);
+    if (response) {
+      console.info(`[ChessMate] Coaching data loaded: ${lookup.size} items for operationId ${response.operationId}`);
+    }
+    return lookup;
+  });
+  protected readonly selectedPly = computed(() => this.selectedPositionIndex());
+
   public constructor() {
     const activeGame = this.game();
     if (!activeGame) {
@@ -117,7 +135,13 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     this.chessboard = null;
   }
 
+  protected onPlySelected(ply: number): void {
+    if (ply < 0 || ply >= this.positionTimeline().length) {
+      return;
+    }
 
+    this.selectedPositionIndex.set(ply);
+  }
 
   protected goFirst(): void {
     this.selectedPositionIndex.set(0);
@@ -324,6 +348,14 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     }
 
     return this.analysisSessionService.getFullGameAnalysis(this.gameId);
+  }
+
+  private resolveBatchCoachResponse(): BatchCoachResponseEnvelope | null {
+    if (!this.gameId) {
+      return null;
+    }
+
+    return this.analysisSessionService.getBatchCoachResponse(this.gameId);
   }
 
   private async syncBoardAndOverlays(fen: string, classifiedMove: ClassifiedMove | null): Promise<void> {

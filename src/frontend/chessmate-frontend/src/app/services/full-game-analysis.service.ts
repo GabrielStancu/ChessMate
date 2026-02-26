@@ -9,7 +9,7 @@ import { centipawnToWinExpectancy, classifyMove, flipWinExpectancy } from '../ut
 export interface AnalysisProgress {
   current: number;
   total: number;
-  phase: 'loading' | 'evaluating' | 'classifying' | 'done' | 'error';
+  phase: 'loading' | 'evaluating' | 'classifying' | 'coaching' | 'done' | 'error';
   errorMessage?: string;
 }
 
@@ -229,9 +229,12 @@ export class FullGameAnalysisService {
         winExpectancyAfter: weAfterForMovingSide,
         winExpectancyLoss: Math.max(0, weLoss),
         bestMove: bestMoveUci,
+        opponentBestResponse: evalAfter.bestMove,
         centipawnBefore: cpBefore,
         centipawnAfter: cpAfter,
-        centipawnLoss: Math.max(0, cpLoss)
+        centipawnLoss: Math.max(0, cpLoss),
+        fenBefore: positions[i],
+        fenAfter: positions[i + 1]
       });
 
       this.progress.set({ current: i + 1, total: moves.length, phase: 'classifying' });

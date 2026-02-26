@@ -34,6 +34,9 @@ export interface AnalysisLoadingDialogData {
       <p class="loading-hint" *ngIf="data.progress().phase === 'classifying'">
         Classifying moves by win expectancy...
       </p>
+      <p class="loading-hint" *ngIf="data.progress().phase === 'coaching'">
+        Generating coaching insights...
+      </p>
       <p class="loading-hint" *ngIf="data.progress().phase === 'loading'">
         Preparing game data...
       </p>
@@ -105,7 +108,7 @@ export class AnalysisLoadingDialogComponent {
 
   protected progressMode(): 'determinate' | 'indeterminate' {
     const p = this.data.progress();
-    if (p.phase === 'loading' || p.total === 0) {
+    if (p.phase === 'loading' || p.phase === 'coaching' || p.total === 0) {
       return 'indeterminate';
     }
 
@@ -117,6 +120,10 @@ export class AnalysisLoadingDialogComponent {
 
     if (p.phase === 'loading') {
       return 'Preparing...';
+    }
+
+    if (p.phase === 'coaching') {
+      return 'Generating coaching...';
     }
 
     if (p.phase === 'done') {

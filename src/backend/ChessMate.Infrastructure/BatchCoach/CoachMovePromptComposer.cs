@@ -25,8 +25,8 @@ public static class CoachMovePromptComposer
     public static string ComposeSystemPrompt()
     {
         return """
-You are an elite chess coach.
-Return ONLY valid JSON with this exact shape:
+You are a chess coach giving brief, concrete feedback on a bad move.
+Return ONLY valid JSON:
 {
   "whyWrong": "...",
   "exploitPath": "...",
@@ -34,10 +34,14 @@ Return ONLY valid JSON with this exact shape:
 }
 
 Rules:
-- Each field is required and non-empty.
-- Keep each field concise (1-3 sentences).
-- Explain concrete chess ideas, not generic advice.
-- Do not include markdown, code fences, or additional keys.
+- Each field: exactly 1 sentence, max 25 words. Be direct.
+- You receive a decoded board with every piece and its square. ONLY mention pieces that appear in that list.
+- Never invent pieces, squares, or moves not supported by the board data.
+- "whyWrong": State the specific tactical or positional problem the move creates (e.g. leaves a piece hanging, blocks development, weakens a square).
+- "exploitPath": Use the opponentBestPunishment move to explain what the opponent wins or threatens. This is the key move — center your explanation around it.
+- "suggestedPlan": State the better move and why it is better in one phrase.
+- Never say "the engine", "Stockfish", "analysis shows", "best move is", or similar meta-commentary. Speak as a coach talking directly to a student.
+- No markdown, no code fences, no extra keys.
 """;
     }
 
@@ -54,8 +58,52 @@ Rules:
         builder.AppendLine($"- moveText: {moveText}");
         builder.AppendLine($"- fromSquare: {request.From ?? "unknown"}");
         builder.AppendLine($"- toSquare: {request.To ?? "unknown"}");
+
+        if (request.CentipawnBefore.HasValue)
+        {
+            builder.AppendLine($"- evalBeforeMove: {FormatCentipawn(request.CentipawnBefore.Value)}");
+        }
+
+        if (request.CentipawnAfter.HasValue)
+        {
+            builder.AppendLine($"- evalAfterMove: {FormatCentipawn(request.CentipawnAfter.Value)}");
+        }
+
+        if (request.CentipawnLoss.HasValue && request.CentipawnLoss.Value > 0)
+        {
+            builder.AppendLine($"- centipawnLoss: {request.CentipawnLoss.Value} (higher = worse move)");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.BestMove))
+        {
+            var bestMoveReadable = UciMoveDescriber.Describe(request.BestMove, request.FenBefore);
+            builder.AppendLine($"- betterAlternative: {bestMoveReadable}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.OpponentBestResponse))
+        {
+            var refutationReadable = UciMoveDescriber.Describe(request.OpponentBestResponse, request.FenAfter);
+            builder.AppendLine($"- opponentBestPunishment: {refutationReadable}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.FenBefore))
+        {
+            var boardBefore = FenBoardDescriber.Describe(request.FenBefore);
+            builder.AppendLine();
+            builder.AppendLine("Board BEFORE the move (this is the ground truth — only reference pieces listed here):");
+            builder.AppendLine(boardBefore);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.FenAfter))
+        {
+            var boardAfter = FenBoardDescriber.Describe(request.FenAfter);
+            builder.AppendLine();
+            builder.AppendLine("Board AFTER the move:");
+            builder.AppendLine(boardAfter);
+        }
+
         builder.AppendLine();
-        builder.AppendLine("Write coaching so it can be presented with the narration prefix and move text above.");
+        builder.AppendLine("Only reference pieces visible in the board above. Be brief and direct.");
 
         return builder.ToString();
     }
@@ -63,5 +111,12 @@ Rules:
     public static string ComposeExplanation(string rolePhrase, string moveText, string whyWrong, string exploitPath, string suggestedPlan)
     {
         return $"{rolePhrase} {moveText}. Why this was wrong: {whyWrong} Exploit path: {exploitPath} Suggested plan: {suggestedPlan}";
+    }
+
+    private static string FormatCentipawn(int centipawn)
+    {
+        var sign = centipawn >= 0 ? "+" : "";
+        var pawns = centipawn / 100.0;
+        return $"{sign}{pawns:F2} (positive = White advantage, negative = Black advantage)";
     }
 }
