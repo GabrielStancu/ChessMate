@@ -5,6 +5,7 @@ using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Http;
 using ChessMate.Functions.Security;
 using ChessMate.Functions.Validation;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -16,18 +17,21 @@ public sealed class ChessComFunctions
     private readonly HttpResponseFactory _responseFactory;
     private readonly ICorrelationContextAccessor _correlationAccessor;
     private readonly IChessComGamesService _chessComGamesService;
+    private readonly TelemetryClient _telemetryClient;
     private readonly CorsPolicy _corsPolicy;
     private readonly ILogger<ChessComFunctions> _logger;
 
     public ChessComFunctions(HttpResponseFactory responseFactory,
         ICorrelationContextAccessor correlationAccessor,
         IChessComGamesService chessComGamesService,
+        TelemetryClient telemetryClient,
         CorsPolicy corsPolicy,
         ILogger<ChessComFunctions> logger)
     {
         _responseFactory = responseFactory;
         _correlationAccessor = correlationAccessor;
         _chessComGamesService = chessComGamesService;
+        _telemetryClient = telemetryClient;
         _corsPolicy = corsPolicy;
         _logger = logger;
     }
@@ -79,6 +83,18 @@ public sealed class ChessComFunctions
                 pageSize,
                 result.CacheStatus,
                 _correlationAccessor.CorrelationId);
+
+            _telemetryClient.TrackEvent(
+                "api.getgames.completed",
+                new Dictionary<string, string>
+                {
+                    ["username"] = username,
+                    ["page"] = page.ToString(),
+                    ["cacheStatus"] = result.CacheStatus,
+                    ["itemCount"] = result.Items.Count.ToString(),
+                    ["hasMore"] = result.HasMore.ToString(),
+                    ["correlationId"] = _correlationAccessor.CorrelationId ?? string.Empty
+                });
 
             var response = GetGamesResponseMapper.Create(result);
             return await _responseFactory.CreateOkAsync(request, response);

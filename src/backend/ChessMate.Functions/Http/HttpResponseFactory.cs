@@ -119,7 +119,7 @@ public sealed class HttpResponseFactory(
         await response.WriteStringAsync(body);
 
         telemetryClient.TrackEvent(
-            "api.ratelimit.hook",
+            "api.response.sent",
             new Dictionary<string, string>
             {
                 ["method"] = request.Method,

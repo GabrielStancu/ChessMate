@@ -1,0 +1,42 @@
+// Estimated cloud cost per analyzed game — based on token usage metrics
+// Uses custom metrics emitted per coaching activity call.
+// Adjust the cost-per-token rates for your Azure OpenAI pricing tier.
+
+let timeRange = 24h;
+let promptTokenCostPer1k = 0.005;      // USD per 1K prompt tokens (GPT-4o)
+let completionTokenCostPer1k = 0.015;  // USD per 1K completion tokens (GPT-4o)
+
+customMetrics
+| where timestamp > ago(timeRange)
+| where name in ("batchcoach.coachmove.tokens.prompt", "batchcoach.coachmove.tokens.completion")
+| extend
+    gameId = tostring(customDimensions["gameId"]),
+    metricName = name
+| summarize
+    TotalPromptTokens = sumif(value, metricName == "batchcoach.coachmove.tokens.prompt"),
+    TotalCompletionTokens = sumif(value, metricName == "batchcoach.coachmove.tokens.completion"),
+    MoveCount = countif(metricName == "batchcoach.coachmove.tokens.prompt")
+    by gameId
+| extend
+    PromptCostUsd = round(TotalPromptTokens / 1000.0 * promptTokenCostPer1k, 6),
+    CompletionCostUsd = round(TotalCompletionTokens / 1000.0 * completionTokenCostPer1k, 6)
+| extend TotalCostUsd = round(PromptCostUsd + CompletionCostUsd, 6)
+| order by TotalCostUsd desc;
+
+// Aggregate cost summary
+customMetrics
+| where timestamp > ago(timeRange)
+| where name in ("batchcoach.coachmove.tokens.prompt", "batchcoach.coachmove.tokens.completion")
+| extend metricName = name
+| summarize
+    TotalPromptTokens = sumif(value, metricName == "batchcoach.coachmove.tokens.prompt"),
+    TotalCompletionTokens = sumif(value, metricName == "batchcoach.coachmove.tokens.completion"),
+    GamesAnalyzed = dcount(tostring(customDimensions["gameId"]))
+| extend
+    TotalCostUsd = round(
+        (TotalPromptTokens / 1000.0 * promptTokenCostPer1k) +
+        (TotalCompletionTokens / 1000.0 * completionTokenCostPer1k), 4),
+    AvgCostPerGame = iff(GamesAnalyzed > 0,
+        round(((TotalPromptTokens / 1000.0 * promptTokenCostPer1k) +
+               (TotalCompletionTokens / 1000.0 * completionTokenCostPer1k)) / toreal(GamesAnalyzed), 6),
+        0.0)

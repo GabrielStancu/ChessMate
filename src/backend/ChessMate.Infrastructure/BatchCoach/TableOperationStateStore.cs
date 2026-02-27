@@ -1,21 +1,24 @@
 using Azure;
 using Azure.Data.Tables;
 using ChessMate.Infrastructure.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ChessMate.Infrastructure.BatchCoach;
 
 public sealed class TableOperationStateStore : IOperationStateStore
 {
     private readonly TableClient _tableClient;
+    private readonly ILogger<TableOperationStateStore> _logger;
 
     private const string OperationPartitionPrefix = "op%23";
     private const string RequestPartitionPrefix = "req%23";
     private const string OperationRowPrefix = "op%23";
     private const int RequestHashPrefixLength = 12;
 
-    public TableOperationStateStore(TableClient tableClient)
+    public TableOperationStateStore(TableClient tableClient, ILogger<TableOperationStateStore> logger)
     {
         _tableClient = tableClient;
+        _logger = logger;
     }
 
     public async Task<OperationStateSnapshot?> GetByRequestIdentityAsync(
@@ -95,6 +98,10 @@ public sealed class TableOperationStateStore : IOperationStateStore
         }
         catch (RequestFailedException exception) when (exception.Status == 409)
         {
+            _logger.LogWarning(
+                "Operation state create conflict for operationId {OperationId}. Another instance may have claimed this operation.",
+                operationId);
+
             return false;
         }
 
@@ -115,6 +122,12 @@ public sealed class TableOperationStateStore : IOperationStateStore
         };
 
         await _tableClient.UpsertEntityAsync(lookupEntity, TableUpdateMode.Replace, cancellationToken);
+
+        _logger.LogInformation(
+            "Operation state created. operationId {OperationId}, status {Status}.",
+            operationId,
+            OperationStateStatus.Running);
+
         return true;
     }
 
@@ -144,6 +157,12 @@ public sealed class TableOperationStateStore : IOperationStateStore
         var entity = getResponse.Value;
         if (OperationStateStatus.IsTerminal(entity.Status))
         {
+            _logger.LogWarning(
+                "Operation state already terminal for operationId {OperationId}. currentStatus {CurrentStatus}, requestedStatus {RequestedStatus}.",
+                operationId,
+                entity.Status,
+                status);
+
             return false;
         }
 
@@ -178,6 +197,12 @@ public sealed class TableOperationStateStore : IOperationStateStore
         };
 
         await _tableClient.UpsertEntityAsync(lookupEntity, TableUpdateMode.Replace, cancellationToken);
+
+        _logger.LogInformation(
+            "Operation state transitioned. operationId {OperationId}, status {Status}.",
+            operationId,
+            status);
+
         return true;
     }
 

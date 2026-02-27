@@ -1,5 +1,6 @@
 using ChessMate.Application.Abstractions;
 using ChessMate.Application.ChessCom;
+using Microsoft.Extensions.Logging;
 
 namespace ChessMate.Infrastructure.ChessCom;
 
@@ -8,16 +9,19 @@ public sealed class ChessComGamesService : IChessComGamesService
     private readonly IGameIndexStore _gameIndexStore;
     private readonly IChessComArchiveClient _archiveClient;
     private readonly TimeProvider _timeProvider;
+    private readonly ILogger<ChessComGamesService> _logger;
     private const int CacheTtlMinutes = 15;
 
     public ChessComGamesService(
         IGameIndexStore gameIndexStore,
         IChessComArchiveClient archiveClient,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        ILogger<ChessComGamesService> logger)
     {
         _gameIndexStore = gameIndexStore;
         _archiveClient = archiveClient;
         _timeProvider = timeProvider;
+        _logger = logger;
     }
 
     public async Task<GetGamesPageResult> GetGamesPageAsync(string username, int page, int pageSize, CancellationToken cancellationToken)
@@ -28,11 +32,22 @@ public sealed class ChessComGamesService : IChessComGamesService
 
         if (IsCacheFresh(cachedGames, now))
         {
+            _logger.LogInformation(
+                "Cache hit for username {Username}. cachedCount {CachedCount}.",
+                normalizedUsername,
+                cachedGames.Count);
+
             return BuildPageResult(cachedGames, page, pageSize, now, cacheStatus: "hit");
         }
 
         var hadCachedGames = cachedGames.Count > 0;
         var requiredCount = checked(page * pageSize + 1);
+
+        _logger.LogInformation(
+            "Cache {CacheDecision} for username {Username}. Fetching upstream, requiredCount {RequiredCount}.",
+            hadCachedGames ? "stale" : "miss",
+            normalizedUsername,
+            requiredCount);
 
         IReadOnlyList<ChessGameSummary> fetchedGames;
 
@@ -46,6 +61,13 @@ public sealed class ChessComGamesService : IChessComGamesService
         }
 
         await _gameIndexStore.UpsertPlayerGamesAsync(normalizedUsername, fetchedGames, now, cancellationToken);
+
+        _logger.LogInformation(
+            "Upstream fetch completed for username {Username}. fetchedCount {FetchedCount}, cacheStatus {CacheStatus}.",
+            normalizedUsername,
+            fetchedGames.Count,
+            hadCachedGames ? "stale" : "miss");
+
         var hydratedGames = fetchedGames.Select(game => game with { IngestedAtUtc = now }).ToArray();
         var cacheStatus = hadCachedGames ? "stale" : "miss";
 

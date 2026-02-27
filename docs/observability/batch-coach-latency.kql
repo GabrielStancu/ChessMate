@@ -1,0 +1,37 @@
+// POST batch-coach endpoint — p50/p95 latency split by analysis mode
+// Uses the api.batchcoach.completed custom event for mode-level breakdown
+// and the requests table for overall endpoint latency.
+
+let timeRange = 24h;
+
+// Overall endpoint latency
+requests
+| where timestamp > ago(timeRange)
+| where name == "BatchCoach"
+| where success == true
+| summarize
+    RequestCount = count(),
+    p50_ms = percentile(duration, 50),
+    p95_ms = percentile(duration, 95),
+    avg_ms = avg(duration),
+    max_ms = max(duration)
+    by bin(timestamp, 5m)
+| order by timestamp asc;
+
+// Per analysis-mode breakdown via custom events
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.batchcoach.completed"
+| extend analysisMode = tostring(customDimensions["analysisMode"])
+| join kind=inner (
+    requests
+    | where name == "BatchCoach"
+    | project operation_Id, duration
+) on operation_Id
+| summarize
+    RequestCount = count(),
+    p50_ms = percentile(duration, 50),
+    p95_ms = percentile(duration, 95),
+    avg_ms = avg(duration)
+    by analysisMode, bin(timestamp, 15m)
+| order by timestamp asc, analysisMode asc

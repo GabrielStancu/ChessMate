@@ -1,3 +1,4 @@
+using ChessMate.Application.Abstractions;
 using ChessMate.Application.Validation;
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
@@ -6,6 +7,7 @@ using ChessMate.Functions.Security;
 using ChessMate.Functions.Validation;
 using ChessMate.Infrastructure.BatchCoach;
 using ChessMate.Infrastructure.Configuration;
+using Microsoft.ApplicationInsights;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
@@ -22,6 +24,8 @@ public sealed class AnalysisFunctions
     private readonly HttpResponseFactory _responseFactory;
     private readonly BatchCoachIdempotencyService _idempotencyService;
     private readonly IAnalysisBatchStore _analysisBatchStore;
+    private readonly ICorrelationContextAccessor _correlationAccessor;
+    private readonly TelemetryClient _telemetryClient;
     private readonly TimeProvider _timeProvider;
     private readonly CorsPolicy _corsPolicy;
     private readonly ILogger<AnalysisFunctions> _logger;
@@ -30,6 +34,8 @@ public sealed class AnalysisFunctions
         HttpResponseFactory responseFactory,
         BatchCoachIdempotencyService idempotencyService,
         IAnalysisBatchStore analysisBatchStore,
+        ICorrelationContextAccessor correlationAccessor,
+        TelemetryClient telemetryClient,
         TimeProvider timeProvider,
         CorsPolicy corsPolicy,
         ILogger<AnalysisFunctions> logger)
@@ -37,6 +43,8 @@ public sealed class AnalysisFunctions
         _responseFactory = responseFactory;
         _idempotencyService = idempotencyService;
         _analysisBatchStore = analysisBatchStore;
+        _correlationAccessor = correlationAccessor;
+        _telemetryClient = telemetryClient;
         _timeProvider = timeProvider;
         _corsPolicy = corsPolicy;
         _logger = logger;
@@ -148,7 +156,8 @@ public sealed class AnalysisFunctions
 
         var orchestrationInput = new BatchCoachOrchestrationInput(
             idempotencyDecision.OperationId,
-            batchCoachRequest);
+            batchCoachRequest,
+            _correlationAccessor.CorrelationId);
 
         var instanceId = await durableTaskClient.ScheduleNewOrchestrationInstanceAsync(
             nameof(BatchCoachDurableFunctions.BatchCoachOrchestratorAsync),
@@ -226,6 +235,21 @@ public sealed class AnalysisFunctions
             responseEnvelope.OperationId,
             instanceId,
             responseEnvelope.Coaching.Count);
+
+        _telemetryClient.TrackEvent(
+            "api.batchcoach.completed",
+            new Dictionary<string, string>
+            {
+                ["operationId"] = responseEnvelope.OperationId,
+                ["gameId"] = responseEnvelope.Summary.GameId,
+                ["analysisMode"] = responseEnvelope.Summary.AnalysisMode,
+                ["totalMoves"] = responseEnvelope.Summary.TotalMoves.ToString(),
+                ["eligibleMoves"] = responseEnvelope.Summary.EligibleMoves.ToString(),
+                ["coachingCount"] = responseEnvelope.Coaching.Count.ToString(),
+                ["warningsCount"] = (responseEnvelope.Metadata.Warnings?.Count ?? 0).ToString(),
+                ["failureCode"] = responseEnvelope.Metadata.FailureCode ?? "None",
+                ["correlationId"] = _correlationAccessor.CorrelationId ?? string.Empty
+            });
 
         return await _responseFactory.CreateOkAsync(request, responseEnvelope);
     }

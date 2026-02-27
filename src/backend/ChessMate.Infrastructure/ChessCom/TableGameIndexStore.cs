@@ -1,18 +1,21 @@
 using Azure.Data.Tables;
 using ChessMate.Application.ChessCom;
 using ChessMate.Infrastructure.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace ChessMate.Infrastructure.ChessCom;
 
 public sealed class TableGameIndexStore : IGameIndexStore
 {
     private readonly TableClient _tableClient;
+    private readonly ILogger<TableGameIndexStore> _logger;
 
     private const string GamePrefix = "game%23";
 
-    public TableGameIndexStore(TableClient tableClient)
+    public TableGameIndexStore(TableClient tableClient, ILogger<TableGameIndexStore> logger)
     {
         _tableClient = tableClient;
+        _logger = logger;
     }
 
     public async Task<IReadOnlyList<ChessGameSummary>> GetPlayerGamesAsync(string normalizedUsername, CancellationToken cancellationToken)
@@ -47,6 +50,11 @@ public sealed class TableGameIndexStore : IGameIndexStore
         await _tableClient.CreateIfNotExistsAsync(cancellationToken);
 
         var partitionKey = BuildPartitionKey(normalizedUsername);
+
+        _logger.LogInformation(
+            "Upserting {GameCount} games for username {Username}.",
+            games.Count,
+            normalizedUsername);
 
         foreach (var game in games)
         {

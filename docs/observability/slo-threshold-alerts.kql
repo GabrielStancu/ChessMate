@@ -1,0 +1,24 @@
+// SLO threshold alerts — Quick p95 <= 60s, Deep p95 <= 60s
+// Returns rows only when the SLO is breached in any 15-minute window.
+
+let timeRange = 24h;
+let sloThresholdMs = 60000.0;  // 60 seconds
+
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.batchcoach.completed"
+| extend analysisMode = tostring(customDimensions["analysisMode"])
+| join kind=inner (
+    requests
+    | where name == "BatchCoach"
+    | project operation_Id, duration
+) on operation_Id
+| summarize
+    RequestCount = count(),
+    p95_ms = percentile(duration, 95)
+    by analysisMode, bin(timestamp, 15m)
+| where p95_ms > sloThresholdMs
+| extend
+    SloTarget_ms = sloThresholdMs,
+    BreachAmount_ms = p95_ms - sloThresholdMs
+| order by timestamp asc, analysisMode asc

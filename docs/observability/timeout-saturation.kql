@@ -1,0 +1,27 @@
+// Timeout saturation — percentage of coaching activities that timed out vs succeeded
+// Uses the per-move coaching warnings from batch-coach completed events.
+
+let timeRange = 24h;
+
+// Per-batch timeout ratio
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.batchcoach.completed"
+| extend
+    eligibleMoves = toint(customDimensions["eligibleMoves"]),
+    coachingCount = toint(customDimensions["coachingCount"]),
+    warningsCount = toint(customDimensions["warningsCount"]),
+    failureCode = tostring(customDimensions["failureCode"]),
+    analysisMode = tostring(customDimensions["analysisMode"])
+| extend timeoutCount = eligibleMoves - coachingCount
+| summarize
+    TotalBatches = count(),
+    TotalEligibleMoves = sum(eligibleMoves),
+    TotalCoached = sum(coachingCount),
+    TotalTimedOut = sum(timeoutCount),
+    BatchesWithTimeouts = countif(warningsCount > 0)
+    by analysisMode, bin(timestamp, 1h)
+| extend
+    TimeoutRate = iff(TotalEligibleMoves > 0, round(100.0 * TotalTimedOut / TotalEligibleMoves, 2), 0.0),
+    BatchTimeoutRate = iff(TotalBatches > 0, round(100.0 * BatchesWithTimeouts / TotalBatches, 2), 0.0)
+| order by timestamp asc, analysisMode asc

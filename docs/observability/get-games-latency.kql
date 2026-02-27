@@ -1,0 +1,17 @@
+// GET games endpoint — p50/p95 latency over the last 24 hours
+// Filters to successful (2xx) requests on the GET games route.
+
+let timeRange = 24h;
+
+requests
+| where timestamp > ago(timeRange)
+| where name == "GetChessComGames"
+| where success == true
+| summarize
+    RequestCount = count(),
+    p50_ms = percentile(duration, 50),
+    p95_ms = percentile(duration, 95),
+    avg_ms = avg(duration),
+    max_ms = max(duration)
+    by bin(timestamp, 5m)
+| order by timestamp asc

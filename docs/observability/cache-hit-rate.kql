@@ -1,0 +1,26 @@
+// Cache hit rate — hit/miss/stale ratio for GET games endpoint over time
+// Uses the api.getgames.completed custom event.
+
+let timeRange = 24h;
+
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.getgames.completed"
+| extend cacheStatus = tostring(customDimensions["cacheStatus"])
+| summarize Count = count() by cacheStatus, bin(timestamp, 1h)
+| order by timestamp asc, cacheStatus asc;
+
+// Overall ratio summary
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.getgames.completed"
+| extend cacheStatus = tostring(customDimensions["cacheStatus"])
+| summarize
+    Total = count(),
+    Hits = countif(cacheStatus == "hit"),
+    Misses = countif(cacheStatus == "miss"),
+    Stale = countif(cacheStatus == "stale")
+| extend
+    HitRate = round(100.0 * Hits / Total, 2),
+    MissRate = round(100.0 * Misses / Total, 2),
+    StaleRate = round(100.0 * Stale / Total, 2)

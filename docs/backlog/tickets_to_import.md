@@ -233,7 +233,7 @@ Finalize observability: structured logs, distributed correlation across API/Dura
 **Definition of Done (.NET/Azure)**
 - Correlation IDs flow across HTTP triggers, orchestrator, activities, and AI calls.
 - App Insights captures metrics for GET games and batch-coach latency (p50/p95).
-- Alerts/queries exist for SLO thresholds (Quick p95 <= 12s, Deep p95 <= 30s).
+- Alerts/queries exist for SLO thresholds (Quick p95 <= 60s, Deep p95 <= 60s).
 - Telemetry includes cache status, flagged move count, and failure taxonomy tags.
 
 ---

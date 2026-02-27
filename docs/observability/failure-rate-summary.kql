@@ -1,0 +1,34 @@
+// Failure rate summary — breakdown by failure taxonomy code
+// Covers both GET games (upstream failures) and batch-coach (all taxonomy codes).
+
+let timeRange = 24h;
+
+// Batch-coach failures by taxonomy code from custom events
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.batchcoach.completed"
+| extend failureCode = tostring(customDimensions["failureCode"])
+| summarize
+    TotalRequests = count(),
+    FailedRequests = countif(failureCode != "None"),
+    PartialCoaching = countif(failureCode == "PartialCoaching")
+    by bin(timestamp, 1h)
+| extend FailureRate = round(100.0 * FailedRequests / TotalRequests, 2)
+| order by timestamp asc;
+
+// Batch-coach failure breakdown by code
+customEvents
+| where timestamp > ago(timeRange)
+| where name == "api.batchcoach.completed"
+| extend failureCode = tostring(customDimensions["failureCode"])
+| where failureCode != "None"
+| summarize Count = count() by failureCode
+| order by Count desc;
+
+// All API error responses by status code and error code
+requests
+| where timestamp > ago(timeRange)
+| where resultCode !startswith "2"
+| extend errorCode = tostring(customDimensions["code"])
+| summarize Count = count() by name, resultCode, errorCode
+| order by Count desc

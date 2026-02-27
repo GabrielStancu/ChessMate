@@ -1,3 +1,4 @@
+using ChessMate.Application.Abstractions;
 using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Infrastructure.BatchCoach;
@@ -19,15 +20,18 @@ public sealed class BatchCoachDurableFunctions
 
     private readonly ILogger<BatchCoachDurableFunctions> _logger;
     private readonly ICoachMoveGenerator _coachMoveGenerator;
+    private readonly ICorrelationContextAccessor _correlationAccessor;
     private readonly TelemetryClient _telemetryClient;
 
     public BatchCoachDurableFunctions(
         ILogger<BatchCoachDurableFunctions> logger,
         ICoachMoveGenerator coachMoveGenerator,
+        ICorrelationContextAccessor correlationAccessor,
         TelemetryClient telemetryClient)
     {
         _logger = logger;
         _coachMoveGenerator = coachMoveGenerator;
+        _correlationAccessor = correlationAccessor;
         _telemetryClient = telemetryClient;
     }
 
@@ -43,8 +47,9 @@ public sealed class BatchCoachDurableFunctions
         var timeoutBudget = ResolveTimeoutBudget(input.Request.AnalysisMode);
 
         logger.LogInformation(
-            "Batch coach orchestration started. operationId {OperationId}, totalMoves {TotalMoves}, eligibleMoves {EligibleMoves}, timeoutBudgetSeconds {TimeoutBudgetSeconds}.",
+            "Batch coach orchestration started. operationId {OperationId}, correlationId {CorrelationId}, totalMoves {TotalMoves}, eligibleMoves {EligibleMoves}, timeoutBudgetSeconds {TimeoutBudgetSeconds}.",
             input.OperationId,
+            input.CorrelationId,
             input.Request.Moves.Count,
             eligibleMoves.Count,
             timeoutBudget.TotalSeconds);
@@ -68,8 +73,9 @@ public sealed class BatchCoachDurableFunctions
             orchestrationContext.CurrentUtcDateTime);
 
         logger.LogInformation(
-            "Batch coach orchestration completed. operationId {OperationId}, coachingCount {CoachingCount}, warningsCount {WarningsCount}, failureCode {FailureCode}.",
+            "Batch coach orchestration completed. operationId {OperationId}, correlationId {CorrelationId}, coachingCount {CoachingCount}, warningsCount {WarningsCount}, failureCode {FailureCode}.",
             input.OperationId,
+            input.CorrelationId,
             response.Coaching.Count,
             response.Metadata.Warnings?.Count ?? 0,
             response.Metadata.FailureCode ?? "None");
@@ -87,7 +93,8 @@ public sealed class BatchCoachDurableFunctions
             input.OperationId,
             input.Request.GameId,
             input.Request.AnalysisMode,
-            move);
+            move,
+            input.CorrelationId);
 
         var activityTask = orchestrationContext.CallActivityAsync<CoachMoveActivityResult>(
             nameof(CoachMoveActivityAsync),
@@ -119,6 +126,11 @@ public sealed class BatchCoachDurableFunctions
     public async Task<CoachMoveActivityResult> CoachMoveActivityAsync(
         [ActivityTrigger] CoachMoveActivityInput input)
     {
+        if (!string.IsNullOrWhiteSpace(input.CorrelationId))
+        {
+            _correlationAccessor.CorrelationId = input.CorrelationId;
+        }
+
         _logger.LogInformation(
             "Coach move activity invoked. operationId {OperationId}, ply {Ply}, classification {Classification}, isUserMove {IsUserMove}.",
             input.OperationId,
@@ -221,7 +233,8 @@ public sealed class BatchCoachDurableFunctions
             ["ply"] = result.Ply.ToString(),
             ["classification"] = result.Classification,
             ["isUserMove"] = result.IsUserMove.ToString(),
-            ["model"] = result.Model ?? "unknown"
+            ["model"] = result.Model ?? "unknown",
+            ["correlationId"] = input.CorrelationId ?? string.Empty
         };
 
         _telemetryClient.TrackMetric(LatencyMetricName, result.LatencyMs, dimensions);

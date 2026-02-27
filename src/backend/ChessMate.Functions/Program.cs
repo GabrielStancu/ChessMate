@@ -8,9 +8,11 @@ using ChessMate.Infrastructure.ChessCom;
 using ChessMate.Infrastructure.Configuration;
 using ChessMate.Infrastructure.Correlation;
 using System.Net.Http.Headers;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Azure.Data.Tables;
 using Azure.Identity;
@@ -25,11 +27,20 @@ var host = new HostBuilder()
     })
     .ConfigureFunctionsWorkerDefaults(worker =>
     {
+        worker.AddApplicationInsights();
         worker.UseMiddleware<CorrelationIdMiddleware>();
+        worker.UseMiddleware<ExceptionHandlingMiddleware>();
     })
     .ConfigureServices((context, services) =>
     {
-        services.AddApplicationInsightsTelemetryWorkerService();
+        services.AddApplicationInsightsTelemetryWorkerService(options =>
+        {
+            var telemetryConfig = context.Configuration.GetSection($"{BackendOptions.SectionName}:Telemetry");
+            var enableSampling = telemetryConfig.GetValue<bool>("EnableAdaptiveSampling");
+            options.EnableAdaptiveSampling = enableSampling;
+        });
+
+        services.AddSingleton<ITelemetryInitializer, CorrelationTelemetryInitializer>();
 
         var allowedOrigins = CorsPolicy.ParseAndValidateAllowedOrigins(
             context.Configuration[ApiSecurityOptions.CorsAllowedOriginsEnvironmentVariable]);
@@ -55,19 +66,22 @@ var host = new HostBuilder()
         services.AddSingleton<IGameIndexStore>(serviceProvider =>
         {
             var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
-            return new TableGameIndexStore(serviceClient.GetTableClient("GameIndex"));
+            var logger = serviceProvider.GetRequiredService<ILogger<TableGameIndexStore>>();
+            return new TableGameIndexStore(serviceClient.GetTableClient("GameIndex"), logger);
         });
 
         services.AddSingleton<IOperationStateStore>(serviceProvider =>
         {
             var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
-            return new TableOperationStateStore(serviceClient.GetTableClient("OperationState"));
+            var logger = serviceProvider.GetRequiredService<ILogger<TableOperationStateStore>>();
+            return new TableOperationStateStore(serviceClient.GetTableClient("OperationState"), logger);
         });
 
         services.AddSingleton<IAnalysisBatchStore>(serviceProvider =>
         {
             var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
-            return new TableAnalysisBatchStore(serviceClient.GetTableClient("AnalysisBatch"));
+            var logger = serviceProvider.GetRequiredService<ILogger<TableAnalysisBatchStore>>();
+            return new TableAnalysisBatchStore(serviceClient.GetTableClient("AnalysisBatch"), logger);
         });
 
         services.AddSingleton<IRequestHashProvider, CanonicalRequestHashProvider>();

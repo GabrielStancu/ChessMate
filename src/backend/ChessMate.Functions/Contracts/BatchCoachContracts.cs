@@ -57,13 +57,15 @@ public sealed record BatchCoachWarningEnvelope(
 
 public sealed record BatchCoachOrchestrationInput(
     string OperationId,
-    BatchCoachRequestEnvelope Request);
+    BatchCoachRequestEnvelope Request,
+    string? CorrelationId = null);
 
 public sealed record CoachMoveActivityInput(
     string OperationId,
     string GameId,
     string? AnalysisMode,
-    BatchCoachMoveEnvelope Move);
+    BatchCoachMoveEnvelope Move,
+    string? CorrelationId = null);
 
 public sealed record CoachMoveActivityResult(
     int Ply,
