@@ -1,0 +1,41 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/assets/**",
+      "/*.js",
+      "/*.css",
+      "/*.ico",
+      "/*.wasm",
+      "/*.map",
+      "/*.svg",
+      "/*.png",
+      "/*.jpg",
+      "/*.woff2",
+      "/*.woff",
+      "/*.ttf"
+    ]
+  },
+  "routes": [
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/index.html",
+      "statusCode": 200
+    }
+  },
+  "globalHeaders": {
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.azure.net https://*.azurewebsites.net; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "platform": {
+    "apiRuntime": "dotnet-isolated:9.0"
+  }
+}

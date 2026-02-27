@@ -26,3 +26,27 @@
 - Logs do not include raw LLM prompts, generated coaching text, or API secrets.
 - Idempotency keys are redacted using masked form (for example: `abcd...wxyz`) before being logged.
 - Keep all secrets in secure configuration sources (Key Vault / environment), never in logs.
+
+## Key Vault Integration (TKT-015)
+
+### Secret resolution
+- `SecretClient` (`Azure.Security.KeyVault.Secrets`) is registered when `ChessMate__KeyVault__VaultUri` is configured.
+- At startup, `KeyVaultPostConfigureOptions` resolves the `AzureOpenAiApiKey` secret from Key Vault and injects it into `BackendOptions.AzureOpenAi.ApiKey`.
+- If `ApiKey` is already present in configuration, Key Vault resolution is skipped.
+- `DefaultAzureCredential` is used for Key Vault access (managed identity in Azure, Azure CLI/VS credential locally).
+
+### Generic secret provider
+- `IKeyVaultSecretProvider` abstraction is available for resolving additional secrets on demand.
+- Inject `IKeyVaultSecretProvider` and call `GetSecretAsync(secretName)` from any service.
+
+### Required RBAC
+- The Function App's managed identity requires the `Key Vault Secrets User` role on the target Key Vault.
+
+### Key Vault secret names
+| Secret | Description |
+|---|---|
+| `AzureOpenAiApiKey` | API key for Azure OpenAI GPT-4o deployment |
+
+## Deployment (TKT-015)
+
+Full deployment configuration, environment contracts, managed identity requirements, and smoke test checklist are documented in [`docs/deployment/deployment-baseline.md`](../../docs/deployment/deployment-baseline.md).

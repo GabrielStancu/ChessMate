@@ -38,7 +38,7 @@ public sealed class AzureOpenAiOptions
 
     public string ApiVersion { get; init; } = "2024-10-21";
 
-    public string? ApiKey { get; init; }
+    public string? ApiKey { get; set; }
 
     public string ModelName { get; init; } = "gpt-4o";
 

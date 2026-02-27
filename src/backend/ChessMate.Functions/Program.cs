@@ -16,6 +16,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Azure.Data.Tables;
 using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 
 var host = new HostBuilder()
     .ConfigureAppConfiguration((context, builder) =>
@@ -27,7 +28,6 @@ var host = new HostBuilder()
     })
     .ConfigureFunctionsWorkerDefaults(worker =>
     {
-        worker.AddApplicationInsights();
         worker.UseMiddleware<CorrelationIdMiddleware>();
         worker.UseMiddleware<ExceptionHandlingMiddleware>();
     })
@@ -55,6 +55,22 @@ var host = new HostBuilder()
         services.AddSingleton<HttpResponseFactory>();
         services.Configure<BackendOptions>(context.Configuration.GetSection(BackendOptions.SectionName));
         services.AddSingleton(TimeProvider.System);
+
+        // Key Vault: register SecretClient and IKeyVaultSecretProvider
+        var keyVaultUri = context.Configuration[$"{BackendOptions.SectionName}:KeyVault:VaultUri"];
+
+        if (!string.IsNullOrWhiteSpace(keyVaultUri))
+        {
+            var credential = new DefaultAzureCredential();
+            var secretClient = new SecretClient(new Uri(keyVaultUri), credential);
+            services.AddSingleton(secretClient);
+            services.AddSingleton<IKeyVaultSecretProvider, KeyVaultSecretProvider>();
+
+            // Resolve secrets from Key Vault at startup and inject into options
+            services.AddSingleton<IPostConfigureOptions<BackendOptions>>(sp =>
+                new KeyVaultPostConfigureOptions(sp.GetRequiredService<SecretClient>(),
+                    sp.GetRequiredService<ILogger<KeyVaultPostConfigureOptions>>()));
+        }
 
         services.AddSingleton(serviceProvider =>
         {
