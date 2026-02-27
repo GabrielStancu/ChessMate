@@ -35,60 +35,62 @@ export function classifyMove(
   const weLoss = weBefore - weAfter;
   const cpLoss = context.cpMovingSideBefore - context.cpMovingSideAfter;
 
-  // --- Bad moves (worst first) ---
-  if (weLoss >= CLASSIFICATION_THRESHOLDS.blunder) {
+  // A move within 10cp of the engine's best line is "near-best".
+  // This widens Best/Great reach so solid moves aren't stuck in Good.
+  const isNearBest = cpLoss <= CLASSIFICATION_THRESHOLDS.nearBestCp;
+
+  // --- Bad moves (CP-based thresholds, worst first) ---
+  if (cpLoss >= CLASSIFICATION_THRESHOLDS.blunderCp) {
     return 'Blunder';
   }
 
-  // Miss: tactical opportunity overlooked — high WE loss with a large centipawn swing
-  if (weLoss >= CLASSIFICATION_THRESHOLDS.miss && cpLoss >= 200) {
+  if (cpLoss >= CLASSIFICATION_THRESHOLDS.missCp) {
     return 'Miss';
   }
 
-  if (weLoss >= CLASSIFICATION_THRESHOLDS.mistake) {
+  if (cpLoss >= CLASSIFICATION_THRESHOLDS.mistakeCp) {
     return 'Mistake';
   }
 
-  if (weLoss >= CLASSIFICATION_THRESHOLDS.inaccuracy) {
+  if (cpLoss >= CLASSIFICATION_THRESHOLDS.inaccuracyCp) {
     return 'Inaccuracy';
   }
 
   // --- Good moves ---
 
-  // Brilliant: best/near-best move involving a material sacrifice, not too early
-  if (isBestMove && weLoss <= 0.5 && context.ply > 8) {
-    const isSacrificeCapture =
-      context.captured != null &&
-      PIECE_VALUES[context.piece] > PIECE_VALUES[context.captured];
-
-    if (isSacrificeCapture) {
-      return 'Brilliant';
-    }
+  // Brilliant: the engine's #1 move involving a true material sacrifice.
+  // Must be a non-pawn piece, past the opening, with SEE-validated sacrifice,
+  // and the move itself must be near-optimal (cpLoss ≤ 10).
+  if (isBestMove && isNearBest && context.ply > 8 && context.isSacrifice && context.piece !== 'p') {
+    return 'Brilliant';
   }
 
-  // Great: best move that creates a critical eval swing
-  if (isBestMove) {
-    const cpBefore = context.cpMovingSideBefore;
-    const cpAfter = context.cpMovingSideAfter;
+  // Great: best or near-best move (within 20cp) where the position
+  // improved by at least 10cp, or involves a material sacrifice.
+  // Chess.com awards ~3-8 Great moves per player per game — this
+  // fires whenever you capitalize on opponent inaccuracy or sacrifice.
+  const isNearBestForGreat = cpLoss <= CLASSIFICATION_THRESHOLDS.nearBestCpGreat;
+  if (isBestMove || isNearBestForGreat) {
+    const cpGain = context.cpMovingSideAfter - context.cpMovingSideBefore;
 
-    // Recovery: position was losing, now recovered significantly
-    const isRecovery = cpBefore <= -150 && cpAfter >= cpBefore + 100;
+    // Position improved by ≥10cp — you exploited the opponent's error
+    const isImprovement = cpGain >= CLASSIFICATION_THRESHOLDS.greatCpGain;
 
-    // Seize advantage: roughly equal position, found a decisive tactic
-    const isSeize = cpBefore >= -50 && cpBefore <= 100 && cpAfter >= cpBefore + 150;
+    // Material sacrifice (SEE-validated)
+    const isTrueSacrifice = context.isSacrifice;
 
-    if (isRecovery || isSeize) {
+    if (isImprovement || isTrueSacrifice) {
       return 'Great';
     }
   }
 
-  // Best: the engine's top recommendation
-  if (isBestMove) {
+  // Best: the engine's top recommendation OR within 10cp of best
+  if (isBestMove || isNearBest) {
     return 'Best';
   }
 
-  // Excellent: very close to the best move
-  if (weLoss < CLASSIFICATION_THRESHOLDS.excellent) {
+  // Excellent: very close to the best move (WE-based sensitivity)
+  if (weLoss < CLASSIFICATION_THRESHOLDS.excellentWe) {
     return 'Excellent';
   }
 

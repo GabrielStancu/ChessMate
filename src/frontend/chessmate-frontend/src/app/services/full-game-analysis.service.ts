@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Chess, Move } from 'chess.js';
-import { ClassifiedMove, FullGameAnalysisResult, MoveContext } from '../models/classification.models';
+import { ClassifiedMove, FullGameAnalysisResult, MoveContext, PIECE_VALUES } from '../models/classification.models';
 import { AnalysisMode, EngineConfig, PositionEvaluation } from '../models/analysis.models';
 import { StockfishAnalysisControllerService } from './stockfish-analysis-controller.service';
 import { OpeningBookService } from './opening-book.service';
@@ -209,7 +209,8 @@ export class FullGameAnalysisService {
         captured: move.captured,
         cpMovingSideBefore,
         cpMovingSideAfter,
-        ply
+        ply,
+        isSacrifice: this.detectSacrifice(move, positions[i + 1])
       };
 
       const classification = classifyMove(weBeforeForMovingSide, weAfterForMovingSide, isBestMove, isBookMove, moveContext);
@@ -253,5 +254,110 @@ export class FullGameAnalysisService {
     }
 
     return evaluation.centipawn ?? 0;
+  }
+
+  /**
+   * Detect whether a move is a true material sacrifice using
+   * Static Exchange Evaluation (SEE).
+   *
+   * Simulates the best sequence of captures on the destination square
+   * (each side always using their least valuable available attacker)
+   * and determines whether the side that placed the piece loses material.
+   *
+   * Returns true only when SEE < 0 — meaning the piece is lost or traded
+   * down even when both sides play optimally on that square.
+   *
+   * Examples where SEE correctly returns false (NOT a sacrifice):
+   *   - Knight captures pawn on a square defended by own pawn → opponent
+   *     recaptures, player recaptures → exchange is even or favorable.
+   *   - Piece captures on a square attacked by opponent but also defended
+   *     by player pieces of equal or lesser value.
+   */
+  private detectSacrifice(move: Move, fenAfterMove: string): boolean {
+    if (move.piece === 'p' || move.piece === 'k') {
+      return false;
+    }
+
+    try {
+      const see = this.computeStaticExchangeEvaluation(
+        fenAfterMove,
+        move.to,
+        PIECE_VALUES[move.piece] ?? 0
+      );
+
+      // Credit material gained from the initial capture.
+      // e.g. Bxd5 capturing knight: SEE = -3 (bishop lost) + 3 (knight gained) = 0 → NOT a sacrifice.
+      // e.g. Qxf2 capturing pawn:   SEE = -9 (queen lost)  + 1 (pawn gained)   = -8 → sacrifice.
+      const capturedValue = move.captured ? (PIECE_VALUES[move.captured] ?? 0) : 0;
+      const netMaterial = see + capturedValue;
+
+      return netMaterial < 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Static Exchange Evaluation (SEE).
+   *
+   * Starting from a position where a piece of known value sits on the
+   * target square, simulates the optimal sequence of captures by both
+   * sides (always using the least valuable attacker) and returns the
+   * net material score from the perspective of the side that placed
+   * the piece.
+   *
+   * Algorithm:
+   *   1. Build a gain[] array by simulating captures with the least
+   *      valuable available attacker on each turn.
+   *   2. Evaluate backwards with negamax: each side only initiates a
+   *      capture if the material gained exceeds the opponent's best
+   *      subsequent exchange result.
+   *
+   * @returns Negative → sacrifice (piece is lost).
+   *          Zero or positive → piece survives or exchange is favorable.
+   */
+  private computeStaticExchangeEvaluation(
+    fen: string,
+    targetSquare: string,
+    pieceOnSquareValue: number
+  ): number {
+    const board = new Chess(fen);
+    const gains: number[] = [];
+    let currentPieceValue = pieceOnSquareValue;
+
+    for (let depth = 0; depth < 32; depth++) {
+      const captures = board
+        .moves({ verbose: true })
+        .filter((m: Move) => m.to === targetSquare && m.captured != null);
+
+      if (captures.length === 0) {
+        break;
+      }
+
+      // Pick the least valuable attacker
+      captures.sort(
+        (a: Move, b: Move) => (PIECE_VALUES[a.piece] ?? 0) - (PIECE_VALUES[b.piece] ?? 0)
+      );
+      const leastValuable = captures[0];
+
+      // The capturing side gains the value of the piece currently on the square
+      gains.push(currentPieceValue);
+
+      // The capturing piece now sits on the square
+      currentPieceValue = PIECE_VALUES[leastValuable.piece] ?? 0;
+
+      board.move(leastValuable.san);
+    }
+
+    // Negamax backwards: each side only captures if profitable.
+    // d[n] = 0;  d[i] = max(0, gains[i] - d[i+1])
+    let score = 0;
+    for (let i = gains.length - 1; i >= 0; i--) {
+      score = Math.max(0, gains[i] - score);
+    }
+
+    // score = what the first capturer (opponent) gains from the exchange.
+    // The moving side's perspective is the negative.
+    return -score;
   }
 }

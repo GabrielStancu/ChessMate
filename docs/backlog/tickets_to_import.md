@@ -301,3 +301,20 @@ Refine the `batch-coach` prompt strategy and response validation to reduce edge-
 - Edge-case regression set is added (including pin-target confusion and invented motifs) and run in CI/local test workflow.
 - Telemetry captures validation/regeneration counts and failure reasons for prompt-quality monitoring.
 - Response contract remains stable (`POST /api/analysis/batch-coach`) and backward compatible.
+
+---
+
+## TKT-019 — Analysis Cache Reuse and Reload Path
+**Title**
+Load previously analyzed games from cache and skip redundant Stockfish + LLM reruns
+
+**Description**
+Fix the reload behavior so that once a game analysis is completed and persisted, reopening the same game reuses cached analysis/coaching artifacts instead of re-running the full local Stockfish.js analysis plus `batch-coach` flow. Implement deterministic cache lookup and freshness/version checks using the existing storage model and contracts.
+
+**Definition of Done (.NET/Azure)**
+- Reopening an already analyzed game first checks persisted analysis cache before starting a new analysis pipeline.
+- When a valid cached artifact exists, UI loads analysis board data, evaluation timeline, and coach insights directly from cache.
+- Stockfish.js + LLM flow is skipped on cache hit unless user explicitly requests re-analysis or cache is invalid/stale.
+- Cache validity uses deterministic keying/version checks (game identity + analysis mode/config + schemaVersion/updated metadata).
+- API response includes clear cache-source metadata for diagnostics (for example cache hit/miss reason).
+- Regression tests cover cache hit reuse, stale/invalid cache fallback, and explicit re-analysis behavior.

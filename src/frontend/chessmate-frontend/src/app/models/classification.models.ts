@@ -92,18 +92,36 @@ export interface MoveContext {
   cpMovingSideAfter: number;
   /** Ply number (1-based) */
   ply: number;
+  /**
+   * Whether this move is a material sacrifice — the moved piece lands on
+   * a square attacked by the opponent and either:
+   *   (a) it's not a capture (piece left en-prise), or
+   *   (b) it IS a capture but the captured piece is worth less than the
+   *       moved piece (losing exchange, e.g. queen takes pawn on attacked square).
+   */
+  isSacrifice: boolean;
 }
 
 /**
- * Win-expectancy loss thresholds for move classification (reference).
- * Actual logic lives in classifyMove() and uses these + contextual checks.
+ * Hybrid classification thresholds.
+ * Bad moves use centipawn loss (CP-based, like Chess.com).
+ * Good moves use win-expectancy loss (WE-based) for Excellent,
+ * and a CP-based "near-best" gate for Best.
  */
 export const CLASSIFICATION_THRESHOLDS = {
-  blunder: 20,
-  miss: 8,
-  mistake: 6,
-  inaccuracy: 3,
-  excellent: 1.5
+  /** CP loss thresholds for bad-move tiers */
+  blunderCp: 300,
+  missCp: 200,
+  mistakeCp: 100,
+  inaccuracyCp: 50,
+  /** A move within this many CP of the engine's best is "near-best" (Best) */
+  nearBestCp: 10,
+  /** Wider near-best gate for Great (allows slightly sub-optimal plays) */
+  nearBestCpGreat: 15,
+  /** Min CP improvement for Great (position got better by this much) */
+  greatCpGain: 30,
+  /** WE loss below this qualifies as Excellent (keeps WE sensitivity) */
+  excellentWe: 1.5
 } as const;
 
 /**
