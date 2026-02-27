@@ -13,6 +13,7 @@
 
 :host {
   display: block;
+  --cm-bg-app: #242424;
 }
 
 /* ── Page shell ── */

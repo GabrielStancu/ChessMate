@@ -21,7 +21,6 @@ import {
   Tooltip
 } from 'chart.js';
 import { ClassifiedMove, CLASSIFICATION_COLORS, MoveClassification } from '../models/classification.models';
-import { EVAL_CLAMP_CP } from '../utils/evaluation.utils';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip);
 
@@ -49,16 +48,16 @@ const MARKER_CLASSES: ReadonlySet<MoveClassification> = new Set<MoveClassificati
   `,
   styles: [`
     .eval-chart-card {
-      border: 1px solid var(--cm-border);
-      border-radius: var(--cm-radius-md);
+      border: none;
+      border-radius: 0;
       padding: 0.5rem;
-      background: #1a1a2e;
+      background: #1e1e1e;
     }
 
     .eval-chart-wrapper {
       position: relative;
       width: 100%;
-      height: 120px;
+      height: 160px;
     }
 
     .eval-chart-wrapper canvas {
@@ -169,7 +168,6 @@ export class EvaluationChartComponent implements AfterViewInit, OnDestroy {
 
     const scores = this.pawnScores();
     const labels = this.labels();
-    const maxPawn = EVAL_CLAMP_CP / 100;
     const styles = this.pointStyles();
 
     this.chart = new Chart(ctx, {
@@ -189,7 +187,7 @@ export class EvaluationChartComponent implements AfterViewInit, OnDestroy {
             fill: {
               target: { value: 0 },
               above: 'rgba(255, 255, 255, 0.8)',
-              below: 'rgba(44, 44, 44, 0.85)'
+              below: 'rgba(95, 95, 95, 0.85)'
             },
             tension: 0.25
           }
@@ -200,7 +198,7 @@ export class EvaluationChartComponent implements AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         animation: { duration: 200 },
         layout: {
-          padding: { top: 4, bottom: 4, left: 2, right: 2 }
+          padding: { top: 18, bottom: 4, left: 2, right: 2 }
         },
         plugins: {
           legend: { display: false },
@@ -222,8 +220,8 @@ export class EvaluationChartComponent implements AfterViewInit, OnDestroy {
           },
           y: {
             display: false,
-            min: -maxPawn,
-            max: maxPawn,
+            min: -9,
+            max: 9,
             grid: { display: false }
           }
         },

@@ -56,7 +56,6 @@ interface MovePair {
             <span class="move-dot" [style.background-color]="getColor(m.classification)"></span>
             <span class="move-san">{{ m.san }}</span>
             <span class="move-symbol">{{ getSymbol(m.classification) }}</span>
-            <span class="coach-indicator" *ngIf="hasCoaching(m)">&#x1F4AC;</span>
           </ng-container>
         </span>
 
@@ -70,7 +69,6 @@ interface MovePair {
             <span class="move-dot" [style.background-color]="getColor(m.classification)"></span>
             <span class="move-san">{{ m.san }}</span>
             <span class="move-symbol">{{ getSymbol(m.classification) }}</span>
-            <span class="coach-indicator" *ngIf="hasCoaching(m)">&#x1F4AC;</span>
           </ng-container>
         </span>
 
@@ -90,10 +88,10 @@ interface MovePair {
 
     .move-row {
       display: grid;
-      grid-template-columns: 2rem 1fr 1fr;
+      grid-template-columns: 2.5rem 1fr 1fr;
       align-items: center;
       gap: 0;
-      min-height: 28px;
+      min-height: 52px;
     }
 
     .move-header {
@@ -106,7 +104,7 @@ interface MovePair {
     }
 
     .col-num {
-      font-size: 0.75rem;
+      font-size: 1rem;
       color: var(--cm-text-muted);
       text-align: right;
       padding-right: 0.5rem;
@@ -114,9 +112,9 @@ interface MovePair {
     }
 
     .move-header .col-move {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: var(--cm-text-muted);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--cm-text-primary);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       padding: 0 0.4rem;
@@ -126,10 +124,10 @@ interface MovePair {
     .move-cell {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
-      padding: 0.25rem 0.4rem;
+      gap: 0.4rem;
+      padding: 0.4rem 0.5rem;
       cursor: pointer;
-      font-size: 0.875rem;
+      font-size: 1.35rem;
       color: var(--cm-text-secondary);
       transition: background 0.12s;
       border-radius: var(--cm-radius-sm);
@@ -165,7 +163,8 @@ interface MovePair {
     }
 
     .move-symbol {
-      font-size: 0.72rem;
+      font-size: 1.3rem;
+      font-weight: 700;
       flex-shrink: 0;
     }
 

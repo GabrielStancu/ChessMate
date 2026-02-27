@@ -202,7 +202,7 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
   protected moveLabel(): string {
     const index = this.selectedPositionIndex();
     if (index === 0) {
-      return 'Initial position';
+      return 'Start';
     }
 
     const step = this.moveSteps()[index - 1];
