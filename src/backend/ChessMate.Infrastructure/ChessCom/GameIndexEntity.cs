@@ -27,6 +27,16 @@ public sealed class GameIndexEntity : ITableEntity
 
     public string Url { get; set; } = string.Empty;
 
+    public string WhitePlayer { get; set; } = string.Empty;
+
+    public string BlackPlayer { get; set; } = string.Empty;
+
+    public int? WhiteRating { get; set; }
+
+    public int? BlackRating { get; set; }
+
+    public string PlayerColor { get; set; } = "white";
+
     public string? Pgn { get; set; }
 
     public string? InitialFen { get; set; }

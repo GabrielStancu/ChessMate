@@ -6,8 +6,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { AnalysisProgress } from '../services/full-game-analysis.service';
 
 export interface AnalysisLoadingDialogData {
-  gameName: string;
-  opponent: string;
+  whitePlayer: string;
+  blackPlayer: string;
   progress: () => AnalysisProgress;
 }
 
@@ -18,7 +18,7 @@ export interface AnalysisLoadingDialogData {
   template: `
     <div class="loading-dialog">
       <h2 class="loading-title">Analyzing Game</h2>
-      <p class="loading-subtitle">{{ data.gameName }} vs {{ data.opponent }}</p>
+      <p class="loading-subtitle">{{ data.whitePlayer }} <span class="vs-sep">vs</span> {{ data.blackPlayer }}</p>
 
       <div class="progress-section">
         <mat-progress-bar
@@ -57,12 +57,19 @@ export interface AnalysisLoadingDialogData {
       margin: 0 0 0.25rem;
       font-size: 1.5rem;
       font-weight: 700;
+      color: var(--cm-text-primary);
     }
 
     .loading-subtitle {
       margin: 0 0 1.5rem;
-      color: #555;
+      color: var(--cm-text-secondary);
       font-size: 0.95rem;
+    }
+
+    .vs-sep {
+      color: var(--cm-text-muted);
+      font-size: 0.8rem;
+      margin: 0 0.25rem;
     }
 
     .progress-section {
@@ -73,16 +80,17 @@ export interface AnalysisLoadingDialogData {
       margin: 0.5rem 0 0;
       font-weight: 600;
       font-size: 0.95rem;
+      color: var(--cm-text-primary);
     }
 
     .loading-hint {
-      color: #666;
+      color: var(--cm-text-secondary);
       font-size: 0.85rem;
       margin: 0.5rem 0 0;
     }
 
     .error-message {
-      color: #D32F2F;
+      color: var(--cm-loss);
       font-weight: 600;
       margin: 1rem 0 0;
     }
@@ -90,6 +98,19 @@ export interface AnalysisLoadingDialogData {
     ::ng-deep .loading-dialog .mat-mdc-progress-bar {
       border-radius: 8px;
       height: 10px;
+    }
+
+    ::ng-deep .loading-dialog .mat-mdc-progress-bar .mdc-linear-progress__bar-inner {
+      border-color: var(--cm-accent);
+    }
+
+    ::ng-deep .loading-dialog .mat-mdc-progress-bar .mdc-linear-progress__buffer-bar {
+      background: rgba(212, 168, 67, 0.15);
+    }
+
+    ::ng-deep .loading-dialog .mat-mdc-progress-bar .mdc-linear-progress__buffer-dots {
+      background-image: none;
+      background-color: rgba(212, 168, 67, 0.1);
     }
   `]
 })

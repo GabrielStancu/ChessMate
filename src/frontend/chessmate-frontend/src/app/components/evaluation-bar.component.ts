@@ -30,20 +30,24 @@ import { evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
       flex-shrink: 0;
       display: flex;
       align-items: stretch;
+      height: 100%;
     }
 
     .eval-bar-track {
       position: relative;
       width: 100%;
-      border: 3px solid #1f1f1f;
-      border-radius: 0.5rem;
+      border: 1px solid var(--cm-border);
+      border-radius: var(--cm-radius-sm);
       overflow: hidden;
-      background: #f0f0f0;
-      min-height: 200px;
+      /* Normal: black at top, white fills background from bottom */
+      background: #ffffff;
+      height: 100%;
+      min-height: 0;
     }
 
     .eval-bar-track.track-flipped {
-      background: #2c2c2c;
+      /* Flipped: white at top, black fills background from bottom */
+      background: #111111;
     }
 
     .eval-bar-fill {
@@ -55,10 +59,12 @@ import { evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
     }
 
     .eval-bar-fill.fill-dark {
-      background: #2c2c2c;
+      /* Black fill expands from top to show black's advantage */
+      background: #111111;
     }
 
     .eval-bar-fill.fill-light {
+      /* White fill expands from top to show white's advantage */
       background: #f0f0f0;
     }
 
@@ -79,7 +85,7 @@ import { evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
     }
 
     .eval-bar-label.label-dark {
-      color: #2c2c2c;
+      color: #1a1a1a;
     }
   `]
 })

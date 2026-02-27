@@ -49,10 +49,10 @@ const MARKER_CLASSES: ReadonlySet<MoveClassification> = new Set<MoveClassificati
   `,
   styles: [`
     .eval-chart-card {
-      border: 3px solid #1f1f1f;
-      border-radius: 0.75rem;
+      border: 1px solid var(--cm-border);
+      border-radius: var(--cm-radius-md);
       padding: 0.5rem;
-      background: #3a3a3a;
+      background: #1a1a2e;
     }
 
     .eval-chart-wrapper {

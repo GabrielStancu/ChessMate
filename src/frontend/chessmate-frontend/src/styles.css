@@ -1,10 +1,50 @@
-@import '@angular/material/prebuilt-themes/azure-blue.css';
+@import '@angular/material/prebuilt-themes/purple-green.css';
 @import 'cm-chessboard/assets/chessboard.css';
 @import 'cm-chessboard/assets/extensions/markers/markers.css';
 @import 'cm-chessboard/assets/extensions/arrows/arrows.css';
 
+/* ── Design tokens ── */
 :root {
-	color-scheme: light;
+	color-scheme: dark;
+
+	/* Background surfaces */
+	--cm-bg-app: #0a0a14;
+	--cm-bg-card: #13131f;
+	--cm-bg-card-hover: #1a1a2e;
+	--cm-bg-input: #1e1e30;
+	--cm-bg-panel: #181828;
+	--cm-bg-error: rgba(183, 28, 28, 0.15);
+
+	/* Borders */
+	--cm-border: rgba(255, 255, 255, 0.08);
+	--cm-border-strong: rgba(255, 255, 255, 0.16);
+	--cm-border-accent: rgba(212, 168, 67, 0.4);
+
+	/* Accent / brand */
+	--cm-accent: #d4a843;
+	--cm-accent-dim: rgba(212, 168, 67, 0.15);
+	--cm-accent-hover: #e0b850;
+
+	/* Text */
+	--cm-text-primary: #f0f0f0;
+	--cm-text-secondary: #9a9ab0;
+	--cm-text-muted: #60607a;
+	--cm-text-accent: #d4a843;
+
+	/* Results */
+	--cm-win: #4caf50;
+	--cm-loss: #ef5350;
+	--cm-draw: #d4a843;
+
+	/* Radius / spacing scale */
+	--cm-radius-sm: 0.5rem;
+	--cm-radius-md: 0.75rem;
+	--cm-radius-lg: 1rem;
+	--cm-radius-xl: 1.25rem;
+
+	/* Shadow */
+	--cm-shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
+
 	--search-bg-image: none;
 }
 
@@ -20,24 +60,64 @@ body {
 }
 
 body {
-	font-family: 'Segoe UI', sans-serif;
-	background: #f9fbff;
-	color: #1f1f1f;
+	font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+	background: var(--cm-bg-app);
+	color: var(--cm-text-primary);
+}
+
+/* ── Angular Material dark overrides ── */
+.mat-mdc-card {
+	background: var(--cm-bg-card) !important;
+	color: var(--cm-text-primary) !important;
+}
+
+/* Card titles and subtitles */
+.mat-mdc-card-title {
+	color: var(--cm-text-primary) !important;
+}
+
+.mat-mdc-card-subtitle {
+	color: var(--cm-text-secondary) !important;
 }
 
 .mat-mdc-button-base,
 .mat-mdc-form-field {
-	--mdc-outlined-text-field-outline-width: 3px;
-	--mdc-filled-button-container-shape: 14px;
-	--mdc-outlined-button-container-shape: 14px;
+	--mdc-outlined-text-field-outline-width: 1px;
+	--mdc-filled-button-container-shape: 8px;
+	--mdc-outlined-button-container-shape: 8px;
 }
 
-.mat-mdc-button,
-.mat-mdc-unelevated-button,
-.mat-mdc-outlined-button {
-	border: 3px solid #1f1f1f;
-	box-shadow: none;
+/* Stroked buttons */
+.mat-mdc-outlined-button:not(:disabled) {
+	--mdc-outlined-button-label-text-color: var(--cm-text-primary);
+	--mdc-outlined-button-outline-color: var(--cm-border-strong);
 }
+
+.mat-mdc-outlined-button:hover:not(:disabled) {
+	background-color: var(--cm-bg-card-hover) !important;
+}
+
+/* Flat / filled buttons */
+.mat-mdc-unelevated-button.mat-primary:not(:disabled) {
+	--mdc-filled-button-container-color: var(--cm-accent);
+	--mdc-filled-button-label-text-color: #0a0a14;
+}
+
+.mat-mdc-dialog-surface {
+	background: var(--cm-bg-card) !important;
+	color: var(--cm-text-primary) !important;
+}
+
+/* Form field overrides on dark bg */
+.mat-mdc-form-field .mdc-text-field--outlined {
+	--mdc-outlined-text-field-input-text-color: var(--cm-text-primary);
+	--mdc-outlined-text-field-label-text-color: var(--cm-text-secondary);
+	--mdc-outlined-text-field-outline-color: var(--cm-border-strong);
+	--mdc-outlined-text-field-focus-outline-color: var(--cm-accent);
+	--mdc-outlined-text-field-caret-color: var(--cm-accent);
+	background: var(--cm-bg-input);
+}
+
 
 /* ── Classification square dim highlights ── */
 .cm-chessboard .markers .marker.marker-dim-highlight {
@@ -167,12 +247,3 @@ body {
 	opacity: 0.6;
 }
 
-/* ── Mode selector in page subtitle ── */
-.mode-select {
-	border: 2px solid #1f1f1f;
-	border-radius: 6px;
-	padding: 2px 6px;
-	font-size: 0.85rem;
-	background: #fff;
-	cursor: pointer;
-}

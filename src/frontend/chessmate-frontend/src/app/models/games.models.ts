@@ -1,6 +1,11 @@
 export interface GetGamesItemEnvelope {
   gameId: string;
   playedAtUtc: string;
+  whitePlayer: string;
+  blackPlayer: string;
+  whiteRating?: number | null;
+  blackRating?: number | null;
+  playerColor: 'white' | 'black';
   opponent: string;
   result: string;
   opening: string;

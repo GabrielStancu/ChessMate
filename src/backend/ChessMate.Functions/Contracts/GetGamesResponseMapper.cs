@@ -27,6 +27,11 @@ public static class GetGamesResponseMapper
             .Select(item => new GetGamesItemEnvelope(
                 item.GameId,
                 item.PlayedAtUtc,
+                item.WhitePlayer,
+                item.BlackPlayer,
+                item.WhiteRating,
+                item.BlackRating,
+                item.PlayerColor,
                 item.Opponent,
                 item.Result,
                 item.Opening,

@@ -3,6 +3,11 @@ namespace ChessMate.Application.ChessCom;
 public sealed record ChessGameSummary(
     string GameId,
     DateTimeOffset PlayedAtUtc,
+    string WhitePlayer,
+    string BlackPlayer,
+    int? WhiteRating,
+    int? BlackRating,
+    string PlayerColor,
     string Opponent,
     string Result,
     string Opening,

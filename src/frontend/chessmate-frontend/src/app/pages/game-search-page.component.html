@@ -1,104 +1,150 @@
-<main class="shell">
-  <section
-    class="search-hero"
-    [class.with-background]="searchBackgroundImageUrl"
-    [style.--search-bg-image]="searchBackgroundImageUrl ? 'url(' + searchBackgroundImageUrl + ')' : 'none'">
-    <h1>Modern Chess Analyzer</h1>
-    <p>Search a Chess.com username and browse games from the backend API.</p>
+<main class="shell" [class.has-result]="searched()">
 
-    <form class="search-form" (submit)="$event.preventDefault()">
-      <mat-form-field appearance="outline" class="username-field">
-        <mat-label>Chess.com Username</mat-label>
-        <input matInput type="text" [formControl]="usernameControl" placeholder="e.g. hikaru" />
-        <mat-error *ngIf="getControlError() as controlError">{{ controlError }}</mat-error>
-      </mat-form-field>
+  <!-- ======= HERO SECTION ======= -->
+  <section class="hero">
+    <div class="hero-content">
 
-      <button mat-flat-button color="primary" type="button" (click)="search()" [disabled]="loading()">
-        Search
-      </button>
-    </form>
-  </section>
+      <!-- Logo + Branding -->
+      <div class="brand-area">
+        <img class="logo" src="assets/images/logo.png" alt="ChessMate logo" />
+        <h1 class="brand-title">
+          <span class="brand-chess">Chess</span><span class="brand-mate">Mate</span>
+        </h1>
+        <p class="brand-subtitle">Analyze your chess games and improve your skills</p>
+      </div>
 
-  <section class="games-section">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Games</mat-card-title>
-        <mat-card-subtitle>
-          Page {{ page() }} · {{ pageSize }} items per page ·
-          Analysis mode:
-          <select class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
-            <option value="quick">Quick</option>
-            <option value="deep">Deep</option>
-          </select>
-        </mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div *ngIf="loading(); else loadedState" class="loading-state">
-          <mat-spinner diameter="44"></mat-spinner>
+      <!-- Search Form -->
+      <form class="search-form" (submit)="$event.preventDefault()">
+        <div class="search-input-wrapper" [class.has-error]="!!getControlError()">
+          <input
+            class="search-input"
+            type="text"
+            [formControl]="usernameControl"
+            placeholder="chess.com username..."
+            (keydown.enter)="search()" />
+          <button class="search-icon-btn" type="button" (click)="search()" [disabled]="loading()" aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
         </div>
+        <p *ngIf="getControlError() as controlError" class="search-error" role="alert">{{ controlError }}</p>
+      </form>
 
-        <ng-template #loadedState>
-          <div *ngIf="errorMessage() as currentError" class="error-state">
-            <p>{{ currentError }}</p>
-            <ul *ngIf="fieldErrors() as currentFieldErrors">
-              <li *ngFor="let entry of currentFieldErrors | keyvalue">
-                {{ entry.key }}: {{ entry.value.join(', ') }}
-              </li>
-            </ul>
+      <!-- ======= GAMES SECTION ======= -->
+      <section class="games-section" #gamesSection *ngIf="searched() || games().length > 0">
+
+    <!-- Section header -->
+    <div class="games-header">
+      <h2 class="games-title">Recent Games</h2>
+      <select id="analysis-mode" class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
+        <option value="quick">Quick</option>
+        <option value="deep">Deep</option>
+      </select>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading(); else loadedState" class="loading-state" role="status" aria-label="Loading games">
+      <span class="spinner"></span>
+      <span class="sr-only">Loading...</span>
+    </div>
+
+    <ng-template #loadedState>
+
+      <!-- Error state -->
+      <div *ngIf="errorMessage() as currentError" class="error-state" role="alert">
+        <p class="error-message">{{ currentError }}</p>
+        <ul *ngIf="fieldErrors() as currentFieldErrors" class="error-fields">
+          <li *ngFor="let entry of currentFieldErrors | keyvalue">
+            <strong>{{ entry.key }}:</strong> {{ entry.value.join(', ') }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- Game cards grid -->
+      <div *ngIf="games().length > 0; else emptyState" class="games-grid">
+        <article
+          *ngFor="let game of displayedGames(); trackBy: trackByGameId"
+          class="game-card">
+
+          <!-- White player row -->
+          <div class="player-row">
+            <span class="player-dot player-dot-white" aria-hidden="true"></span>
+            <span class="player-name">{{ game.whitePlayer || 'Unknown' }}</span>
+            <span class="player-rating" *ngIf="game.whiteRating">{{ game.whiteRating }}</span>
           </div>
 
-          <mat-list *ngIf="games().length > 0; else emptyState">
-            <mat-list-item *ngFor="let game of games(); trackBy: trackByGameId">
-              <div class="game-row">
-                <div>
-                  <strong>{{ game.opening || 'Unknown opening' }}</strong>
-                  <p>Opponent: {{ game.opponent }} · Result: {{ game.result }}</p>
-                </div>
-                <div class="game-meta">
-                  <span>{{ game.playedAtUtc | date: 'medium' }}</span>
-                  <div class="game-actions">
-                    <a [href]="game.url" target="_blank" rel="noreferrer">View</a>
-                    <button
-                      mat-stroked-button
-                      type="button"
-                      (click)="openAnalysis(game)"
-                      [disabled]="analyzingGameId() !== null">
-                      Analyze
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </mat-list-item>
-          </mat-list>
+          <!-- Black player row -->
+          <div class="player-row">
+            <span class="player-dot player-dot-black" aria-hidden="true"></span>
+            <span class="player-name">{{ game.blackPlayer || 'Unknown' }}</span>
+            <span class="player-rating" *ngIf="game.blackRating">{{ game.blackRating }}</span>
+          </div>
 
-          <ng-template #emptyState>
-            <p *ngIf="searched(); else firstLoadState" class="empty-state">No games were returned for this page.</p>
-          </ng-template>
+          <!-- Card meta row -->
+          <div class="game-card-meta">
+            <span class="game-time-control">{{ formatTimeControl(game.timeControl) }}</span>
+            <span
+              class="game-result-badge"
+              [class.result-win]="getResultClass(game) === 'win'"
+              [class.result-loss]="getResultClass(game) === 'loss'"
+              [class.result-draw]="getResultClass(game) === 'draw'">
+              {{ formatResult(game) }}
+            </span>
+          </div>
 
-          <ng-template #firstLoadState>
-            <p class="empty-state">Run a search to load games.</p>
-          </ng-template>
-        </ng-template>
-      </mat-card-content>
+          <!-- Actions -->
+          <div class="game-card-actions">
+            <a [href]="game.url" target="_blank" rel="noreferrer" class="view-link">View</a>
+            <button
+              class="analyze-btn"
+              type="button"
+              (click)="openAnalysis(game)"
+              [disabled]="analyzingGameId() !== null"
+              [attr.aria-label]="'Analyze ' + (game.opening || 'game')">
+              Analyze
+            </button>
+          </div>
+        </article>
+      </div>
 
-      <mat-card-actions class="pager-actions">
-        <button mat-stroked-button type="button" (click)="previousPage()" [disabled]="!canGoPrevious()">
-          Previous
-        </button>
-        <button mat-stroked-button type="button" (click)="nextPage()" [disabled]="!canGoNext()">
-          Next
-        </button>
-      </mat-card-actions>
+      <ng-template #emptyState>
+        <p *ngIf="searched(); else firstLoadState" class="empty-state">No games were returned for this page.</p>
+      </ng-template>
 
-      <mat-card-footer class="card-footer">
-        <span *ngIf="cacheStatus()">
-          <span>Cache: {{ cacheStatus() }}</span>
-        </span>
-        <span *ngIf="sourceTimestamp()">
-          <span>Source: {{ sourceTimestamp() | date: 'medium' }}</span>
-        </span>
-      </mat-card-footer>
-    </mat-card>
+      <ng-template #firstLoadState>
+        <p class="empty-state">Run a search to load games.</p>
+      </ng-template>
+
+    </ng-template>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <button
+        class="pager-btn"
+        type="button"
+        (click)="previousPage()"
+        [disabled]="!canGoPrevious()"
+        aria-label="Previous page">
+        &#8249;
+      </button>
+      <span class="page-indicator">Page {{ page() }}</span>
+      <button
+        class="pager-btn"
+        type="button"
+        (click)="nextPage()"
+        [disabled]="!canGoNext()"
+        aria-label="Next page">
+        &#8250;
+      </button>
+    </div>
+
+</section>
+
+    </div>
+
+    <!-- Right side chess frame -->
+    <div class="hero-image" aria-hidden="true"></div>
   </section>
 </main>
+

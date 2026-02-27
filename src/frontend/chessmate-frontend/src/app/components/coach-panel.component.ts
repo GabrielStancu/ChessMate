@@ -25,44 +25,50 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       </mat-card-header>
 
       <mat-card-content>
-        <ng-container *ngIf="currentMove() as move; else noMoveState">
-          <div class="coach-bubble" *ngIf="isCoachingLoaded(); else coachingUnavailable">
-            <div
-              class="coach-classification-pill"
-              [style.background-color]="getClassificationColor(move.classification)">
-              <span class="pill-symbol">{{ getClassificationSymbol(move.classification) }}</span>
-              <span class="pill-label">{{ move.classification }}</span>
+        <div class="coach-body">
+          <ng-container *ngIf="currentMove() as move; else noMoveState">
+            <div class="coach-bubble" *ngIf="isCoachingLoaded(); else coachingUnavailable">
+              <div
+                class="coach-classification-pill"
+                [style.background-color]="getClassificationColor(move.classification)">
+                <span class="pill-symbol">{{ getClassificationSymbol(move.classification) }}</span>
+                <span class="pill-label">{{ move.classification }}</span>
+              </div>
+
+              <p class="coach-explanation">{{ coachText() }}</p>
             </div>
 
-            <p class="coach-explanation">{{ coachText() }}</p>
-          </div>
+            <ng-template #coachingUnavailable>
+              <div
+                class="coach-classification-pill"
+                [style.background-color]="getClassificationColor(move.classification)">
+                <span class="pill-symbol">{{ getClassificationSymbol(move.classification) }}</span>
+                <span class="pill-label">{{ move.classification }}</span>
+              </div>
+              <p class="coach-unavailable">Coaching data was not loaded. Re-run analysis to generate coaching insights.</p>
+            </ng-template>
+          </ng-container>
 
-          <ng-template #coachingUnavailable>
-            <div
-              class="coach-classification-pill"
-              [style.background-color]="getClassificationColor(move.classification)">
-              <span class="pill-symbol">{{ getClassificationSymbol(move.classification) }}</span>
-              <span class="pill-label">{{ move.classification }}</span>
-            </div>
-            <p class="coach-unavailable">Coaching data was not loaded. Re-run analysis to generate coaching insights.</p>
+          <ng-template #noMoveState>
+            <p class="coach-empty">Navigate to a move to see coaching insights.</p>
           </ng-template>
-        </ng-container>
-
-        <ng-template #noMoveState>
-          <p class="coach-empty">Navigate to a move to see coaching insights.</p>
-        </ng-template>
-
-        <div class="coach-footer" *ngIf="operationId()">
-          <span class="operation-id">Operation: {{ operationId() }}</span>
         </div>
+
       </mat-card-content>
     </mat-card>
   `,
   styles: [`
     .coach-card {
-      border: 4px solid #1f1f1f;
-      border-radius: 1.25rem;
-      box-shadow: none;
+      border: 1px solid var(--cm-border);
+      border-radius: var(--cm-radius-xl);
+      box-shadow: var(--cm-shadow-card);
+      background: var(--cm-bg-card);
+    }
+
+    .coach-body {
+      height: 200px;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .coach-header {
@@ -73,10 +79,10 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     }
 
     .coach-bubble {
-      border: 3px solid #1f1f1f;
-      border-radius: 0.75rem;
-      padding: 0.5rem 0.75rem;
-      background: #f0f4ff;
+      border: 1px solid var(--cm-border);
+      border-radius: var(--cm-radius-md);
+      padding: 0.6rem 0.85rem;
+      background: var(--cm-bg-panel);
     }
 
     .coach-classification-pill {
@@ -85,7 +91,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       gap: 0.4rem;
       padding: 0.3rem 0.75rem;
       border-radius: 2rem;
-      border: 3px solid #1f1f1f;
+      border: 1px solid rgba(255, 255, 255, 0.12);
       color: #ffffff;
       font-weight: 700;
       font-size: 0.85rem;
@@ -103,19 +109,21 @@ import { CoachAvatarComponent } from './coach-avatar.component';
 
     .coach-explanation {
       margin: 0;
-      line-height: 1.4;
-      font-size: 0.9rem;
+      line-height: 1.5;
+      font-size: 0.875rem;
       white-space: pre-line;
+      color: var(--cm-text-secondary);
     }
 
     .coach-empty {
-      color: #666;
+      color: var(--cm-text-muted);
       font-style: italic;
       margin: 0;
+      font-size: 0.875rem;
     }
 
     .coach-unavailable {
-      color: #8a1222;
+      color: #ff6b6b;
       font-weight: 600;
       font-size: 0.85rem;
       margin: 0.5rem 0 0;
@@ -124,12 +132,12 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     .coach-footer {
       margin-top: 0.5rem;
       padding-top: 0.35rem;
-      border-top: 2px solid #e0e0e0;
+      border-top: 1px solid var(--cm-border);
     }
 
     .operation-id {
-      font-size: 0.75rem;
-      color: #999;
+      font-size: 0.72rem;
+      color: var(--cm-text-muted);
       font-family: monospace;
       word-break: break-all;
     }

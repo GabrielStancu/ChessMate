@@ -1,111 +1,112 @@
-<main class="analysis-shell" *ngIf="game() as activeGame">
-  <section class="analysis-header">
-    <button mat-stroked-button type="button" routerLink="/">Back</button>
-    <div>
-      <h1>Game Analysis</h1>
-      <p>{{ activeGame.opening || 'Unknown opening' }} · Opponent: {{ activeGame.opponent }} · {{ activeGame.result }}</p>
-    </div>
-  </section>
+<main class="analysis-shell" *ngIf="game() as g; else noGame">
 
-  <section class="analysis-layout">
+  <!-- ══ Board column ════════════════════════════════════════════════ -->
+  <div class="board-column">
+
+    <!-- Top player bar (opponent side) -->
+    <div class="player-bar">
+      <span class="player-dot"
+            [class.dot-white]="playerColor() === 'black'"
+            [class.dot-black]="playerColor() === 'white'"></span>
+      <span class="player-name">{{ playerColor() === 'white' ? g.blackPlayer : g.whitePlayer }}</span>
+      <span class="player-rating">{{ playerColor() === 'white' ? g.blackRating : g.whiteRating }}</span>
+    </div>
+
+    <!-- Eval bar + board -->
     <div class="board-area">
       <app-evaluation-bar
         *ngIf="fullAnalysis()"
-        class="eval-bar"
         [score]="currentEvaluation()"
         [playerColor]="playerColor()">
       </app-evaluation-bar>
-
-      <mat-card class="board-card">
-      <mat-card-content>
-        <div #boardHost class="board-host" aria-label="Chessboard"></div>
-      </mat-card-content>
-
-      <mat-card-actions class="navigation-actions">
-        <button mat-stroked-button type="button" (click)="goFirst()" [disabled]="!canGoPrevious()">First</button>
-        <button mat-stroked-button type="button" (click)="goPrevious()" [disabled]="!canGoPrevious()">Previous</button>
-        <button mat-stroked-button type="button" (click)="goNext()" [disabled]="!canGoNext()">Next</button>
-        <button mat-stroked-button type="button" (click)="goLast()" [disabled]="!canGoNext()">Last</button>
-      </mat-card-actions>
-
-      <p class="timeline-warning" *ngIf="timelineWarning() as warning">{{ warning }}</p>
-
-      <mat-card-footer class="board-footer">
-        <span>Position {{ selectedPositionIndex() }} / {{ positionTimeline().length - 1 }}</span>
-        <span>{{ moveLabel() }}</span>
-      </mat-card-footer>
-    </mat-card>
+      <div #boardHost class="board-host" aria-label="Chessboard"></div>
     </div>
 
-    <div class="right-panel">
-      <mat-card class="control-card">
-        <mat-card-header>
-          <mat-card-title>Move Classification</mat-card-title>
-        </mat-card-header>
+    <!-- Bottom player bar (user side) -->
+    <div class="player-bar">
+      <span class="player-dot"
+            [class.dot-white]="playerColor() === 'white'"
+            [class.dot-black]="playerColor() === 'black'"></span>
+      <span class="player-name">{{ playerColor() === 'white' ? g.whitePlayer : g.blackPlayer }}</span>
+      <span class="player-rating">{{ playerColor() === 'white' ? g.whiteRating : g.blackRating }}</span>
+    </div>
 
-        <mat-card-content>
-          <ng-container *ngIf="fullAnalysis() as analysis">
-            <div class="analysis-meta">
-              <p>Playing as: <strong>{{ analysis.playerColor }}</strong></p>
-              <p>Mode: {{ analysis.analysisMode }} · Depth: {{ analysis.engineConfig.depth }}</p>
-            </div>
+  </div>
 
-            <ng-container *ngIf="currentClassifiedMove() as move; else initialPosition">
-              <div
-                class="classification-badge"
-                [style.background-color]="classificationColors[move.classification]">
-                <span class="classification-symbol">{{ classificationSymbols[move.classification] }}</span>
-                <span class="classification-label">{{ move.classification }}</span>
-              </div>
+  <!-- ══ Right analysis panel ════════════════════════════════════════ -->
+  <aside class="analysis-panel">
 
-              <div class="move-detail-panel">
-                <p>Move: <strong>{{ move.san }}</strong> ({{ move.piece }})</p>
-                <p>{{ move.isUserMove ? 'Your move' : "Opponent's move" }}</p>
-                <p *ngIf="move.bestMove">
-                  Best move: <strong>{{ formatBestMoveForDisplay(move.bestMove, previousFen()) }}</strong>
-                </p>
-                <p>Centipawn: {{ move.centipawnAfter ?? 'N/A' }}
-                  <span *ngIf="move.centipawnLoss > 0"> (Δ −{{ move.centipawnLoss }})</span>
-                </p>
-                <p>Win expectancy: {{ move.winExpectancyAfter | number:'1.1-1' }}%
-                  <span *ngIf="move.winExpectancyLoss > 0" class="we-loss">(−{{ move.winExpectancyLoss | number:'1.1-1' }}%)</span>
-                </p>
-              </div>
-            </ng-container>
+    <!-- Panel header -->
+    <div class="panel-header">
+      <button class="header-icon-btn" routerLink="/" aria-label="Back to search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <span class="panel-title">Game Analysis</span>
+      <span class="move-badge">{{ formatTimeControl(g.timeControl) }}</span>
+      <span class="move-badge">{{ moveLabel() }}</span>
+    </div>
 
-            <ng-template #initialPosition>
-              <p class="initial-position-hint">Navigate to a move to see its classification.</p>
-            </ng-template>
-          </ng-container>
+    <!-- Coach panel -->
+    <app-coach-panel
+      [currentMove]="currentClassifiedMove()"
+      [coachingLookup]="coachingLookup()"
+      [batchCoachResponse]="batchCoachResponse()">
+    </app-coach-panel>
 
-          <p *ngIf="!fullAnalysis()" class="error">
-            No analysis data found. Please run analysis from the search page first.
-          </p>
-        </mat-card-content>
-      </mat-card>
-
-      <ng-container *ngIf="fullAnalysis() as analysis">
-        <app-evaluation-chart
-          [evaluations]="evaluationTimeline()"
-          [selectedIndex]="selectedPositionIndex()"
-          [classifiedMoves]="analysis.classifiedMoves"
-          [playerColor]="playerColor()"
-          (positionSelected)="onPlySelected($event)">
-        </app-evaluation-chart>
-
-        <app-move-list
-          [moves]="analysis.classifiedMoves"
-          [selectedPly]="selectedPly()"
-          [coachingLookup]="coachingLookup()"
-          (plySelected)="onPlySelected($event)">
-        </app-move-list>
-      </ng-container>
-
-      <app-coach-panel
-        [currentMove]="currentClassifiedMove()"
+    <!-- Move list — scrollable -->
+    <div class="move-list-scroll" *ngIf="fullAnalysis() as analysis">
+      <app-move-list
+        [moves]="analysis.classifiedMoves"
+        [selectedPly]="selectedPly()"
         [coachingLookup]="coachingLookup()"
-        [batchCoachResponse]="batchCoachResponse()">
-      </app-coach-panel>
+        (plySelected)="onPlySelected($event)">
+      </app-move-list>
     </div>
-  </section>
+
+    <p *ngIf="!fullAnalysis()" class="no-analysis-hint">
+      No analysis loaded. Run analysis from the search page.
+    </p>
+
+    <!-- Bottom dock -->
+    <div class="panel-dock">
+
+      <!-- Eval chart -->
+      <app-evaluation-chart
+        *ngIf="fullAnalysis() as analysis"
+        [evaluations]="evaluationTimeline()"
+        [selectedIndex]="selectedPositionIndex()"
+        [classifiedMoves]="analysis.classifiedMoves"
+        [playerColor]="playerColor()"
+        (positionSelected)="onPlySelected($event)">
+      </app-evaluation-chart>
+
+      <!-- Navigation controls -->
+      <div class="nav-controls">
+        <button class="nav-btn" (click)="goFirst()" [disabled]="!canGoPrevious()" aria-label="First position">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+        <button class="nav-btn" (click)="goPrevious()" [disabled]="!canGoPrevious()" aria-label="Previous move">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59 10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+        </button>
+        <span class="nav-position">{{ selectedPositionIndex() }} / {{ positionTimeline().length - 1 }}</span>
+        <button class="nav-btn" (click)="goNext()" [disabled]="!canGoNext()" aria-label="Next move">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </button>
+        <button class="nav-btn" (click)="goLast()" [disabled]="!canGoNext()" aria-label="Last position">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18 14.5 12 6 6v12zm10-12v12h2V6z"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </aside>
+
 </main>
+
+<ng-template #noGame>
+  <div class="no-game-shell">
+    <p>No game selected. <a routerLink="/">Return to search</a></p>
+  </div>
+</ng-template>

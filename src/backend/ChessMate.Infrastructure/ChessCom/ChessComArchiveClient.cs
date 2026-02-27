@@ -111,6 +111,11 @@ public sealed class ChessComArchiveClient : IChessComArchiveClient
         return new ChessGameSummary(
             ExtractGameId(game.Url),
             playedAtUtc,
+            game.White?.Username ?? "unknown",
+            game.Black?.Username ?? "unknown",
+            game.White?.Rating,
+            game.Black?.Rating,
+            isWhite ? "white" : "black",
             opponentSide?.Username ?? "unknown",
             userSide?.Result ?? "unknown",
             game.Eco ?? string.Empty,
@@ -148,5 +153,6 @@ public sealed class ChessComArchiveClient : IChessComArchiveClient
 
     private sealed record ChessComPlayer(
         [property: JsonPropertyName("username")] string? Username,
+        [property: JsonPropertyName("rating")] int? Rating,
         [property: JsonPropertyName("result")] string? Result);
 }

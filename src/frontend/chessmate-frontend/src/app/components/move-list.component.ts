@@ -19,115 +19,174 @@ import {
   MoveClassification
 } from '../models/classification.models';
 
+interface MovePair {
+  moveNumber: number;
+  white: ClassifiedMove | null;
+  black: ClassifiedMove | null;
+}
+
 @Component({
   selector: 'app-move-list',
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="move-list-container" #scrollContainer>
-      <div
-        *ngFor="let move of moves(); let i = index"
-        class="move-list-item"
-        [class.selected]="selectedPly() === move.ply"
-        [class.is-user-move]="move.isUserMove"
-        [attr.data-ply]="move.ply"
-        (click)="selectMove(move.ply)">
-        <span class="move-number">{{ getMoveNumber(move.ply) }}.</span>
-        <span
-          class="move-dot"
-          [style.background-color]="getColor(move.classification)">
-        </span>
-        <span class="move-san">{{ move.san }}</span>
-        <span class="move-symbol">{{ getSymbol(move.classification) }}</span>
-        <span class="coach-indicator" *ngIf="hasCoaching(move)">&#x1F4AC;</span>
+    <div class="move-table" #scrollContainer>
+      <!-- Header row -->
+      <div class="move-row move-header">
+        <span class="col-num">#</span>
+        <span class="col-move">White</span>
+        <span class="col-move">Black</span>
       </div>
 
-      <p class="empty-hint" *ngIf="moves().length === 0">
-        No moves to display.
-      </p>
+      <!-- Move pairs -->
+      <div
+        *ngFor="let pair of movePairs()"
+        class="move-row"
+        [class.row-selected]="isRowSelected(pair)">
+
+        <span class="col-num">{{ pair.moveNumber }}</span>
+
+        <!-- White move -->
+        <span
+          class="col-move move-cell"
+          [class.cell-selected]="pair.white !== null && selectedPly() === pair.white.ply"
+          [class.cell-empty]="pair.white === null"
+          (click)="pair.white && selectMove(pair.white.ply)">
+          <ng-container *ngIf="pair.white as m">
+            <span class="move-dot" [style.background-color]="getColor(m.classification)"></span>
+            <span class="move-san">{{ m.san }}</span>
+            <span class="move-symbol">{{ getSymbol(m.classification) }}</span>
+            <span class="coach-indicator" *ngIf="hasCoaching(m)">&#x1F4AC;</span>
+          </ng-container>
+        </span>
+
+        <!-- Black move -->
+        <span
+          class="col-move move-cell"
+          [class.cell-selected]="pair.black !== null && selectedPly() === pair.black.ply"
+          [class.cell-empty]="pair.black === null"
+          (click)="pair.black && selectMove(pair.black.ply)">
+          <ng-container *ngIf="pair.black as m">
+            <span class="move-dot" [style.background-color]="getColor(m.classification)"></span>
+            <span class="move-san">{{ m.san }}</span>
+            <span class="move-symbol">{{ getSymbol(m.classification) }}</span>
+            <span class="coach-indicator" *ngIf="hasCoaching(m)">&#x1F4AC;</span>
+          </ng-container>
+        </span>
+
+      </div>
+
+      <p class="empty-hint" *ngIf="moves().length === 0">No moves to display.</p>
     </div>
   `,
   styles: [`
-    .move-list-container {
-      border: 3px solid #1f1f1f;
-      border-radius: 0.75rem;
-      flex: 1 1 0;
-      min-height: 80px;
-      max-height: 200px;
+    .move-table {
+      display: flex;
+      flex-direction: column;
       overflow-y: auto;
-      padding: 0.25rem;
+      height: 100%;
+      background: var(--cm-bg-card);
     }
 
-    .move-list-item {
+    .move-row {
+      display: grid;
+      grid-template-columns: 2rem 1fr 1fr;
+      align-items: center;
+      gap: 0;
+      min-height: 28px;
+    }
+
+    .move-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: var(--cm-bg-panel);
+      border-bottom: 1px solid var(--cm-border);
+      padding: 0.25rem 0;
+    }
+
+    .col-num {
+      font-size: 0.75rem;
+      color: var(--cm-text-muted);
+      text-align: right;
+      padding-right: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .move-header .col-move {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--cm-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0 0.4rem;
+      cursor: default;
+    }
+
+    .move-cell {
       display: flex;
       align-items: center;
       gap: 0.3rem;
-      padding: 0.2rem 0.4rem;
-      border-radius: 0.5rem;
+      padding: 0.25rem 0.4rem;
       cursor: pointer;
-      font-size: 0.85rem;
-      transition: background-color 0.15s;
+      font-size: 0.875rem;
+      color: var(--cm-text-secondary);
+      transition: background 0.12s;
+      border-radius: var(--cm-radius-sm);
     }
 
-    .move-list-item:hover {
-      background-color: #e8eaf6;
+    .move-cell:hover:not(.cell-empty) {
+      background: var(--cm-bg-card-hover);
+      color: var(--cm-text-primary);
     }
 
-    .move-list-item.selected {
-      background-color: #c5cae9;
+    .move-cell.cell-empty {
+      cursor: default;
+    }
+
+    .cell-selected {
+      background: var(--cm-accent-dim) !important;
+      color: var(--cm-accent) !important;
       font-weight: 700;
-    }
-
-    .move-number {
-      min-width: 2rem;
-      color: #888;
-      font-size: 0.8rem;
-      text-align: right;
     }
 
     .move-dot {
       display: inline-block;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      border: 2px solid #1f1f1f;
+      border: 1px solid rgba(255, 255, 255, 0.12);
       flex-shrink: 0;
     }
 
     .move-san {
       flex: 1;
+      min-width: 0;
     }
 
     .move-symbol {
-      font-size: 0.8rem;
-      color: #555;
+      font-size: 0.72rem;
+      flex-shrink: 0;
     }
 
     .coach-indicator {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       flex-shrink: 0;
     }
 
     .empty-hint {
-      color: #666;
+      color: var(--cm-text-muted);
       font-style: italic;
       text-align: center;
-      padding: 1rem;
+      padding: 1.5rem 1rem;
       margin: 0;
     }
   `]
 })
 export class MoveListComponent implements AfterViewChecked {
-  /** All classified moves for the game. */
   public readonly moves = input<ClassifiedMove[]>([]);
-
-  /** Currently selected ply (1-based). 0 = initial position. */
   public readonly selectedPly = input<number>(0);
-
-  /** Coaching lookup for indicator display. */
   public readonly coachingLookup = input<Map<number, BatchCoachCoachingItemEnvelope>>(new Map());
-
-  /** Emits when user clicks a move. */
   public readonly plySelected = output<number>();
 
   @ViewChild('scrollContainer')
@@ -135,8 +194,30 @@ export class MoveListComponent implements AfterViewChecked {
 
   private lastScrolledPly = -1;
 
-  protected readonly isCoachingEligible = computed(() => {
-    return new Set(COACHING_ELIGIBLE_CLASSES);
+  protected readonly movePairs = computed<MovePair[]>(() => {
+    const all = this.moves();
+    const pairMap = new Map<number, { white?: ClassifiedMove; black?: ClassifiedMove }>();
+
+    for (const move of all) {
+      const num = Math.ceil(move.ply / 2);
+      if (!pairMap.has(num)) {
+        pairMap.set(num, {});
+      }
+      const pair = pairMap.get(num)!;
+      if (move.ply % 2 === 1) {
+        pair.white = move;
+      } else {
+        pair.black = move;
+      }
+    }
+
+    return Array.from(pairMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([moveNumber, pair]) => ({
+        moveNumber,
+        white: pair.white ?? null,
+        black: pair.black ?? null
+      }));
   });
 
   public ngAfterViewChecked(): void {
@@ -144,7 +225,6 @@ export class MoveListComponent implements AfterViewChecked {
     if (ply === this.lastScrolledPly) {
       return;
     }
-
     this.lastScrolledPly = ply;
     this.scrollToSelectedMove(ply);
   }
@@ -153,8 +233,9 @@ export class MoveListComponent implements AfterViewChecked {
     this.plySelected.emit(ply);
   }
 
-  protected getMoveNumber(ply: number): string {
-    return String(Math.ceil(ply / 2));
+  protected isRowSelected(pair: MovePair): boolean {
+    const ply = this.selectedPly();
+    return (pair.white?.ply === ply) || (pair.black?.ply === ply);
   }
 
   protected getColor(classification: MoveClassification | string): string {
@@ -166,27 +247,22 @@ export class MoveListComponent implements AfterViewChecked {
   }
 
   protected hasCoaching(move: ClassifiedMove): boolean {
-    const lookup = this.coachingLookup();
-    return lookup.has(move.ply);
+    return this.coachingLookup().has(move.ply);
   }
 
   private scrollToSelectedMove(ply: number): void {
     if (!this.scrollContainer) {
       return;
     }
-
     const container = this.scrollContainer.nativeElement;
     const target = container.querySelector(`[data-ply="${ply}"]`) as HTMLElement | null;
-
     if (!target) {
       return;
     }
-
     const containerTop = container.scrollTop;
     const containerBottom = containerTop + container.clientHeight;
     const targetTop = target.offsetTop;
     const targetBottom = targetTop + target.offsetHeight;
-
     if (targetTop < containerTop || targetBottom > containerBottom) {
       target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }

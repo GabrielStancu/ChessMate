@@ -187,6 +187,18 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     this.selectedPositionIndex.set(this.positionTimeline().length - 1);
   }
 
+  protected formatTimeControl(tc: string): string {
+    const match = tc.match(/^(\d+)(\+\d+)?(.*)$/);
+    if (!match) {
+      return tc;
+    }
+    const seconds = parseInt(match[1], 10);
+    const increment = match[2] ?? '';
+    const rest = match[3] ?? '';
+    const minutes = seconds < 60 ? seconds : Math.round(seconds / 60);
+    return `${minutes}${increment}${rest}`;
+  }
+
   protected moveLabel(): string {
     const index = this.selectedPositionIndex();
     if (index === 0) {

@@ -1,18 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSelectModule } from '@angular/material/select';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../environments/environment';
 import { AnalysisMode, EngineConfig } from '../models/analysis.models';
 import { ErrorResponseEnvelope, GetGamesItemEnvelope } from '../models/games.models';
 import { AnalysisLoadingDialogComponent, AnalysisLoadingDialogData } from './analysis-loading-dialog.component';
@@ -24,25 +16,24 @@ import { FullGameAnalysisService } from '../services/full-game-analysis.service'
 import { GamesApiService } from '../services/games-api.service';
 import { StockfishAnalysisControllerService } from '../services/stockfish-analysis-controller.service';
 
+const DRAW_RESULTS = new Set([
+  'stalemate', 'insufficient', '50move', 'repetition', 'agreed', 'timevsinsufficient'
+]);
+
 @Component({
   selector: 'app-game-search-page',
   standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    MatButtonModule,
-    MatCardModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatListModule,
-    MatProgressSpinnerModule,
-    MatSelectModule
+    MatDialogModule
   ],
   templateUrl: './game-search-page.component.html',
   styleUrl: './game-search-page.component.css'
 })
-export class GameSearchPageComponent {
+export class GameSearchPageComponent implements AfterViewInit {
+  @ViewChild('gamesSection') private gamesSection?: ElementRef<HTMLElement>;
+
   private readonly gamesApiService = inject(GamesApiService);
   private readonly analysisSessionService = inject(AnalysisSessionService);
   private readonly fullGameAnalysisService = inject(FullGameAnalysisService);
@@ -60,6 +51,7 @@ export class GameSearchPageComponent {
   });
   protected readonly loading = signal(false);
   protected readonly games = signal<GetGamesItemEnvelope[]>([]);
+  protected readonly displayedGames = computed(() => this.games().slice(0, 9));
   protected readonly page = signal(1);
   protected readonly hasMore = signal(false);
   protected readonly sourceTimestamp = signal<string | null>(null);
@@ -69,7 +61,8 @@ export class GameSearchPageComponent {
   protected readonly searched = signal(false);
   protected readonly canGoPrevious = computed(() => this.page() > 1 && !this.loading());
   protected readonly canGoNext = computed(() => this.hasMore() && !this.loading());
-  protected readonly searchBackgroundImageUrl = environment.searchBackgroundImageUrl;
+
+  ngAfterViewInit(): void { /* noop – required for ViewChild resolution */ }
 
   protected async search(): Promise<void> {
     if (this.usernameControl.invalid) {
@@ -132,6 +125,53 @@ export class GameSearchPageComponent {
     this.analysisMode.set(mode);
   }
 
+  protected getResultClass(game: GetGamesItemEnvelope): 'win' | 'loss' | 'draw' {
+    const result = game.result?.toLowerCase() ?? '';
+    if (result === 'win') {
+      return 'win';
+    }
+
+    if (DRAW_RESULTS.has(result)) {
+      return 'draw';
+    }
+
+    return 'loss';
+  }
+
+  protected formatResult(game: GetGamesItemEnvelope): string {
+    const cls = this.getResultClass(game);
+    const isWhite = game.playerColor === 'white';
+
+    if (cls === 'draw') {
+      return '½-½';
+    }
+
+    if (cls === 'win') {
+      return isWhite ? '1-0' : '0-1';
+    }
+
+    return isWhite ? '0-1' : '1-0';
+  }
+
+  protected formatTimeControl(tc: string): string {
+    if (!tc) {
+      return tc;
+    }
+
+    const match = tc.match(/^(\d+)(\+\d+)?(.*)$/);
+
+    if (!match) {
+      return tc;
+    }
+
+    const seconds = parseInt(match[1], 10);
+    const increment = match[2] ?? '';
+    const rest = match[3] ?? '';
+    const minutes = seconds < 60 ? seconds : Math.round(seconds / 60);
+
+    return `${minutes}${increment}${rest}`;
+  }
+
   private async runFullAnalysisAndNavigate(game: GetGamesItemEnvelope): Promise<void> {
     const mode = this.analysisMode();
     const config: EngineConfig = this.stockfishController.getPreset(mode);
@@ -141,8 +181,8 @@ export class GameSearchPageComponent {
       disableClose: true,
       width: '440px',
       data: {
-        gameName: game.opening || 'Unknown opening',
-        opponent: game.opponent,
+        whitePlayer: game.whitePlayer,
+        blackPlayer: game.blackPlayer,
         progress: () => this.fullGameAnalysisService.progress()
       } as AnalysisLoadingDialogData
     });
@@ -183,6 +223,12 @@ export class GameSearchPageComponent {
     }
   }
 
+  private scrollToGames(): void {
+    requestAnimationFrame(() => {
+      this.gamesSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   private async loadPage(page: number): Promise<void> {
     const username = this.usernameControl.value.trim();
     this.loading.set(true);
@@ -193,6 +239,7 @@ export class GameSearchPageComponent {
     try {
       const response = await firstValueFrom(this.gamesApiService.getGames(username, page));
       this.games.set(response.items);
+      this.scrollToGames();
       this.page.set(response.page);
       this.hasMore.set(response.hasMore);
       this.sourceTimestamp.set(response.sourceTimestamp);
