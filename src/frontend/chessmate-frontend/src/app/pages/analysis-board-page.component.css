@@ -36,6 +36,16 @@
   align-items: stretch;
 }
 
+.board-area {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.eval-bar {
+  align-self: stretch;
+}
+
 .right-panel {
   display: flex;
   flex-direction: column;
@@ -119,6 +129,10 @@
 @media (max-width: 992px) {
   .analysis-layout {
     grid-template-columns: 1fr;
+  }
+
+  .board-area {
+    flex-direction: row;
   }
 
   .right-panel {

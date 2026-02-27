@@ -21,8 +21,11 @@ import {
 } from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
 import { CoachPanelComponent } from '../components/coach-panel.component';
+import { EvaluationBarComponent } from '../components/evaluation-bar.component';
+import { EvaluationChartComponent } from '../components/evaluation-chart.component';
 import { MoveListComponent } from '../components/move-list.component';
 import { AnalysisSessionService } from '../services/analysis-session.service';
+import { buildEvaluationTimeline } from '../utils/evaluation.utils';
 
 interface MoveStep {
   moveNumber: number;
@@ -32,7 +35,7 @@ interface MoveStep {
 @Component({
   selector: 'app-analysis-board-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, MoveListComponent],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, EvaluationBarComponent, EvaluationChartComponent, MoveListComponent],
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
@@ -90,6 +93,23 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     return lookup;
   });
   protected readonly selectedPly = computed(() => this.selectedPositionIndex());
+
+  protected readonly evaluationTimeline = computed(() => {
+    const analysis = this.fullAnalysis();
+    if (!analysis) {
+      return [0];
+    }
+
+    return buildEvaluationTimeline(analysis.classifiedMoves);
+  });
+
+  protected readonly currentEvaluation = computed(() => {
+    const timeline = this.evaluationTimeline();
+    const index = this.selectedPositionIndex();
+    return timeline[Math.min(index, timeline.length - 1)] ?? 0;
+  });
+
+  protected readonly playerColor = computed(() => this.fullAnalysis()?.playerColor ?? 'white');
 
   public constructor() {
     const activeGame = this.game();

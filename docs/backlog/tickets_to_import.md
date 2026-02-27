@@ -250,3 +250,54 @@ Create deployment-ready configuration baseline for Angular SPA on Azure Static W
 - Managed identity access requirements are listed for Table Storage, Key Vault, and Azure OpenAI.
 - Deployment docs preserve locked architecture decisions and excluded services.
 - Smoke checklist validates both API contracts and web-only flow post-deploy.
+
+---
+
+## TKT-016 — Analysis Evaluation Bar + Game Evaluation Chart
+**Title**
+Add Chess.com-like vertical evaluation bar and game evaluation trend chart
+
+**Description**
+Implement the missing analysis visuals on the game analysis board page: a vertical position evaluation bar (current engine score) and an evaluation change chart across the full move timeline, similar in behavior to Chess.com analysis UX. These visuals must use existing analysis data/engine outputs and support synchronized updates while navigating positions.
+
+**Definition of Done (.NET/Azure)**
+- Analysis board page displays a vertical evaluation bar that reflects the currently selected position score from Stockfish.js.
+- Analysis board page displays an evaluation trend chart across the game (move-by-move score progression).
+- Evaluation bar and chart stay in sync with first/previous/next/last position navigation.
+- Chart clearly indicates current selected move/position and updates when navigation changes.
+- Quick/Deep analysis runs populate both bar and chart consistently using the same score source.
+- Existing API contracts and core analysis flow remain unchanged.
+
+---
+
+## TKT-017 — Frontend Visual Styling Pass (Mature Flat Minimal)
+**Title**
+Apply production-ready visual design system and landing/search page styling
+
+**Description**
+Implement a full styling pass for the Angular web app so the UI matches the locked mature, flat modern, minimalist direction. The game search/landing page should align with the provided visual reference (dark premium atmosphere, clean typography, restrained accents, and polished card/list hierarchy) while preserving all existing functionality and contracts.
+
+**Definition of Done (.NET/Azure)**
+- Styling is applied app-wide (search, game list, analysis board view, right panel, error/empty/loading states) with consistent spacing, typography, and component states.
+- Search/landing page layout aligns to the approved reference intent (mature flat minimal, dark hero treatment, clear primary CTA/input hierarchy).
+- Existing functionality remains unchanged: no API contract, route, or behavior regressions.
+- Visual tokens (colors, spacing, radius, typography scale) are centralized and reused; no scattered one-off inline styling.
+- Accessibility baseline is preserved: readable contrast, visible focus states, and keyboard-navigable interactive elements.
+- Responsive behavior is verified for desktop and mobile web breakpoints without breaking core MVP flow.
+
+---
+
+## TKT-018 — LLM Coach Prompt Grounding and Accuracy Hardening
+**Title**
+Harden coach prompts to prevent hallucinated tactical claims and board-state mismatches
+
+**Description**
+Refine the `batch-coach` prompt strategy and response validation to reduce edge-case inaccuracies (e.g., wrong pinned piece, invented tactical ideas, or claims not supported by the actual position). Prompt outputs must stay grounded in provided move/position context and remain role-aware (user vs opponent phrasing).
+
+**Definition of Done (.NET/Azure)**
+- Prompt template explicitly constrains the model to provided board/move context and forbids unsupported tactical claims.
+- Role-aware narration remains correct for user vs opponent moves.
+- Add a lightweight post-generation validation layer that flags or regenerates outputs containing contradictions with supplied position facts.
+- Edge-case regression set is added (including pin-target confusion and invented motifs) and run in CI/local test workflow.
+- Telemetry captures validation/regeneration counts and failure reasons for prompt-quality monitoring.
+- Response contract remains stable (`POST /api/analysis/batch-coach`) and backward compatible.

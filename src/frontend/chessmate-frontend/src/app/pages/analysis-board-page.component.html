@@ -8,7 +8,15 @@
   </section>
 
   <section class="analysis-layout">
-    <mat-card class="board-card">
+    <div class="board-area">
+      <app-evaluation-bar
+        *ngIf="fullAnalysis()"
+        class="eval-bar"
+        [score]="currentEvaluation()"
+        [playerColor]="playerColor()">
+      </app-evaluation-bar>
+
+      <mat-card class="board-card">
       <mat-card-content>
         <div #boardHost class="board-host" aria-label="Chessboard"></div>
       </mat-card-content>
@@ -27,6 +35,7 @@
         <span>{{ moveLabel() }}</span>
       </mat-card-footer>
     </mat-card>
+    </div>
 
     <div class="right-panel">
       <mat-card class="control-card">
@@ -76,6 +85,14 @@
       </mat-card>
 
       <ng-container *ngIf="fullAnalysis() as analysis">
+        <app-evaluation-chart
+          [evaluations]="evaluationTimeline()"
+          [selectedIndex]="selectedPositionIndex()"
+          [classifiedMoves]="analysis.classifiedMoves"
+          [playerColor]="playerColor()"
+          (positionSelected)="onPlySelected($event)">
+        </app-evaluation-chart>
+
         <app-move-list
           [moves]="analysis.classifiedMoves"
           [selectedPly]="selectedPly()"
