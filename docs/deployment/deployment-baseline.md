@@ -84,6 +84,15 @@ This document defines the deployment-ready configuration baseline for the ChessM
 | `environment.ts` (production) | `/api` | SWA proxies `/api/*` to linked Functions backend |
 | `environment.development.ts` | `http://localhost:7071/api` | Local dev against Functions emulator |
 
+### Frontend Runtime Notes
+
+- Games API supports optional cache-bypass query flag:
+   - `forceRefresh=true`
+   - Example: `/api/chesscom/users/{username}/games?page=1&pageSize=12&forceRefresh=true`
+- Frontend persists user search preferences in browser local storage:
+   - `lastSearchedUsername`
+   - `lastAnalysisMode` (`quick` or `deep`)
+
 ### SWA Config (`staticwebapp.config.json`)
 
 The `staticwebapp.config.json` in the frontend build output provides:

@@ -24,13 +24,18 @@ public sealed class ChessComGamesService : IChessComGamesService
         _logger = logger;
     }
 
-    public async Task<GetGamesPageResult> GetGamesPageAsync(string username, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<GetGamesPageResult> GetGamesPageAsync(
+        string username,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken,
+        bool forceRefresh = false)
     {
         var normalizedUsername = NormalizeUsername(username);
         var cachedGames = await _gameIndexStore.GetPlayerGamesAsync(normalizedUsername, cancellationToken);
         var now = _timeProvider.GetUtcNow();
 
-        if (IsCacheFresh(cachedGames, now))
+        if (!forceRefresh && IsCacheFresh(cachedGames, now))
         {
             _logger.LogInformation(
                 "Cache hit for username {Username}. cachedCount {CachedCount}.",
@@ -42,10 +47,15 @@ public sealed class ChessComGamesService : IChessComGamesService
 
         var hadCachedGames = cachedGames.Count > 0;
         var requiredCount = checked(page * pageSize + 1);
+        var cacheDecision = forceRefresh
+            ? "bypassed"
+            : hadCachedGames
+                ? "stale"
+                : "miss";
 
         _logger.LogInformation(
             "Cache {CacheDecision} for username {Username}. Fetching upstream, requiredCount {RequiredCount}.",
-            hadCachedGames ? "stale" : "miss",
+            cacheDecision,
             normalizedUsername,
             requiredCount);
 
@@ -66,10 +76,10 @@ public sealed class ChessComGamesService : IChessComGamesService
             "Upstream fetch completed for username {Username}. fetchedCount {FetchedCount}, cacheStatus {CacheStatus}.",
             normalizedUsername,
             fetchedGames.Count,
-            hadCachedGames ? "stale" : "miss");
+            cacheDecision);
 
         var hydratedGames = fetchedGames.Select(game => game with { IngestedAtUtc = now }).ToArray();
-        var cacheStatus = hadCachedGames ? "stale" : "miss";
+        var cacheStatus = forceRefresh ? "bypassed" : hadCachedGames ? "stale" : "miss";
 
         return BuildPageResult(hydratedGames, page, pageSize, now, cacheStatus);
     }

@@ -51,6 +51,18 @@ public static partial class RequestValidators
             : throw CreateInvalidIntegerException(fieldName);
     }
 
+    public static bool ParseOptionalBooleanQuery(string? value, string fieldName, bool fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallback;
+        }
+
+        return bool.TryParse(value, out var parsedValue)
+            ? parsedValue
+            : throw CreateInvalidBooleanException(fieldName);
+    }
+
     public static void ValidateBatchCoachRequest(string payload)
     {
         Guard.AgainstNullOrWhiteSpace(payload, "body");
@@ -112,6 +124,16 @@ public static partial class RequestValidators
         var errors = new Dictionary<string, string[]>
         {
             [fieldName] = [$"{fieldName} must be a valid integer."]
+        };
+
+        return new RequestValidationException("Validation failed.", errors);
+    }
+
+    private static RequestValidationException CreateInvalidBooleanException(string fieldName)
+    {
+        var errors = new Dictionary<string, string[]>
+        {
+            [fieldName] = [$"{fieldName} must be either true or false."]
         };
 
         return new RequestValidationException("Validation failed.", errors);

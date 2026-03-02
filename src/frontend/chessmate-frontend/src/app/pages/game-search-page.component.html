@@ -37,11 +37,28 @@
     <!-- Section header -->
     <div class="games-header">
       <h2 class="games-title">Recent Games</h2>
-      <select id="analysis-mode" class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
-        <option value="quick">Quick</option>
-        <option value="deep">Deep</option>
-      </select>
+      <div class="games-actions">
+        <select id="analysis-mode" class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
+          <option value="quick">Quick</option>
+          <option value="deep">Deep</option>
+        </select>
+        <button
+          class="hard-refresh-btn"
+          type="button"
+          (click)="hardRefresh()"
+          [disabled]="loading() || hardRefreshLoading()"
+          aria-label="Hard refresh games">
+          Refresh
+        </button>
+      </div>
     </div>
+
+    <p
+      *ngIf="hardRefreshStatusMessage() as refreshMessage"
+      class="refresh-status"
+      [class.refresh-status-error]="hardRefreshStatusKind() === 'error'">
+      {{ refreshMessage }}
+    </p>
 
     <!-- Loading -->
     <div *ngIf="loading(); else loadedState" class="loading-state" role="status" aria-label="Loading games">

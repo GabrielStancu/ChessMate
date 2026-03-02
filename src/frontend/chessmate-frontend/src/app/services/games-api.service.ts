@@ -10,11 +10,15 @@ export class GamesApiService {
 
   public constructor(private readonly httpClient: HttpClient) {}
 
-  public getGames(username: string, page: number): Observable<GetGamesResponseEnvelope> {
+  public getGames(username: string, page: number, forceRefresh = false): Observable<GetGamesResponseEnvelope> {
     const endpoint = `${this.getBaseApiUrl()}/chesscom/users/${encodeURIComponent(username)}/games`;
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('page', page.toString())
       .set('pageSize', GamesApiService.pageSize.toString());
+
+    if (forceRefresh) {
+      params = params.set('forceRefresh', 'true');
+    }
 
     return this.httpClient.get<GetGamesResponseEnvelope>(endpoint, { params });
   }

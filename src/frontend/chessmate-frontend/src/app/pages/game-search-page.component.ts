@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AfterViewInit, Component, ElementRef, ViewChild, computed, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Router } from '@angular/router';
@@ -20,6 +20,9 @@ const DRAW_RESULTS = new Set([
   'stalemate', 'insufficient', '50move', 'repetition', 'agreed', 'timevsinsufficient'
 ]);
 
+const LAST_SEARCHED_USERNAME_STORAGE_KEY = 'lastSearchedUsername';
+const LAST_ANALYSIS_MODE_STORAGE_KEY = 'lastAnalysisMode';
+
 @Component({
   selector: 'app-game-search-page',
   standalone: true,
@@ -31,7 +34,7 @@ const DRAW_RESULTS = new Set([
   templateUrl: './game-search-page.component.html',
   styleUrl: './game-search-page.component.css'
 })
-export class GameSearchPageComponent implements AfterViewInit {
+export class GameSearchPageComponent implements OnInit, AfterViewInit {
   @ViewChild('gamesSection') private gamesSection?: ElementRef<HTMLElement>;
 
   private readonly gamesApiService = inject(GamesApiService);
@@ -56,11 +59,18 @@ export class GameSearchPageComponent implements AfterViewInit {
   protected readonly hasMore = signal(false);
   protected readonly sourceTimestamp = signal<string | null>(null);
   protected readonly cacheStatus = signal<string | null>(null);
+  protected readonly hardRefreshLoading = signal(false);
+  protected readonly hardRefreshStatusMessage = signal<string | null>(null);
+  protected readonly hardRefreshStatusKind = signal<'error' | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly fieldErrors = signal<Record<string, string[]> | null>(null);
   protected readonly searched = signal(false);
   protected readonly canGoPrevious = computed(() => this.page() > 1 && !this.loading());
   protected readonly canGoNext = computed(() => this.hasMore() && !this.loading());
+
+  public ngOnInit(): void {
+    this.restoreStoredPreferences();
+  }
 
   ngAfterViewInit(): void { /* noop – required for ViewChild resolution */ }
 
@@ -72,7 +82,29 @@ export class GameSearchPageComponent implements AfterViewInit {
       return;
     }
 
-    await this.loadPage(1);
+    this.persistLastSearchedUsername(this.usernameControl.value.trim());
+    this.hardRefreshStatusMessage.set(null);
+    this.hardRefreshStatusKind.set(null);
+    await this.loadPage(1, false);
+  }
+
+  protected async hardRefresh(): Promise<void> {
+    if (this.loading() || this.hardRefreshLoading()) {
+      return;
+    }
+
+    if (this.usernameControl.invalid) {
+      this.usernameControl.markAsTouched();
+      this.hardRefreshStatusMessage.set('Enter a valid username before hard refresh.');
+      this.hardRefreshStatusKind.set('error');
+      return;
+    }
+
+    this.persistLastSearchedUsername(this.usernameControl.value.trim());
+    this.hardRefreshStatusMessage.set(null);
+    this.hardRefreshStatusKind.set(null);
+    this.hardRefreshLoading.set(true);
+    await this.loadPage(1, true);
   }
 
   protected async nextPage(): Promise<void> {
@@ -80,7 +112,7 @@ export class GameSearchPageComponent implements AfterViewInit {
       return;
     }
 
-    await this.loadPage(this.page() + 1);
+    await this.loadPage(this.page() + 1, false);
   }
 
   protected async previousPage(): Promise<void> {
@@ -88,7 +120,7 @@ export class GameSearchPageComponent implements AfterViewInit {
       return;
     }
 
-    await this.loadPage(this.page() - 1);
+    await this.loadPage(this.page() - 1, false);
   }
 
   protected getControlError(): string | null {
@@ -123,6 +155,7 @@ export class GameSearchPageComponent implements AfterViewInit {
 
   protected setAnalysisMode(mode: AnalysisMode): void {
     this.analysisMode.set(mode);
+    this.persistLastAnalysisMode(mode);
   }
 
   protected getResultClass(game: GetGamesItemEnvelope): 'win' | 'loss' | 'draw' {
@@ -248,7 +281,7 @@ export class GameSearchPageComponent implements AfterViewInit {
     });
   }
 
-  private async loadPage(page: number): Promise<void> {
+  private async loadPage(page: number, forceRefresh: boolean): Promise<void> {
     const username = this.usernameControl.value.trim();
     this.loading.set(true);
     this.errorMessage.set(null);
@@ -256,7 +289,7 @@ export class GameSearchPageComponent implements AfterViewInit {
     this.searched.set(true);
 
     try {
-      const response = await firstValueFrom(this.gamesApiService.getGames(username, page));
+      const response = await firstValueFrom(this.gamesApiService.getGames(username, page, forceRefresh));
       this.games.set(response.items);
       this.scrollToGames();
       this.page.set(response.page);
@@ -267,8 +300,59 @@ export class GameSearchPageComponent implements AfterViewInit {
       this.games.set([]);
       this.hasMore.set(false);
       this.readError(error);
+
+      if (forceRefresh) {
+        this.hardRefreshStatusMessage.set('Hard refresh failed. Please try again.');
+        this.hardRefreshStatusKind.set('error');
+      }
     } finally {
       this.loading.set(false);
+
+      if (forceRefresh) {
+        this.hardRefreshLoading.set(false);
+      }
+    }
+  }
+
+  private restoreStoredPreferences(): void {
+    const storedMode = this.readFromLocalStorage(LAST_ANALYSIS_MODE_STORAGE_KEY);
+    if (storedMode === 'quick' || storedMode === 'deep') {
+      this.analysisMode.set(storedMode);
+    }
+
+    const storedUsername = this.readFromLocalStorage(LAST_SEARCHED_USERNAME_STORAGE_KEY);
+    if (!storedUsername) {
+      return;
+    }
+
+    this.usernameControl.setValue(storedUsername);
+
+    if (!this.usernameControl.invalid) {
+      void this.loadPage(1, false);
+    }
+  }
+
+  private persistLastSearchedUsername(username: string): void {
+    this.writeToLocalStorage(LAST_SEARCHED_USERNAME_STORAGE_KEY, username);
+  }
+
+  private persistLastAnalysisMode(mode: AnalysisMode): void {
+    this.writeToLocalStorage(LAST_ANALYSIS_MODE_STORAGE_KEY, mode);
+  }
+
+  private readFromLocalStorage(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private writeToLocalStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // ignore storage errors in non-browser/private contexts
     }
   }
 

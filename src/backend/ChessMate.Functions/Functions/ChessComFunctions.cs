@@ -54,33 +54,42 @@ public sealed class ChessComFunctions
         var query = System.Web.HttpUtility.ParseQueryString(request.Url.Query);
         int page;
         int pageSize;
+        bool forceRefresh;
 
         try
         {
             page = RequestValidators.ParseOptionalIntegerQuery(query.Get("page"), "page", 1);
             pageSize = RequestValidators.ParseOptionalIntegerQuery(query.Get("pageSize"), "pageSize", 12);
+            forceRefresh = RequestValidators.ParseOptionalBooleanQuery(query.Get("forceRefresh"), "forceRefresh", false);
             RequestValidators.ValidateGetGamesRequest(username, page, pageSize);
         }
         catch (RequestValidationException exception)
         {
             _logger.LogWarning(exception,
-                "GET games request validation failed for username {Username}, page {Page}, pageSize {PageSize}, correlationId {CorrelationId}.",
+                "GET games request validation failed for username {Username}, page {Page}, pageSize {PageSize}, forceRefresh {ForceRefresh}, correlationId {CorrelationId}.",
                 username,
                 query.Get("page"),
                 query.Get("pageSize"),
+                query.Get("forceRefresh"),
                 _correlationAccessor.CorrelationId);
             return await _responseFactory.CreateValidationErrorAsync(request, exception);
         }
 
         try
         {
-            var result = await _chessComGamesService.GetGamesPageAsync(username, page, pageSize, request.FunctionContext.CancellationToken);
-
-            _logger.LogInformation(
-                "GET games request completed for username {Username}, page {Page}, pageSize {PageSize}, cacheStatus {CacheStatus}, correlationId {CorrelationId}.",
+            var result = await _chessComGamesService.GetGamesPageAsync(
                 username,
                 page,
                 pageSize,
+                request.FunctionContext.CancellationToken,
+                forceRefresh);
+
+            _logger.LogInformation(
+                "GET games request completed for username {Username}, page {Page}, pageSize {PageSize}, forceRefresh {ForceRefresh}, cacheStatus {CacheStatus}, correlationId {CorrelationId}.",
+                username,
+                page,
+                pageSize,
+                forceRefresh,
                 result.CacheStatus,
                 _correlationAccessor.CorrelationId);
 
@@ -90,6 +99,7 @@ public sealed class ChessComFunctions
                 {
                     ["username"] = username,
                     ["page"] = page.ToString(),
+                    ["forceRefresh"] = forceRefresh.ToString(),
                     ["cacheStatus"] = result.CacheStatus,
                     ["itemCount"] = result.Items.Count.ToString(),
                     ["hasMore"] = result.HasMore.ToString(),
