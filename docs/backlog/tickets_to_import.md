@@ -318,3 +318,24 @@ Fix the reload behavior so that once a game analysis is completed and persisted,
 - Cache validity uses deterministic keying/version checks (game identity + analysis mode/config + schemaVersion/updated metadata).
 - API response includes clear cache-source metadata for diagnostics (for example cache hit/miss reason).
 - Regression tests cover cache hit reuse, stale/invalid cache fallback, and explicit re-analysis behavior.
+
+---
+
+## TKT-020 — Persisted Username + Last Mode, Auto-Search, and Hard Refresh
+**Title**
+Persist user search state and add hard-refresh to force external fetch
+
+**Description**
+Persist the last-searched Chess.com username and the last selected analysis mode (Quick/Deep) in the browser so the games search page can auto-run against the stored username on page load. Add a visible "Hard Refresh" control on the game list that forces a cache-bypass and re-fetch from Chess.com (invalidating read-through cache for the player) to ensure newly-played games appear immediately.
+
+**Definition of Done (.NET/Azure)**
+- The browser persists `lastSearchedUsername` and `lastAnalysisMode` (Quick|Deep) using `localStorage` (or equivalent platform-safe storage) whenever the user performs a search or changes the mode.
+- On game-search page render, if `lastSearchedUsername` exists, the app auto-runs the search with that username and applies the persisted `lastAnalysisMode` as the UI default.
+- A `Hard Refresh` button is visible in the game list UI; when clicked it calls the GET games endpoint with a `forceRefresh=true` query flag that bypasses the 15-minute cache (backend must accept and honor this flag) and returns fresh results.
+- The `Hard Refresh` action displays an inline busy state and a brief confirmation on success or a clear error on failure.
+- When `forceRefresh=true` is used, the response includes `cacheStatus` metadata indicating `bypassed` and `sourceTimestamp` reflecting the fresh fetch.
+
+- Update frontend README and environment notes documenting the new `forceRefresh` query param and localStorage keys.
+- Update the app chrome and branding:
+	- Rename the browser/tab title from the default "ChessMateFrontend" to "ChessMate" (update `index.html` title and verify build).
+	- Replace the default Angular logo with the project logo located under `assets/images` (ensure the shell/header references the asset and the build copies it correctly).

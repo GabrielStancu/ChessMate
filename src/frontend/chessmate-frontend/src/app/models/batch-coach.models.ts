@@ -29,6 +29,7 @@ export interface BatchCoachRequestPayload {
   moves: BatchCoachMovePayload[];
   analysisMode: string | null;
   metadata: Record<string, string> | null;
+  analysisSnapshot: FullGameAnalysisResult | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,6 +74,19 @@ export interface BatchCoachWarningEnvelope {
   message: string;
 }
 
+export interface AnalysisCacheResponseEnvelope {
+  cacheStatus: string;
+  cacheReason: string;
+  gameId: string;
+  requestedAnalysisMode: string | null;
+  requestedEngineConfig: EngineConfig;
+  schemaVersion: string | null;
+  analysisVersion: string | null;
+  createdAtUtc: string | null;
+  batchCoachResponse: BatchCoachResponseEnvelope | null;
+  analysisSnapshot: FullGameAnalysisResult | null;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -112,7 +126,8 @@ export function buildBatchCoachPayload(result: FullGameAnalysisResult): BatchCoa
       timePerMoveMs: String(result.engineConfig.timePerMoveMs),
       analyzedAt: result.analyzedAt,
       playerColor: result.playerColor
-    }
+    },
+    analysisSnapshot: result
   };
 }
 

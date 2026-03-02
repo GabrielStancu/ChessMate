@@ -13,6 +13,7 @@ using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.Text.Json;
 
 namespace ChessMate.Functions.Functions;
@@ -29,6 +30,9 @@ public sealed class AnalysisFunctions
     private readonly TimeProvider _timeProvider;
     private readonly CorsPolicy _corsPolicy;
     private readonly ILogger<AnalysisFunctions> _logger;
+
+    private const string CacheHit = "hit";
+    private const string CacheMiss = "miss";
 
     public AnalysisFunctions(
         HttpResponseFactory responseFactory,
@@ -211,6 +215,10 @@ public sealed class AnalysisFunctions
 
         var createdAtUtc = _timeProvider.GetUtcNow();
         var payloadJson = JsonSerializer.Serialize(responseEnvelope, SerializerOptions);
+        var engineConfig = ResolveEngineConfig(batchCoachRequest);
+        var analysisPayloadJson = batchCoachRequest.AnalysisSnapshot is null
+            ? string.Empty
+            : JsonSerializer.Serialize(batchCoachRequest.AnalysisSnapshot, SerializerOptions);
 
         var artifact = new AnalysisBatchArtifact(
             responseEnvelope.Summary.GameId,
@@ -220,8 +228,12 @@ public sealed class AnalysisFunctions
             PersistencePolicy.CalculateExpiresAtUtc(createdAtUtc),
             PersistencePolicy.SchemaVersion,
             responseEnvelope.Summary.AnalysisMode,
+            engineConfig.Depth,
+            engineConfig.Threads,
+            engineConfig.TimePerMoveMs,
             responseEnvelope.Coaching.Count,
-            payloadJson);
+            payloadJson,
+            analysisPayloadJson);
 
         await _analysisBatchStore.UpsertAsync(artifact, functionContext.CancellationToken);
 
@@ -252,6 +264,174 @@ public sealed class AnalysisFunctions
             });
 
         return await _responseFactory.CreateOkAsync(request, responseEnvelope);
+    }
+
+    [Function("GetAnalysisCache")]
+    public async Task<HttpResponseData> GetAnalysisCacheAsync(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "analysis/cache/{gameId}")]
+        HttpRequestData request,
+        string gameId,
+        FunctionContext functionContext)
+    {
+        if (!_corsPolicy.IsOriginAllowed(request))
+        {
+            _logger.LogWarning("GET analysis cache blocked by CORS allowlist.");
+            return await _responseFactory.CreateForbiddenAsync(
+                request,
+                "CorsForbidden",
+                "Origin is not allowed.");
+        }
+
+        var requestedMode = GetQueryValue(request.Url.Query, "analysisMode");
+        var requestedDepth = RequestValidators.ParseOptionalIntegerQuery(GetQueryValue(request.Url.Query, "depth"), "depth", 12);
+        var requestedThreads = RequestValidators.ParseOptionalIntegerQuery(GetQueryValue(request.Url.Query, "threads"), "threads", 1);
+        var requestedTimePerMoveMs = RequestValidators.ParseOptionalIntegerQuery(GetQueryValue(request.Url.Query, "timePerMoveMs"), "timePerMoveMs", 150);
+
+        var requestedConfig = new BatchCoachEngineConfigEnvelope(
+            requestedDepth,
+            requestedThreads,
+            requestedTimePerMoveMs);
+
+        var cachedEntries = await _analysisBatchStore.GetForGameAsync(gameId, functionContext.CancellationToken);
+        if (cachedEntries.Count == 0)
+        {
+            var missNotFound = new AnalysisCacheResponseEnvelope(
+                CacheMiss,
+                "not_found",
+                gameId,
+                requestedMode,
+                requestedConfig,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+            return await _responseFactory.CreateOkAsync(request, missNotFound);
+        }
+
+        var latest = cachedEntries[0];
+
+        var matchingEntry = cachedEntries.FirstOrDefault(entry =>
+            string.Equals(entry.SchemaVersion, PersistencePolicy.SchemaVersion, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(entry.AnalysisVersion, PersistencePolicy.SchemaVersion, StringComparison.OrdinalIgnoreCase) &&
+            (string.IsNullOrWhiteSpace(requestedMode) || string.Equals(entry.AnalysisMode, requestedMode, StringComparison.OrdinalIgnoreCase)) &&
+            entry.EngineDepth == requestedConfig.Depth &&
+            entry.EngineThreads == requestedConfig.Threads &&
+            entry.EngineTimePerMoveMs == requestedConfig.TimePerMoveMs);
+
+        if (matchingEntry is null)
+        {
+            if (!cachedEntries.Any(entry =>
+                    string.Equals(entry.SchemaVersion, PersistencePolicy.SchemaVersion, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(entry.AnalysisVersion, PersistencePolicy.SchemaVersion, StringComparison.OrdinalIgnoreCase)))
+            {
+                var missSchemaMismatch = new AnalysisCacheResponseEnvelope(
+                    CacheMiss,
+                    "version_mismatch",
+                    gameId,
+                    requestedMode,
+                    requestedConfig,
+                    latest.SchemaVersion,
+                    latest.AnalysisVersion,
+                    latest.CreatedAtUtc,
+                    null,
+                    null);
+
+                return await _responseFactory.CreateOkAsync(request, missSchemaMismatch);
+            }
+
+            if (!string.IsNullOrWhiteSpace(requestedMode) && !cachedEntries.Any(entry =>
+                    string.Equals(entry.AnalysisMode, requestedMode, StringComparison.OrdinalIgnoreCase)))
+            {
+                var missModeMismatch = new AnalysisCacheResponseEnvelope(
+                    CacheMiss,
+                    "analysis_mode_mismatch",
+                    gameId,
+                    requestedMode,
+                    requestedConfig,
+                    latest.SchemaVersion,
+                    latest.AnalysisVersion,
+                    latest.CreatedAtUtc,
+                    null,
+                    null);
+
+                return await _responseFactory.CreateOkAsync(request, missModeMismatch);
+            }
+
+            var missConfigMismatch = new AnalysisCacheResponseEnvelope(
+                CacheMiss,
+                "engine_config_mismatch",
+                gameId,
+                requestedMode,
+                requestedConfig,
+                latest.SchemaVersion,
+                latest.AnalysisVersion,
+                latest.CreatedAtUtc,
+                null,
+                null);
+
+            return await _responseFactory.CreateOkAsync(request, missConfigMismatch);
+        }
+
+        if (string.IsNullOrWhiteSpace(matchingEntry.InlinePayloadJson) || string.IsNullOrWhiteSpace(matchingEntry.FullAnalysisPayloadJson))
+        {
+            var missIncomplete = new AnalysisCacheResponseEnvelope(
+                CacheMiss,
+                "incomplete_payload",
+                gameId,
+                requestedMode,
+                requestedConfig,
+                matchingEntry.SchemaVersion,
+                matchingEntry.AnalysisVersion,
+                matchingEntry.CreatedAtUtc,
+                null,
+                null);
+
+            return await _responseFactory.CreateOkAsync(request, missIncomplete);
+        }
+
+        var batchCoach = JsonSerializer.Deserialize<BatchCoachResponseEnvelope>(matchingEntry.InlinePayloadJson, SerializerOptions);
+        var analysisSnapshot = JsonSerializer.Deserialize<BatchCoachAnalysisSnapshotEnvelope>(matchingEntry.FullAnalysisPayloadJson, SerializerOptions);
+
+        if (batchCoach is null || analysisSnapshot is null)
+        {
+            var missInvalid = new AnalysisCacheResponseEnvelope(
+                CacheMiss,
+                "invalid_payload",
+                gameId,
+                requestedMode,
+                requestedConfig,
+                matchingEntry.SchemaVersion,
+                matchingEntry.AnalysisVersion,
+                matchingEntry.CreatedAtUtc,
+                null,
+                null);
+
+            return await _responseFactory.CreateOkAsync(request, missInvalid);
+        }
+
+        var hitResponse = new AnalysisCacheResponseEnvelope(
+            CacheHit,
+            "persisted",
+            gameId,
+            requestedMode,
+            requestedConfig,
+            matchingEntry.SchemaVersion,
+            matchingEntry.AnalysisVersion,
+            matchingEntry.CreatedAtUtc,
+            batchCoach,
+            analysisSnapshot);
+
+        _logger.LogInformation(
+            "GET analysis cache hit. gameId {GameId}, analysisMode {AnalysisMode}, depth {Depth}, threads {Threads}, timePerMoveMs {TimePerMoveMs}.",
+            gameId,
+            requestedMode,
+            requestedDepth,
+            requestedThreads,
+            requestedTimePerMoveMs);
+
+        return await _responseFactory.CreateOkAsync(request, hitResponse);
     }
 
     private static string? ExtractIdempotencyKey(HttpRequestData request)
@@ -322,5 +502,66 @@ public sealed class AnalysisFunctions
             {
                 ["body"] = [message]
             });
+    }
+
+    private static BatchCoachEngineConfigEnvelope ResolveEngineConfig(BatchCoachRequestEnvelope request)
+    {
+        if (request.AnalysisSnapshot is not null)
+        {
+            return request.AnalysisSnapshot.EngineConfig;
+        }
+
+        var depth = TryReadMetadataInt(request.Metadata, "depth") ?? 12;
+        var threads = TryReadMetadataInt(request.Metadata, "threads") ?? 1;
+        var timePerMoveMs = TryReadMetadataInt(request.Metadata, "timePerMoveMs") ?? 150;
+
+        return new BatchCoachEngineConfigEnvelope(depth, threads, timePerMoveMs);
+    }
+
+    private static int? TryReadMetadataInt(IReadOnlyDictionary<string, string>? metadata, string key)
+    {
+        if (metadata is null || !metadata.TryGetValue(key, out var rawValue))
+        {
+            return null;
+        }
+
+        return int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : null;
+    }
+
+    private static string? GetQueryValue(string queryString, string key)
+    {
+        if (string.IsNullOrWhiteSpace(queryString))
+        {
+            return null;
+        }
+
+        var query = queryString[0] == '?' ? queryString[1..] : queryString;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return null;
+        }
+
+        var segments = query.Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var segment in segments)
+        {
+            var separatorIndex = segment.IndexOf('=');
+            if (separatorIndex < 0)
+            {
+                continue;
+            }
+
+            var currentKey = Uri.UnescapeDataString(segment[..separatorIndex]);
+            if (!string.Equals(currentKey, key, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var rawValue = segment[(separatorIndex + 1)..];
+            return Uri.UnescapeDataString(rawValue);
+        }
+
+        return null;
     }
 }

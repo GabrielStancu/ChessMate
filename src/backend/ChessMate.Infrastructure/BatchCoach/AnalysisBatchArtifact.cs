@@ -8,5 +8,9 @@ public sealed record AnalysisBatchArtifact(
     DateTimeOffset ExpiresAtUtc,
     string SchemaVersion,
     string AnalysisMode,
+    int EngineDepth,
+    int EngineThreads,
+    int EngineTimePerMoveMs,
     int CoachingCount,
-    string InlinePayloadJson);
+    string InlinePayloadJson,
+    string FullAnalysisPayloadJson);

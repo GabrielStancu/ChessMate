@@ -32,8 +32,12 @@ public sealed class TableAnalysisBatchStore : IAnalysisBatchStore
             ExpiresAtUtc = artifact.ExpiresAtUtc,
             SchemaVersion = artifact.SchemaVersion,
             AnalysisMode = artifact.AnalysisMode,
+            EngineDepth = artifact.EngineDepth,
+            EngineThreads = artifact.EngineThreads,
+            EngineTimePerMoveMs = artifact.EngineTimePerMoveMs,
             CoachingCount = artifact.CoachingCount,
-            InlinePayloadJson = artifact.InlinePayloadJson
+            InlinePayloadJson = artifact.InlinePayloadJson,
+            FullAnalysisPayloadJson = artifact.FullAnalysisPayloadJson
         };
 
         await _tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace, cancellationToken);
@@ -43,6 +47,39 @@ public sealed class TableAnalysisBatchStore : IAnalysisBatchStore
             artifact.GameId,
             artifact.OperationId,
             artifact.CoachingCount);
+    }
+
+    public async Task<IReadOnlyList<AnalysisBatchCacheEntry>> GetForGameAsync(string gameId, CancellationToken cancellationToken)
+    {
+        await _tableClient.CreateIfNotExistsAsync(cancellationToken);
+
+        var partitionKey = BuildPartitionKey(gameId);
+        var results = new List<AnalysisBatchEntity>();
+
+        await foreach (var entity in _tableClient.QueryAsync<AnalysisBatchEntity>(
+            x => x.PartitionKey == partitionKey,
+            cancellationToken: cancellationToken))
+        {
+            results.Add(entity);
+        }
+
+        return results
+            .OrderByDescending(static x => x.CreatedAtUtc)
+            .Select(static latest => new AnalysisBatchCacheEntry(
+                latest.GameId,
+                latest.OperationId,
+                latest.AnalysisVersion,
+                latest.CreatedAtUtc,
+                latest.ExpiresAtUtc,
+                latest.SchemaVersion,
+                latest.AnalysisMode,
+                latest.EngineDepth,
+                latest.EngineThreads,
+                latest.EngineTimePerMoveMs,
+                latest.CoachingCount,
+                latest.InlinePayloadJson,
+                latest.FullAnalysisPayloadJson))
+            .ToArray();
     }
 
     public static string BuildPartitionKey(string gameId)

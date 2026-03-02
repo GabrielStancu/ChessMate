@@ -31,6 +31,13 @@ var host = new HostBuilder()
         worker.UseMiddleware<CorrelationIdMiddleware>();
         worker.UseMiddleware<ExceptionHandlingMiddleware>();
     })
+    .ConfigureLogging(logging =>
+    {
+        logging.AddFilter("Azure.Core", LogLevel.Warning);
+        logging.AddFilter("Azure.Core.Pipeline", LogLevel.Warning);
+        logging.AddFilter("Azure.Data.Tables", LogLevel.Warning);
+        logging.AddFilter("Azure.Identity", LogLevel.Warning);
+    })
     .ConfigureServices((context, services) =>
     {
         services.AddApplicationInsightsTelemetryWorkerService(options =>

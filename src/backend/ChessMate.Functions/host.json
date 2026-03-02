@@ -15,7 +15,11 @@
     "logLevel": {
       "default": "Information",
       "Host.Results": "Information",
-      "Function": "Information"
+      "Function": "Information",
+      "Azure.Core": "Warning",
+      "Azure.Core.Pipeline": "Warning",
+      "Azure.Data.Tables": "Warning",
+      "Azure.Identity": "Warning"
     }
   }
 }

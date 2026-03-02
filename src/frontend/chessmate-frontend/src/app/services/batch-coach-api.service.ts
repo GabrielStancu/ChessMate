@@ -2,7 +2,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { BatchCoachRequestPayload, BatchCoachResponseEnvelope } from '../models/batch-coach.models';
+import { EngineConfig } from '../models/analysis.models';
+import {
+  AnalysisCacheResponseEnvelope,
+  BatchCoachRequestPayload,
+  BatchCoachResponseEnvelope
+} from '../models/batch-coach.models';
 
 @Injectable({ providedIn: 'root' })
 export class BatchCoachApiService {
@@ -26,6 +31,25 @@ export class BatchCoachApiService {
 
     return firstValueFrom(
       this.httpClient.post<BatchCoachResponseEnvelope>(endpoint, payload, { headers })
+    );
+  }
+
+  public async getAnalysisCache(
+    gameId: string,
+    analysisMode: string,
+    config: EngineConfig
+  ): Promise<AnalysisCacheResponseEnvelope> {
+    const endpoint = `${this.getBaseApiUrl()}/analysis/cache/${encodeURIComponent(gameId)}`;
+
+    return firstValueFrom(
+      this.httpClient.get<AnalysisCacheResponseEnvelope>(endpoint, {
+        params: {
+          analysisMode,
+          depth: String(config.depth),
+          threads: String(config.threads),
+          timePerMoveMs: String(config.timePerMoveMs)
+        }
+      })
     );
   }
 

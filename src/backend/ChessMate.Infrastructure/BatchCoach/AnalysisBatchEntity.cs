@@ -27,7 +27,15 @@ public sealed class AnalysisBatchEntity : ITableEntity
 
     public string AnalysisMode { get; set; } = string.Empty;
 
+    public int EngineDepth { get; set; }
+
+    public int EngineThreads { get; set; }
+
+    public int EngineTimePerMoveMs { get; set; }
+
     public int CoachingCount { get; set; }
 
     public string InlinePayloadJson { get; set; } = string.Empty;
+
+    public string FullAnalysisPayloadJson { get; set; } = string.Empty;
 }

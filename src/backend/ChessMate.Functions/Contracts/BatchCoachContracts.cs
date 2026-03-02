@@ -4,7 +4,41 @@ public sealed record BatchCoachRequestEnvelope(
     string GameId,
     IReadOnlyList<BatchCoachMoveEnvelope> Moves,
     string? AnalysisMode = null,
-    IReadOnlyDictionary<string, string>? Metadata = null);
+    IReadOnlyDictionary<string, string>? Metadata = null,
+    BatchCoachAnalysisSnapshotEnvelope? AnalysisSnapshot = null);
+
+public sealed record BatchCoachAnalysisSnapshotEnvelope(
+    string GameId,
+    string PlayerColor,
+    IReadOnlyList<BatchCoachAnalysisMoveEnvelope> ClassifiedMoves,
+    BatchCoachEngineConfigEnvelope EngineConfig,
+    string AnalysisMode,
+    int TotalPositions,
+    string AnalyzedAt);
+
+public sealed record BatchCoachAnalysisMoveEnvelope(
+    int Ply,
+    string San,
+    string From,
+    string To,
+    string Piece,
+    bool IsUserMove,
+    string Classification,
+    double WinExpectancyBefore,
+    double WinExpectancyAfter,
+    double WinExpectancyLoss,
+    string? BestMove,
+    string? OpponentBestResponse,
+    int? CentipawnBefore,
+    int? CentipawnAfter,
+    int CentipawnLoss,
+    string FenBefore,
+    string FenAfter);
+
+public sealed record BatchCoachEngineConfigEnvelope(
+    int Depth,
+    int Threads,
+    int TimePerMoveMs);
 
 public sealed record BatchCoachMoveEnvelope(
     int Ply,
@@ -107,3 +141,15 @@ public sealed record CoachMoveActivityResult(
             FailureMessage: failureMessage);
     }
 }
+
+public sealed record AnalysisCacheResponseEnvelope(
+    string CacheStatus,
+    string CacheReason,
+    string GameId,
+    string? RequestedAnalysisMode,
+    BatchCoachEngineConfigEnvelope RequestedEngineConfig,
+    string? SchemaVersion,
+    string? AnalysisVersion,
+    DateTimeOffset? CreatedAtUtc,
+    BatchCoachResponseEnvelope? BatchCoachResponse,
+    BatchCoachAnalysisSnapshotEnvelope? AnalysisSnapshot);

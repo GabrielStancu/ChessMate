@@ -177,6 +177,25 @@ export class GameSearchPageComponent implements AfterViewInit {
     const config: EngineConfig = this.stockfishController.getPreset(mode);
     const username = this.usernameControl.value.trim();
 
+    try {
+      const cacheResponse = await this.batchCoachApiService.getAnalysisCache(game.gameId, mode, config);
+      this.cacheStatus.set(`analysis-${cacheResponse.cacheStatus}:${cacheResponse.cacheReason}`);
+
+      if (
+        cacheResponse.cacheStatus === 'hit' &&
+        cacheResponse.analysisSnapshot &&
+        cacheResponse.batchCoachResponse
+      ) {
+        this.analysisSessionService.setFullGameAnalysis(cacheResponse.analysisSnapshot);
+        this.analysisSessionService.setBatchCoachResponse(cacheResponse.batchCoachResponse);
+        this.analyzingGameId.set(null);
+        void this.router.navigate(['/analysis', game.gameId]);
+        return;
+      }
+    } catch (error) {
+      console.warn('[ChessMate] Analysis cache lookup failed, falling back to fresh analysis:', error);
+    }
+
     const dialogRef = this.dialog.open(AnalysisLoadingDialogComponent, {
       disableClose: true,
       width: '440px',
