@@ -43,7 +43,9 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
         var rolePhrase = CoachMovePromptComposer.CreateRolePhrase(request.IsUserMove);
         var moveText = CoachMovePromptComposer.CreateMoveText(request);
         var systemPrompt = CoachMovePromptComposer.ComposeSystemPrompt();
-        var userPrompt = CoachMovePromptComposer.ComposeUserPrompt(request, rolePhrase, moveText);
+        var tacticalAnnotation = TacticalAnnotator.Annotate(request.FenAfter, request.From, request.To);
+        var userPrompt = CoachMovePromptComposer.ComposeUserPrompt(request, rolePhrase, moveText, tacticalAnnotation);
+        var boardAfter = BoardSnapshot.TryParse(request.FenAfter);
         var requestUri = BuildRequestUri(openAiOptions);
 
         var wallClockStart = _timeProvider.GetTimestamp();
@@ -82,6 +84,19 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
                 }
 
                 var sections = ParseSections(content);
+
+                var validation = CoachResponseValidator.Validate(
+                    sections.WhyWrong, sections.ExploitPath, sections.SuggestedPlan, boardAfter);
+
+                if (!validation.IsValid)
+                {
+                    _logger.LogWarning(
+                        "Coach response contains board-state anomalies. OperationId {OperationId}, Ply {Ply}, Anomalies {Anomalies}.",
+                        request.OperationId,
+                        request.Ply,
+                        string.Join("; ", validation.Anomalies));
+                }
+
                 var elapsed = _timeProvider.GetElapsedTime(wallClockStart).TotalMilliseconds;
 
                 return new CoachGenerationResult(

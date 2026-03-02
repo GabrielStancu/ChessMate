@@ -41,11 +41,12 @@ Rules:
 - "exploitPath": Use the opponentBestPunishment move to explain what the opponent wins or threatens. This is the key move — center your explanation around it.
 - "suggestedPlan": State the better move and why it is better in one phrase.
 - Never say "the engine", "Stockfish", "analysis shows", "best move is", or similar meta-commentary. Speak as a coach talking directly to a student.
+- A "Legal captures" section is provided. You MUST NOT describe any capture unless it appears exactly in that list. Never state a piece can take another piece if that capture is not listed.
 - No markdown, no code fences, no extra keys.
 """;
     }
 
-    public static string ComposeUserPrompt(CoachMoveGenerationRequest request, string rolePhrase, string moveText)
+    public static string ComposeUserPrompt(CoachMoveGenerationRequest request, string rolePhrase, string moveText, TacticalAnnotation? annotation = null)
     {
         var builder = new StringBuilder();
         builder.AppendLine("Context for one flagged move:");
@@ -104,6 +105,21 @@ Rules:
 
         builder.AppendLine();
         builder.AppendLine("Only reference pieces visible in the board above. Be brief and direct.");
+
+        if (annotation is { HasContent: true })
+        {
+            if (annotation.Motifs.Count > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine("Detected tactical motifs AFTER the move (use these to ground your explanation):");
+                foreach (var motif in annotation.Motifs)
+                    builder.AppendLine($"- {motif}");
+            }
+
+            builder.AppendLine();
+            builder.AppendLine("Legal captures available AFTER the move (ONLY these captures are pseudo-legal — do NOT describe any other capture):");
+            builder.AppendLine(annotation.LegalCapturesText);
+        }
 
         return builder.ToString();
     }
