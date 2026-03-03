@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Chess, Move } from 'chess.js';
-import { ClassifiedMove, FullGameAnalysisResult, MoveContext, PIECE_VALUES } from '../models/classification.models';
+import { ClassifiedMove, FullGameAnalysisResult, MoveClassification, MoveContext, PIECE_VALUES } from '../models/classification.models';
 import { AnalysisMode, EngineConfig, PositionEvaluation } from '../models/analysis.models';
 import { StockfishAnalysisControllerService } from './stockfish-analysis-controller.service';
 import { OpeningBookService } from './opening-book.service';
@@ -215,6 +215,10 @@ export class FullGameAnalysisService {
 
       const classification = classifyMove(weBeforeForMovingSide, weAfterForMovingSide, isBestMove, isBookMove, moveContext);
 
+      const BAD_CLASSIFICATIONS: ReadonlyArray<string> = ['Blunder', 'Miss', 'Mistake'];
+      const effectiveClassification: MoveClassification =
+        (ply <= 4 && !BAD_CLASSIFICATIONS.includes(classification)) ? 'Book' : classification;
+
       const weLoss = weBeforeForMovingSide - weAfterForMovingSide;
       const cpLoss = cpMovingSideBefore - cpMovingSideAfter;
 
@@ -225,7 +229,7 @@ export class FullGameAnalysisService {
         to: move.to,
         piece: move.piece,
         isUserMove,
-        classification,
+        classification: effectiveClassification,
         winExpectancyBefore: weBeforeForMovingSide,
         winExpectancyAfter: weAfterForMovingSide,
         winExpectancyLoss: Math.max(0, weLoss),

@@ -99,7 +99,7 @@ interface MovePair {
       grid-template-columns: 2.5rem 1fr 1fr;
       align-items: center;
       gap: 0;
-      min-height: 52px;
+      min-height: 36px;
     }
 
     .move-header {
@@ -110,7 +110,7 @@ interface MovePair {
     }
 
     .col-num {
-      font-size: 1rem;
+      font-size: 0.8rem;
       color: var(--cm-text-muted);
       text-align: right;
       padding-right: 0.5rem;
@@ -131,9 +131,9 @@ interface MovePair {
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.4rem 0.5rem;
+      padding: 0.25rem 0.5rem;
       cursor: pointer;
-      font-size: 1.35rem;
+      font-size: 1.0rem;
       color: var(--cm-text-secondary);
       transition: background 0.12s;
       border-radius: var(--cm-radius-sm);
@@ -169,7 +169,7 @@ interface MovePair {
     }
 
     .move-symbol {
-      font-size: 1.3rem;
+      font-size: 1.0rem;
       font-weight: 700;
       flex-shrink: 0;
     }
