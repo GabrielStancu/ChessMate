@@ -28,6 +28,13 @@ public static partial class RequestValidators
         "Deep"
     };
 
+    private static readonly HashSet<string> AllowedPromptVerbosities = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "concise",
+        "balanced",
+        "detailed"
+    };
+
     [GeneratedRegex("^[a-zA-Z0-9_-]{3,30}$", RegexOptions.CultureInvariant)]
     private static partial Regex UsernameRegex();
 
@@ -101,6 +108,14 @@ public static partial class RequestValidators
                 AllowedAnalysisModes.Contains(request.AnalysisMode),
                 nameof(request.AnalysisMode),
                 "analysisMode must be one of: Quick, Deep.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.PromptVerbosity))
+        {
+            Guard.AgainstFalse(
+                AllowedPromptVerbosities.Contains(request.PromptVerbosity),
+                nameof(request.PromptVerbosity),
+                "promptVerbosity must be one of: concise, balanced, detailed.");
         }
 
         for (var index = 0; index < request.Moves.Count; index++)

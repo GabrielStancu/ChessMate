@@ -1,6 +1,8 @@
 import { ClassifiedMove, COACHING_ELIGIBLE_CLASSES, FullGameAnalysisResult } from './classification.models';
 import { EngineConfig } from './analysis.models';
 
+export type PromptVerbosity = 'concise' | 'balanced' | 'detailed';
+
 /**
  * Mirrors backend BatchCoachMoveEnvelope record.
  */
@@ -28,6 +30,7 @@ export interface BatchCoachRequestPayload {
   gameId: string;
   moves: BatchCoachMovePayload[];
   analysisMode: string | null;
+  promptVerbosity: PromptVerbosity;
   metadata: Record<string, string> | null;
   analysisSnapshot: FullGameAnalysisResult | null;
 }
@@ -95,7 +98,10 @@ export interface AnalysisCacheResponseEnvelope {
  * Build a batch-coach API request payload from a full-game analysis result.
  * Only coaching-eligible moves (Inaccuracy, Mistake, Miss, Blunder) are included.
  */
-export function buildBatchCoachPayload(result: FullGameAnalysisResult): BatchCoachRequestPayload {
+export function buildBatchCoachPayload(
+  result: FullGameAnalysisResult,
+  promptVerbosity: PromptVerbosity = 'balanced'
+): BatchCoachRequestPayload {
   const eligibleMoves = result.classifiedMoves
     .filter((m: ClassifiedMove) => (COACHING_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(m.classification));
 
@@ -120,6 +126,7 @@ export function buildBatchCoachPayload(result: FullGameAnalysisResult): BatchCoa
     gameId: result.gameId,
     moves,
     analysisMode: result.analysisMode,
+    promptVerbosity,
     metadata: {
       depth: String(result.engineConfig.depth),
       threads: String(result.engineConfig.threads),

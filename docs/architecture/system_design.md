@@ -218,6 +218,14 @@ sequenceDiagram
   - coaching success/failure rate
   - timeout saturation rate
   - estimated cloud cost per analyzed game
+- **Prompt-quality counters (TKT-021):** per-move telemetry includes `regenerationAttempts`, `softenedClaims`, and `validationFailures`.
+
+### 5.4 Coach Prompt Guardrails (TKT-021)
+- Batch-coach request accepts `promptVerbosity` (`concise|balanced|detailed`) and defaults to `balanced` when omitted.
+- Prompt strategy prioritizes generalized positional coaching language, with explicit grounding and uncertainty qualifiers when evidence is limited.
+- Post-generation sanity pipeline:
+  - Contradictory tactical/board-state claims trigger at most one regeneration using stronger grounding instructions.
+  - Absolute or overconfident phrasing is softened before response composition.
 - **Alerting:** spikes in `OrchestrationFailed`, `UpstreamUnavailable`, `RateLimited`, and p95 latency breach.
 
 ---

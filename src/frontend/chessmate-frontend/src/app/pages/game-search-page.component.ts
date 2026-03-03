@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { AnalysisMode, EngineConfig } from '../models/analysis.models';
 import { ErrorResponseEnvelope, GetGamesItemEnvelope } from '../models/games.models';
 import { AnalysisLoadingDialogComponent, AnalysisLoadingDialogData } from './analysis-loading-dialog.component';
-import { buildBatchCoachPayload, generateIdempotencyKey } from '../models/batch-coach.models';
+import { buildBatchCoachPayload, generateIdempotencyKey, PromptVerbosity } from '../models/batch-coach.models';
 import { COACHING_ELIGIBLE_CLASSES } from '../models/classification.models';
 import { AnalysisSessionService } from '../services/analysis-session.service';
 import { BatchCoachApiService } from '../services/batch-coach-api.service';
@@ -22,6 +22,7 @@ const DRAW_RESULTS = new Set([
 
 const LAST_SEARCHED_USERNAME_STORAGE_KEY = 'lastSearchedUsername';
 const LAST_ANALYSIS_MODE_STORAGE_KEY = 'lastAnalysisMode';
+const LAST_PROMPT_VERBOSITY_STORAGE_KEY = 'lastPromptVerbosity';
 
 @Component({
   selector: 'app-game-search-page',
@@ -47,6 +48,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
 
   protected readonly pageSize = 12;
   protected readonly analysisMode = signal<AnalysisMode>('quick');
+  protected readonly promptVerbosity = signal<PromptVerbosity>('balanced');
   protected readonly analyzingGameId = signal<string | null>(null);
   protected readonly usernameControl = new FormControl('', {
     nonNullable: true,
@@ -156,6 +158,11 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   protected setAnalysisMode(mode: AnalysisMode): void {
     this.analysisMode.set(mode);
     this.persistLastAnalysisMode(mode);
+  }
+
+  protected setPromptVerbosity(verbosity: PromptVerbosity): void {
+    this.promptVerbosity.set(verbosity);
+    this.persistPromptVerbosity(verbosity);
   }
 
   protected getResultClass(game: GetGamesItemEnvelope): 'win' | 'loss' | 'draw' {
@@ -325,6 +332,11 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    const storedVerbosity = this.readFromLocalStorage(LAST_PROMPT_VERBOSITY_STORAGE_KEY);
+    if (storedVerbosity === 'concise' || storedVerbosity === 'balanced' || storedVerbosity === 'detailed') {
+      this.promptVerbosity.set(storedVerbosity);
+    }
+
     this.usernameControl.setValue(storedUsername);
 
     if (!this.usernameControl.invalid) {
@@ -338,6 +350,10 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
 
   private persistLastAnalysisMode(mode: AnalysisMode): void {
     this.writeToLocalStorage(LAST_ANALYSIS_MODE_STORAGE_KEY, mode);
+  }
+
+  private persistPromptVerbosity(verbosity: PromptVerbosity): void {
+    this.writeToLocalStorage(LAST_PROMPT_VERBOSITY_STORAGE_KEY, verbosity);
   }
 
   private readFromLocalStorage(key: string): string | null {
@@ -376,7 +392,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     mode: AnalysisMode,
     config: EngineConfig
   ): Promise<void> {
-    const payload = buildBatchCoachPayload(result);
+    const payload = buildBatchCoachPayload(result, this.promptVerbosity());
 
     const hasEligibleMoves = result.classifiedMoves.some(
       (m) => (COACHING_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(m.classification)

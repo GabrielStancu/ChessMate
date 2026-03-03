@@ -17,6 +17,9 @@ public sealed class BatchCoachDurableFunctions
     private const string PromptTokensMetricName = "batchcoach.coachmove.tokens.prompt";
     private const string CompletionTokensMetricName = "batchcoach.coachmove.tokens.completion";
     private const string TotalTokensMetricName = "batchcoach.coachmove.tokens.total";
+    private const string RegenerationAttemptsMetricName = "batchcoach.coachmove.validation.regenerationAttempts";
+    private const string SoftenedClaimsMetricName = "batchcoach.coachmove.validation.softenedClaims";
+    private const string ValidationFailuresMetricName = "batchcoach.coachmove.validation.validationFailures";
 
     private readonly ILogger<BatchCoachDurableFunctions> _logger;
     private readonly ICoachMoveGenerator _coachMoveGenerator;
@@ -94,7 +97,8 @@ public sealed class BatchCoachDurableFunctions
             input.Request.GameId,
             input.Request.AnalysisMode,
             move,
-            input.CorrelationId);
+            input.CorrelationId,
+            input.Request.PromptVerbosity);
 
         var activityTask = orchestrationContext.CallActivityAsync<CoachMoveActivityResult>(
             nameof(CoachMoveActivityAsync),
@@ -155,7 +159,8 @@ public sealed class BatchCoachDurableFunctions
             input.Move.CentipawnAfter,
             input.Move.CentipawnLoss,
             input.Move.BestMove,
-            input.Move.OpponentBestResponse);
+            input.Move.OpponentBestResponse,
+            input.PromptVerbosity);
 
         var moveText = string.IsNullOrWhiteSpace(input.Move.Move)
             ? CoachMovePromptComposer.CreateMoveText(generationRequest)
@@ -179,6 +184,9 @@ public sealed class BatchCoachDurableFunctions
                 generationResult.PromptTokens,
                 generationResult.CompletionTokens,
                 generationResult.TotalTokens,
+                generationResult.RegenerationAttempts,
+                generationResult.SoftenedClaims,
+                generationResult.ValidationFailures,
                 generationResult.LatencyMs,
                 generationResult.Model);
 
@@ -230,6 +238,7 @@ public sealed class BatchCoachDurableFunctions
             ["operationId"] = input.OperationId,
             ["gameId"] = input.GameId,
             ["analysisMode"] = input.AnalysisMode ?? "Quick",
+            ["promptVerbosity"] = string.IsNullOrWhiteSpace(input.PromptVerbosity) ? "balanced" : input.PromptVerbosity,
             ["ply"] = result.Ply.ToString(),
             ["classification"] = result.Classification,
             ["isUserMove"] = result.IsUserMove.ToString(),
@@ -241,5 +250,8 @@ public sealed class BatchCoachDurableFunctions
         _telemetryClient.TrackMetric(PromptTokensMetricName, result.PromptTokens, dimensions);
         _telemetryClient.TrackMetric(CompletionTokensMetricName, result.CompletionTokens, dimensions);
         _telemetryClient.TrackMetric(TotalTokensMetricName, result.TotalTokens, dimensions);
+        _telemetryClient.TrackMetric(RegenerationAttemptsMetricName, result.RegenerationAttempts, dimensions);
+        _telemetryClient.TrackMetric(SoftenedClaimsMetricName, result.SoftenedClaims, dimensions);
+        _telemetryClient.TrackMetric(ValidationFailuresMetricName, result.ValidationFailures, dimensions);
     }
 }

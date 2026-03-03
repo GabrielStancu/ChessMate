@@ -23,6 +23,21 @@ Angular 18 standalone frontend for ChessMate MVP.
 - `lastAnalysisMode`
 	- Stored when user changes analysis mode (`quick` or `deep`).
 	- Used as default mode on app load.
+- `lastPromptVerbosity`
+	- Stored when user changes coach verbosity (`concise`, `balanced`, `detailed`).
+	- Sent to `POST /api/analysis/batch-coach` as `promptVerbosity`.
+	- Used as default coach verbosity on app load.
+
+## Coach prompt quality controls
+
+- Coach prompt tone is grounded toward practical positional guidance instead of definitive tactical claims.
+- Post-generation sanity behavior:
+	- Contradictory claims trigger one regeneration with stronger grounding instructions.
+	- Absolute/overconfident phrasing is softened using uncertainty qualifiers.
+- Telemetry counters are emitted per coached move for:
+	- `regenerationAttempts`
+	- `softenedClaims`
+	- `validationFailures`
 
 ## Branding assets
 

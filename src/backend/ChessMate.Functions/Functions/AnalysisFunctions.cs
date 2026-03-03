@@ -255,6 +255,7 @@ public sealed class AnalysisFunctions
                 ["operationId"] = responseEnvelope.OperationId,
                 ["gameId"] = responseEnvelope.Summary.GameId,
                 ["analysisMode"] = responseEnvelope.Summary.AnalysisMode,
+                ["promptVerbosity"] = string.IsNullOrWhiteSpace(batchCoachRequest.PromptVerbosity) ? "balanced" : batchCoachRequest.PromptVerbosity,
                 ["totalMoves"] = responseEnvelope.Summary.TotalMoves.ToString(),
                 ["eligibleMoves"] = responseEnvelope.Summary.EligibleMoves.ToString(),
                 ["coachingCount"] = responseEnvelope.Coaching.Count.ToString(),

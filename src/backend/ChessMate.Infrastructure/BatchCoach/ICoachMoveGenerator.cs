@@ -22,7 +22,8 @@ public sealed record CoachMoveGenerationRequest(
     int? CentipawnAfter = null,
     int? CentipawnLoss = null,
     string? BestMove = null,
-    string? OpponentBestResponse = null);
+    string? OpponentBestResponse = null,
+    string? PromptVerbosity = null);
 
 public sealed record CoachGenerationResult(
     string WhyWrong,
@@ -32,5 +33,8 @@ public sealed record CoachGenerationResult(
     int PromptTokens,
     int CompletionTokens,
     int TotalTokens,
+    int RegenerationAttempts,
+    int SoftenedClaims,
+    int ValidationFailures,
     double LatencyMs,
     string Model);

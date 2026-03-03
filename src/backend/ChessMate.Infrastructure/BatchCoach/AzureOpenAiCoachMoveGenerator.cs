@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Azure.Core;
 using Azure.Identity;
 using ChessMate.Infrastructure.Configuration;
@@ -42,13 +43,137 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
 
         var rolePhrase = CoachMovePromptComposer.CreateRolePhrase(request.IsUserMove);
         var moveText = CoachMovePromptComposer.CreateMoveText(request);
-        var systemPrompt = CoachMovePromptComposer.ComposeSystemPrompt();
+        var promptVerbosity = CoachMovePromptComposer.NormalizePromptVerbosity(request.PromptVerbosity);
+        var systemPrompt = CoachMovePromptComposer.ComposeSystemPrompt(promptVerbosity);
         var tacticalAnnotation = TacticalAnnotator.Annotate(request.FenAfter, request.From, request.To);
         var userPrompt = CoachMovePromptComposer.ComposeUserPrompt(request, rolePhrase, moveText, tacticalAnnotation);
         var boardAfter = BoardSnapshot.TryParse(request.FenAfter);
         var requestUri = BuildRequestUri(openAiOptions);
 
         var wallClockStart = _timeProvider.GetTimestamp();
+        var accumulatedPromptTokens = 0;
+        var accumulatedCompletionTokens = 0;
+        var accumulatedTotalTokens = 0;
+        var regenerationAttempts = 0;
+        var softenedClaims = 0;
+        var validationFailures = 0;
+
+        var completion = await GenerateCompletionWithRetryAsync(
+            openAiOptions,
+            requestUri,
+            systemPrompt,
+            userPrompt,
+            cancellationToken);
+
+        accumulatedPromptTokens += completion.Usage?.PromptTokens ?? 0;
+        accumulatedCompletionTokens += completion.Usage?.CompletionTokens ?? 0;
+        accumulatedTotalTokens += completion.Usage?.TotalTokens ?? 0;
+
+        var sections = ParseSections(completion.Choices?.FirstOrDefault()?.Message?.Content
+            ?? throw new InvalidOperationException("Azure OpenAI response did not contain message content."));
+
+        var validation = CoachResponseValidator.Validate(
+            sections.WhyWrong,
+            sections.ExploitPath,
+            sections.SuggestedPlan,
+            boardAfter,
+            tacticalAnnotation);
+
+        if (!validation.IsValid)
+        {
+            validationFailures++;
+
+            _logger.LogWarning(
+                "Coach response validation failed. OperationId {OperationId}, Ply {Ply}, Contradictions {Contradictions}, AbsoluteIndicators {AbsoluteIndicators}.",
+                request.OperationId,
+                request.Ply,
+                string.Join("; ", validation.Contradictions),
+                string.Join("; ", validation.AbsoluteClaimIndicators));
+
+            if (validation.HasContradictions)
+            {
+                regenerationAttempts = 1;
+
+                var strongerPrompt = CoachMovePromptComposer.ComposeSystemPrompt(promptVerbosity, strongerGrounding: true);
+                var strongerUserPrompt = BuildRegenerationUserPrompt(userPrompt, validation.Contradictions);
+
+                var regeneratedCompletion = await GenerateCompletionWithRetryAsync(
+                    openAiOptions,
+                    requestUri,
+                    strongerPrompt,
+                    strongerUserPrompt,
+                    cancellationToken);
+
+                accumulatedPromptTokens += regeneratedCompletion.Usage?.PromptTokens ?? 0;
+                accumulatedCompletionTokens += regeneratedCompletion.Usage?.CompletionTokens ?? 0;
+                accumulatedTotalTokens += regeneratedCompletion.Usage?.TotalTokens ?? 0;
+                completion = regeneratedCompletion;
+
+                sections = ParseSections(regeneratedCompletion.Choices?.FirstOrDefault()?.Message?.Content
+                    ?? throw new InvalidOperationException("Azure OpenAI regeneration did not contain message content."));
+
+                validation = CoachResponseValidator.Validate(
+                    sections.WhyWrong,
+                    sections.ExploitPath,
+                    sections.SuggestedPlan,
+                    boardAfter,
+                    tacticalAnnotation);
+
+                if (!validation.IsValid)
+                {
+                    validationFailures++;
+                }
+            }
+
+            if (validation.HasAbsoluteClaimRisk)
+            {
+                var (softenedWhy, whyChanged) = SoftenAbsoluteClaims(sections.WhyWrong);
+                var (softenedExploit, exploitChanged) = SoftenAbsoluteClaims(sections.ExploitPath);
+                var (softenedPlan, planChanged) = SoftenAbsoluteClaims(sections.SuggestedPlan);
+
+                if (whyChanged)
+                {
+                    softenedClaims++;
+                }
+
+                if (exploitChanged)
+                {
+                    softenedClaims++;
+                }
+
+                if (planChanged)
+                {
+                    softenedClaims++;
+                }
+
+                sections = new CoachSections(softenedWhy, softenedExploit, softenedPlan);
+            }
+        }
+
+        var elapsed = _timeProvider.GetElapsedTime(wallClockStart).TotalMilliseconds;
+
+        return new CoachGenerationResult(
+            sections.WhyWrong,
+            sections.ExploitPath,
+            sections.SuggestedPlan,
+            CoachMovePromptComposer.ComposeExplanation(rolePhrase, moveText, sections.WhyWrong, sections.ExploitPath, sections.SuggestedPlan),
+            accumulatedPromptTokens,
+            accumulatedCompletionTokens,
+            accumulatedTotalTokens,
+            regenerationAttempts,
+            softenedClaims,
+            validationFailures,
+            elapsed,
+            string.IsNullOrWhiteSpace(completion.Model) ? openAiOptions.ModelName : completion.Model!);
+    }
+
+    private async Task<AzureOpenAiCompletionResponse> GenerateCompletionWithRetryAsync(
+        AzureOpenAiOptions openAiOptions,
+        string requestUri,
+        string systemPrompt,
+        string userPrompt,
+        CancellationToken cancellationToken)
+    {
         var attempts = Math.Max(openAiOptions.Retry.MaxAttempts, 1);
 
         for (var attempt = 1; attempt <= attempts; attempt++)
@@ -77,38 +202,12 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
                     SerializerOptions,
                     cancellationToken);
 
-                var content = completion?.Choices?.FirstOrDefault()?.Message?.Content;
-                if (string.IsNullOrWhiteSpace(content))
+                if (completion is null)
                 {
-                    throw new InvalidOperationException("Azure OpenAI response did not contain message content.");
+                    throw new InvalidOperationException("Azure OpenAI response payload could not be deserialized.");
                 }
 
-                var sections = ParseSections(content);
-
-                var validation = CoachResponseValidator.Validate(
-                    sections.WhyWrong, sections.ExploitPath, sections.SuggestedPlan, boardAfter);
-
-                if (!validation.IsValid)
-                {
-                    _logger.LogWarning(
-                        "Coach response contains board-state anomalies. OperationId {OperationId}, Ply {Ply}, Anomalies {Anomalies}.",
-                        request.OperationId,
-                        request.Ply,
-                        string.Join("; ", validation.Anomalies));
-                }
-
-                var elapsed = _timeProvider.GetElapsedTime(wallClockStart).TotalMilliseconds;
-
-                return new CoachGenerationResult(
-                    sections.WhyWrong,
-                    sections.ExploitPath,
-                    sections.SuggestedPlan,
-                    CoachMovePromptComposer.ComposeExplanation(rolePhrase, moveText, sections.WhyWrong, sections.ExploitPath, sections.SuggestedPlan),
-                    completion?.Usage?.PromptTokens ?? 0,
-                    completion?.Usage?.CompletionTokens ?? 0,
-                    completion?.Usage?.TotalTokens ?? 0,
-                    elapsed,
-                    string.IsNullOrWhiteSpace(completion?.Model) ? openAiOptions.ModelName : completion!.Model!);
+                return completion;
             }
             catch (HttpRequestException exception) when (IsTransientStatusCode(exception.StatusCode) && attempt < attempts)
             {
@@ -133,6 +232,46 @@ public sealed class AzureOpenAiCoachMoveGenerator : ICoachMoveGenerator
         }
 
         throw new InvalidOperationException("Azure OpenAI coaching call failed after the configured retry attempts.");
+    }
+
+    private static string BuildRegenerationUserPrompt(string userPrompt, IReadOnlyList<string> contradictions)
+    {
+        if (contradictions.Count == 0)
+        {
+            return userPrompt;
+        }
+
+        var builder = new StringBuilder(userPrompt);
+        builder.AppendLine();
+        builder.AppendLine();
+        builder.AppendLine("Regeneration guardrails:");
+        builder.AppendLine("- The prior answer included unsupported claims. Correct them and stay strictly grounded.");
+        foreach (var contradiction in contradictions)
+        {
+            builder.AppendLine($"- Avoid unsupported claim: {contradiction}");
+        }
+
+        return builder.ToString();
+    }
+
+    private static (string Text, bool Changed) SoftenAbsoluteClaims(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return (input, false);
+        }
+
+        var softened = input;
+        softened = Regex.Replace(softened, "\\balways\\b", "often", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bnever\\b", "rarely", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bdefinitely\\b", "likely", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bcertainly\\b", "likely", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bguaranteed\\b", "likely", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bforced\\s+win\\b", "strong practical advantage", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bcompletely\\s+winning\\b", "clearly preferable", RegexOptions.IgnoreCase);
+        softened = Regex.Replace(softened, "\\bcannot\\s+be\\s+stopped\\b", "is difficult to stop", RegexOptions.IgnoreCase);
+
+        return (softened, !string.Equals(input, softened, StringComparison.Ordinal));
     }
 
     private static void ValidateOptions(AzureOpenAiOptions options)

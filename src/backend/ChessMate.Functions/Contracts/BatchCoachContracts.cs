@@ -5,7 +5,8 @@ public sealed record BatchCoachRequestEnvelope(
     IReadOnlyList<BatchCoachMoveEnvelope> Moves,
     string? AnalysisMode = null,
     IReadOnlyDictionary<string, string>? Metadata = null,
-    BatchCoachAnalysisSnapshotEnvelope? AnalysisSnapshot = null);
+    BatchCoachAnalysisSnapshotEnvelope? AnalysisSnapshot = null,
+    string? PromptVerbosity = null);
 
 public sealed record BatchCoachAnalysisSnapshotEnvelope(
     string GameId,
@@ -99,7 +100,8 @@ public sealed record CoachMoveActivityInput(
     string GameId,
     string? AnalysisMode,
     BatchCoachMoveEnvelope Move,
-    string? CorrelationId = null);
+    string? CorrelationId = null,
+    string? PromptVerbosity = null);
 
 public sealed record CoachMoveActivityResult(
     int Ply,
@@ -113,6 +115,9 @@ public sealed record CoachMoveActivityResult(
     int PromptTokens = 0,
     int CompletionTokens = 0,
     int TotalTokens = 0,
+    int RegenerationAttempts = 0,
+    int SoftenedClaims = 0,
+    int ValidationFailures = 0,
     double LatencyMs = 0,
     string? Model = null,
     bool IsSuccessful = true,

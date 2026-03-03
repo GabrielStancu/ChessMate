@@ -339,3 +339,42 @@ Persist the last-searched Chess.com username and the last selected analysis mode
 - Update the app chrome and branding:
 	- Rename the browser/tab title from the default "ChessMateFrontend" to "ChessMate" (update `index.html` title and verify build).
 	- Replace the default Angular logo with the project logo located under `assets/images` (ensure the shell/header references the asset and the build copies it correctly).
+
+---
+
+## TKT-021 — Coach Tone, Prompt Validation, and Prompt Verbosity
+**Title**
+Harden coach prompts: prefer generalized guidance and add validation/telemetry
+
+**Description**
+Reduce hallucinations by updating coach prompts to favor positional guidance, uncertainty qualifiers, and explicit grounding. Add a lightweight validation pipeline and telemetry to monitor prompt quality.
+
+**Definition of Done (.NET/Azure)**
+- Update coach prompt templates to prefer generalized coaching language (plans, positional ideas, themes) instead of definitive tactical claims; include grounding instructions and uncertainty qualifiers when evidence is insufficient.
+- Add a prompt-verbosity toggle (`concise` | `balanced` | `detailed`) and persist the selection with other local settings (username, analysis mode).
+- Implement a post-generation sanity check that detects absolute or contradictory tactical claims (e.g., impossible pins) and either softens phrasing or triggers one regeneration with stronger grounding.
+- Record telemetry counters for `regenerationAttempts`, `softenedClaims`, and `validationFailures`.
+- Update frontend README and design notes documenting the prompt-verbosity option and validation behavior.
+
+
+---
+
+## TKT-022 — Custom Board, Captured Pieces, Avatars, Flags, and Move Overlays
+**Title**
+Replace and enrich the board UI: custom board styling, captured-piece strips, avatars, flags, and overlays
+
+**Description**
+Implement a custom SVG/CSS board consistent with the mature flat minimal visual system; show captured-piece strips, player avatars, national flags/emojis, and visual move overlays/arrows.
+
+**Definition of Done (Frontend)**
+- Replace the existing board with a custom SVG/CSS board component or thematic board wrapper that matches the mature flat minimal design tokens.
+- Add captured-piece strips beneath each player's name showing thumbnails of captured opponent pieces in order of capture; ensure keyboard accessibility and correct updates when navigating positions.
+- Show player profile pictures (from Chess.com metadata) on the analysis board page with graceful fallbacks.
+- Surface country flags/emojis from Chess.com player metadata on both the games search page and analysis page; map country codes to accessible flag emoji or small SVG flag assets as appropriate.
+- Visual move overlays and arrows:
+  - Highlight starting and destination squares when a move is selected or navigated to using the color associated with that move's classification.
+  - Display the classification symbol (small emblem) in the upper-right corner of the destination square.
+  - Render the "best move" arrow for move types where applicable (exclude `Book`, `Great`, `Brilliant`, and `Best`).
+- Ensure all UI changes are responsive and meet accessibility requirements (alt text, ARIA roles, keyboard focus).
+- Add unit/integration tests for captured-piece rendering, avatar/flag display, and move overlay behavior.
+- Update frontend README and design notes documenting the new UI components and contracts.

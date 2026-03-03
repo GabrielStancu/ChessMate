@@ -39,8 +39,17 @@
       <h2 class="games-title">Recent Games</h2>
       <div class="games-actions">
         <select id="analysis-mode" class="mode-select" [value]="analysisMode()" (change)="setAnalysisMode($any($event.target).value)">
-          <option value="quick">Quick</option>
-          <option value="deep">Deep</option>
+          <option value="quick">Quick analysis</option>
+          <option value="deep">Deep analysis</option>
+        </select>
+        <select
+          id="prompt-verbosity"
+          class="mode-select"
+          [value]="promptVerbosity()"
+          (change)="setPromptVerbosity($any($event.target).value)">
+          <option value="concise">Concise coach</option>
+          <option value="balanced">Balanced coach</option>
+          <option value="detailed">Detailed coach</option>
         </select>
         <button
           class="hard-refresh-btn"
