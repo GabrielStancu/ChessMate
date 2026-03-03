@@ -24,6 +24,7 @@ import { CoachPanelComponent } from '../components/coach-panel.component';
 import { EvaluationBarComponent } from '../components/evaluation-bar.component';
 import { EvaluationChartComponent } from '../components/evaluation-chart.component';
 import { MoveListComponent } from '../components/move-list.component';
+import { PlayerBarComponent } from '../components/player-bar.component';
 import { AnalysisSessionService } from '../services/analysis-session.service';
 import { buildEvaluationTimeline } from '../utils/evaluation.utils';
 
@@ -35,7 +36,7 @@ interface MoveStep {
 @Component({
   selector: 'app-analysis-board-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, EvaluationBarComponent, EvaluationChartComponent, MoveListComponent],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, EvaluationBarComponent, EvaluationChartComponent, MoveListComponent, PlayerBarComponent],
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
@@ -111,6 +112,73 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
 
   protected readonly playerColor = computed(() => this.fullAnalysis()?.playerColor ?? 'white');
 
+  // ── Player bar metadata ──────────────────────────────────────────────────────
+  protected readonly topPlayerUsername = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return '';
+    return color === 'white' ? g.blackPlayer : g.whitePlayer;
+  });
+
+  protected readonly topPlayerRating = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.blackRating : g.whiteRating;
+  });
+
+  protected readonly topPlayerAvatarUrl = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.blackAvatarUrl : g.whiteAvatarUrl;
+  });
+
+  protected readonly topPlayerCountry = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.blackCountry : g.whiteCountry;
+  });
+
+  protected readonly bottomPlayerUsername = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return '';
+    return color === 'white' ? g.whitePlayer : g.blackPlayer;
+  });
+
+  protected readonly bottomPlayerRating = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.whiteRating : g.blackRating;
+  });
+
+  protected readonly bottomPlayerAvatarUrl = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.whiteAvatarUrl : g.blackAvatarUrl;
+  });
+
+  protected readonly bottomPlayerCountry = computed(() => {
+    const g = this.game();
+    const color = this.playerColor();
+    if (!g) return null;
+    return color === 'white' ? g.whiteCountry : g.blackCountry;
+  });
+
+  /** The color that the top player plays (opponent color). */
+  protected readonly topCapturedByColor = computed((): 'white' | 'black' =>
+    this.playerColor() === 'white' ? 'black' : 'white'
+  );
+
+  /** The color that the bottom player (user) plays. */
+  protected readonly bottomCapturedByColor = computed((): 'white' | 'black' =>
+    this.playerColor()
+  );
+
   public constructor() {
     const activeGame = this.game();
     if (!activeGame) {
@@ -141,7 +209,10 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       orientation: this.fullAnalysis()?.playerColor === 'black' ? COLOR.black : COLOR.white,
       style: {
         borderType: BORDER_TYPE.frame,
-        showCoordinates: true
+        showCoordinates: true,
+        pieces: {
+          file: '/assets/images/chess%20set/svgs/pieces.svg'
+        }
       },
       extensions: [
         { class: Markers },
@@ -197,6 +268,17 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     const rest = match[3] ?? '';
     const minutes = seconds < 60 ? seconds : Math.round(seconds / 60);
     return `${minutes}${increment}${rest}`;
+  }
+
+  protected parseOpening(raw: string | null | undefined): string | null {
+    if (!raw) return null;
+    let slug = raw.trim();
+    // If it's a URL, take the last path segment
+    if (slug.startsWith('http')) {
+      slug = slug.replace(/\/+$/, '').split('/').pop() ?? slug;
+    }
+    const name = slug.replace(/-/g, ' ').trim();
+    return name || null;
   }
 
   protected moveLabel(): string {
@@ -409,20 +491,14 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
 
     const classKey = classifiedMove.classification.toLowerCase();
 
-    const dimMarker: MarkerType = { class: 'marker-dim-highlight', slice: 'markerSquare' };
-    this.chessboard.addMarker(dimMarker, classifiedMove.from);
-    this.chessboard.addMarker(dimMarker, classifiedMove.to);
-
-    const classificationMarker: MarkerType = {
-      class: `marker-classification-${classKey}`,
-      slice: 'markerCircle'
-    };
-    this.chessboard.addMarker(classificationMarker, classifiedMove.to);
+    const moveSquareMarker: MarkerType = { class: `marker-move-${classKey}`, slice: 'markerSquare' };
+    this.chessboard.addMarker(moveSquareMarker, classifiedMove.from);
+    this.chessboard.addMarker(moveSquareMarker, classifiedMove.to);
 
     if (classifiedMove.bestMove) {
       const parsed = this.parseUciMove(classifiedMove.bestMove);
       if (parsed) {
-        const arrowType: ArrowType = { class: `arrow-bestmove-${classKey}` };
+        const arrowType: ArrowType = { class: 'arrow-bestmove' };
         this.chessboard.addArrow(arrowType, parsed.from, parsed.to);
       }
     }

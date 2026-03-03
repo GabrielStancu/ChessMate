@@ -114,6 +114,18 @@ var host = new HostBuilder()
 
         services.AddSingleton<IChessComGamesService, ChessComGamesService>();
         services
+            .AddHttpClient<IChessComPlayerProfileClient, ChessComPlayerProfileClient>((serviceProvider, client) =>
+            {
+                var options = serviceProvider.GetRequiredService<IOptions<BackendOptions>>().Value;
+                client.BaseAddress = new Uri(options.ChessCom.BaseUrl.TrimEnd('/') + "/");
+                client.DefaultRequestHeaders.UserAgent.Clear();
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("ChessMate", "1.0"));
+                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("(+https://github.com/ChessMate)"));
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            })
+            .AddStandardResilienceHandler();
+        services
             .AddHttpClient<IChessComArchiveClient, ChessComArchiveClient>((serviceProvider, client) =>
             {
                 var options = serviceProvider.GetRequiredService<IOptions<BackendOptions>>().Value;

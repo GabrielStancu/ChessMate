@@ -14,4 +14,8 @@ public sealed record GetGamesItemEnvelope(
     string TimeControl,
     string Url,
     string? Pgn,
-    string? InitialFen);
+    string? InitialFen,
+    string? WhiteAvatarUrl = null,
+    string? BlackAvatarUrl = null,
+    string? WhiteCountry = null,
+    string? BlackCountry = null);

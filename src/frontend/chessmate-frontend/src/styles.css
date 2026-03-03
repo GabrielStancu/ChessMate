@@ -119,131 +119,74 @@ body {
 }
 
 
-/* ── Classification square dim highlights ── */
-.cm-chessboard .markers .marker.marker-dim-highlight {
-	fill: #000000;
-	opacity: 0.18;
-}
-
-/* ── Classification markers (colored circle with thick outline + white border) ── */
-.cm-chessboard .markers .marker.marker-classification-brilliant {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
-	fill: #26C6DA;
-	opacity: 0.92;
-}
-
-.cm-chessboard .markers .marker.marker-classification-great {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
-	fill: #3949AB;
-	opacity: 0.92;
-}
-
-.cm-chessboard .markers .marker.marker-classification-best {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
-	fill: #2E7D32;
-	opacity: 0.92;
-}
-
-.cm-chessboard .markers .marker.marker-classification-excellent {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
-	fill: #00897B;
-	opacity: 0.92;
-}
-
-.cm-chessboard .markers .marker.marker-classification-good {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
+/* ── Classification square fill markers (from/to squares take the classification color) ── */
+.cm-chessboard .markers .marker.marker-move-good {
 	fill: #66BB6A;
-	opacity: 0.92;
+	opacity: 0.48;
 }
 
-.cm-chessboard .markers .marker.marker-classification-inaccuracy {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
+.cm-chessboard .markers .marker.marker-move-inaccuracy {
 	fill: #F57C00;
-	opacity: 0.92;
+	opacity: 0.48;
 }
 
-.cm-chessboard .markers .marker.marker-classification-mistake {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
+.cm-chessboard .markers .marker.marker-move-mistake {
 	fill: #EF5350;
-	opacity: 0.92;
+	opacity: 0.48;
 }
 
-.cm-chessboard .markers .marker.marker-classification-miss {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
+.cm-chessboard .markers .marker.marker-move-miss {
 	fill: #D32F2F;
-	opacity: 0.92;
+	opacity: 0.48;
 }
 
-.cm-chessboard .markers .marker.marker-classification-blunder {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
+.cm-chessboard .markers .marker.marker-move-blunder {
 	fill: #B71C1C;
-	opacity: 0.92;
+	opacity: 0.48;
 }
 
-.cm-chessboard .markers .marker.marker-classification-book {
-	stroke: #1f1f1f;
-	stroke-width: 2.5px;
-	fill: #78909C;
-	opacity: 0.92;
-}
-
-/* ── Best-move arrow styles per classification ── */
-.cm-chessboard .arrow-bestmove-good .arrow-head {
-	fill: #66BB6A;
+/* ── Best-move arrow — always dim green ── */
+.cm-chessboard .arrow-bestmove .arrow-head {
+	fill: #4CAF50;
 	fill-rule: nonzero;
+	opacity: 0.65;
 }
-.cm-chessboard .arrow-bestmove-good .arrow-line {
-	stroke: #66BB6A;
+.cm-chessboard .arrow-bestmove .arrow-line {
+	stroke: #4CAF50;
 	stroke-linecap: round;
-	opacity: 0.6;
+	opacity: 0.45;
 }
 
-.cm-chessboard .arrow-bestmove-inaccuracy .arrow-head {
-	fill: #F57C00;
-	fill-rule: nonzero;
-}
-.cm-chessboard .arrow-bestmove-inaccuracy .arrow-line {
-	stroke: #F57C00;
-	stroke-linecap: round;
-	opacity: 0.6;
+/* ── ChessMate board theme: dark squares, light white squares ── */
+.cm-chessboard.default .board .square.white {
+	fill: #e8e8e8 !important;
 }
 
-.cm-chessboard .arrow-bestmove-mistake .arrow-head {
-	fill: #EF5350;
-	fill-rule: nonzero;
-}
-.cm-chessboard .arrow-bestmove-mistake .arrow-line {
-	stroke: #EF5350;
-	stroke-linecap: round;
-	opacity: 0.6;
+.cm-chessboard.default .board .square.black {
+	fill: #828282 !important;
 }
 
-.cm-chessboard .arrow-bestmove-miss .arrow-head {
-	fill: #D32F2F;
-	fill-rule: nonzero;
-}
-.cm-chessboard .arrow-bestmove-miss .arrow-line {
-	stroke: #D32F2F;
-	stroke-linecap: round;
-	opacity: 0.6;
+.cm-chessboard.default.border-type-frame .board .border {
+	fill: #2a2a32 !important;
+	stroke: none;
 }
 
-.cm-chessboard .arrow-bestmove-blunder .arrow-head {
-	fill: #B71C1C;
-	fill-rule: nonzero;
+.cm-chessboard.default.border-type-frame .board .border-inner {
+	fill: #828282 !important;
+	stroke: #828282 !important;
+	stroke-width: 0.7%;
 }
-.cm-chessboard .arrow-bestmove-blunder .arrow-line {
-	stroke: #B71C1C;
-	stroke-linecap: round;
-	opacity: 0.6;
+
+.cm-chessboard.default .coordinates .coordinate {
+	fill: #9ba3ae !important;
 }
+
+.cm-chessboard.default .coordinates .coordinate.black {
+	fill: #d0d0d0 !important;
+}
+
+.cm-chessboard.default .coordinates .coordinate.white {
+	fill: #9ba3ae !important;
+}
+
 

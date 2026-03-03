@@ -202,7 +202,7 @@ export class FullGameAnalysisService {
       const isBestMove = bestMoveUci !== null && uciMove.toLowerCase() === bestMoveUci.toLowerCase();
 
       const positionBeforeMove = positions[i];
-      const isBookMove = this.openingBook.isBookPositionSync(positionBeforeMove);
+      const isBookMove = ply <= 2 || this.openingBook.isBookPositionSync(positionBeforeMove);
 
       const moveContext: MoveContext = {
         piece: move.piece,

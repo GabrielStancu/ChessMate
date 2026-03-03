@@ -13,6 +13,10 @@ export interface GetGamesItemEnvelope {
   url: string;
   pgn?: string;
   initialFen?: string;
+  whiteAvatarUrl?: string | null;
+  blackAvatarUrl?: string | null;
+  whiteCountry?: string | null;
+  blackCountry?: string | null;
 }
 
 export interface GetGamesResponseEnvelope {

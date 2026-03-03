@@ -4,13 +4,15 @@
   <div class="board-column">
 
     <!-- Top player bar (opponent side) -->
-    <div class="player-bar">
-      <span class="player-dot"
-            [class.dot-white]="playerColor() === 'black'"
-            [class.dot-black]="playerColor() === 'white'"></span>
-      <span class="player-name">{{ playerColor() === 'white' ? g.blackPlayer : g.whitePlayer }}</span>
-      <span class="player-rating">{{ playerColor() === 'white' ? g.blackRating : g.whiteRating }}</span>
-    </div>
+    <app-player-bar
+      [username]="topPlayerUsername()"
+      [rating]="topPlayerRating()"
+      [avatarUrl]="topPlayerAvatarUrl()"
+      [countryCode]="topPlayerCountry()"
+      [fen]="currentFen()"
+      [capturedByColor]="topCapturedByColor()"
+      position="top">
+    </app-player-bar>
 
     <!-- Eval bar + board -->
     <div class="board-area">
@@ -23,13 +25,15 @@
     </div>
 
     <!-- Bottom player bar (user side) -->
-    <div class="player-bar">
-      <span class="player-dot"
-            [class.dot-white]="playerColor() === 'white'"
-            [class.dot-black]="playerColor() === 'black'"></span>
-      <span class="player-name">{{ playerColor() === 'white' ? g.whitePlayer : g.blackPlayer }}</span>
-      <span class="player-rating">{{ playerColor() === 'white' ? g.whiteRating : g.blackRating }}</span>
-    </div>
+    <app-player-bar
+      [username]="bottomPlayerUsername()"
+      [rating]="bottomPlayerRating()"
+      [avatarUrl]="bottomPlayerAvatarUrl()"
+      [countryCode]="bottomPlayerCountry()"
+      [fen]="currentFen()"
+      [capturedByColor]="bottomCapturedByColor()"
+      position="bottom">
+    </app-player-bar>
 
   </div>
 
@@ -44,9 +48,14 @@
           <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
       </button>
-      <span class="panel-title">Game Analysis</span>
+      <div class="header-title-block">
+        <span class="panel-title">Game Analysis</span>
+      </div>
       <span class="move-badge">{{ formatTimeControl(g.timeControl) }}</span>
       <span class="move-badge">{{ moveLabel() }}</span>
+      @if (parseOpening(g.opening); as openingName) {
+        <span class="opening-badge" [title]="openingName">{{ openingName }}</span>
+      }
     </div>
 
     <!-- Coach panel -->

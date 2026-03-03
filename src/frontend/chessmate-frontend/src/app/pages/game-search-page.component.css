@@ -190,15 +190,17 @@
   cursor: not-allowed;
 }
 
-/* Right hero image panel — sticky so it stays in view while left column scrolls */
+/* Right hero image panel — fixed so it always fills the viewport regardless of left column height */
 .hero-image {
   background-image: url('/assets/images/chess-hero.jpg');
   background-size: cover;
   background-position: center right;
-  position: sticky;
+  position: fixed;
   top: 0;
+  right: 0;
+  width: 50%;
   height: 100vh;
-  align-self: start;
+  z-index: 0;
 }
 
 .hero-image::after {
@@ -394,6 +396,12 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.player-flag {
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .player-dot {

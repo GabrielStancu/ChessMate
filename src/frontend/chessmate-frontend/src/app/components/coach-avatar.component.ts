@@ -16,7 +16,7 @@ import { Component } from '@angular/core';
     .coach-avatar-img {
       width: 100%;
       height: 100%;
-      border-radius: 50%;
+      border-radius: 10px;
       object-fit: cover;
     }
   `]

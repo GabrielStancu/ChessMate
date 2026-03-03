@@ -30,14 +30,14 @@ interface MovePair {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="move-table" #scrollContainer>
-      <!-- Header row -->
-      <div class="move-row move-header">
-        <span class="col-num">#</span>
-        <span class="col-move">White</span>
-        <span class="col-move">Black</span>
-      </div>
+    <!-- Header row — outside scroll container so scrollbar starts below it -->
+    <div class="move-row move-header">
+      <span class="col-num">#</span>
+      <span class="col-move">White</span>
+      <span class="col-move">Black</span>
+    </div>
 
+    <div class="move-table" #scrollContainer>
       <!-- Move pairs -->
       <div
         *ngFor="let pair of movePairs()"
@@ -78,11 +78,19 @@ interface MovePair {
     </div>
   `,
   styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
     .move-table {
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      height: 100%;
+      flex: 1;
+      min-height: 0;
       background: var(--cm-bg-card);
     }
 
@@ -95,9 +103,7 @@ interface MovePair {
     }
 
     .move-header {
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      flex-shrink: 0;
       background: var(--cm-bg-panel);
       border-bottom: 1px solid var(--cm-border);
       padding: 0.25rem 0;

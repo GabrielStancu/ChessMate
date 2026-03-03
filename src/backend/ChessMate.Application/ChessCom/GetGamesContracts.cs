@@ -15,7 +15,13 @@ public sealed record ChessGameSummary(
     string Url,
     string? Pgn,
     string? InitialFen,
-    DateTimeOffset IngestedAtUtc);
+    DateTimeOffset IngestedAtUtc,
+    string? WhiteAvatarUrl = null,
+    string? BlackAvatarUrl = null,
+    string? WhiteCountry = null,
+    string? BlackCountry = null);
+
+public sealed record PlayerProfile(string? AvatarUrl, string? CountryCode);
 
 public sealed record GetGamesPageResult(
     IReadOnlyList<ChessGameSummary> Items,

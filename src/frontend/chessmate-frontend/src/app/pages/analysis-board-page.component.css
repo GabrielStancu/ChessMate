@@ -38,50 +38,20 @@
 }
 
 /* Player bar (above / below board) */
-.player-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.45rem 0.25rem;
-}
-
-.player-dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+app-player-bar {
+  padding: 0 0.25rem;
   flex-shrink: 0;
 }
 
-.dot-white {
-  background: #f0f0f0;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dot-black {
-  background: #2a2a3a;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.player-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--cm-text-primary);
-}
-
-.player-rating {
-  font-size: 0.85rem;
-  color: var(--cm-text-secondary);
-  margin-left: 0.15rem;
-}
-
-/* Eval bar + board wrapper */
+/* Eval bar + board wrapper — left inset = player-bar host pad (0.25rem) + player-bar internal pad (0.25rem) */
 .board-area {
   display: flex;
   gap: 0.5rem;
   align-items: stretch;
   flex: 1;
   min-height: 0;
+  padding: 0 0.25rem 0 0.5rem;
+  box-sizing: border-box;
 }
 
 .board-host {
@@ -90,6 +60,7 @@
   aspect-ratio: 1 / 1;
   min-width: 0;
   overflow: hidden;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
@@ -111,7 +82,8 @@
 .panel-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--cm-border);
   flex-shrink: 0;
@@ -139,10 +111,34 @@
 }
 
 .panel-title {
-  flex: 1;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--cm-text-primary);
+}
+
+.header-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+}
+
+.opening-badge {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #f5c518;
+  border: 1.5px solid #f5c518;
+  border-radius: 99px;
+  padding: 0.1rem 0.75rem;
+  flex-basis: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .move-badge {
@@ -160,10 +156,10 @@ app-coach-panel {
   flex-shrink: 0;
 }
 
-/* Move list — scrollable, takes remaining space */
+/* Move list — fills remaining space, inner component handles scrolling */
 .move-list-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   min-height: 0;
 }
 
@@ -278,6 +274,6 @@ app-coach-panel {
 
   .move-list-scroll {
     max-height: 400px;
-    overflow-y: auto;
+    overflow: hidden;
   }
 }

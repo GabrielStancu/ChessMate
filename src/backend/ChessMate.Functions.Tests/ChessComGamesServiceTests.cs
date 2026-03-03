@@ -1,3 +1,4 @@
+using ChessMate.Application.Abstractions;
 using ChessMate.Application.ChessCom;
 using ChessMate.Infrastructure.ChessCom;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,7 +15,8 @@ public sealed class ChessComGamesServiceTests
         var store = new FakeGameIndexStore([]);
         var upstreamGames = ChessGameSummaryFactory.BuildGames(13, now.AddHours(-1), DateTimeOffset.MinValue);
         var archiveClient = new FakeArchiveClient(upstreamGames);
-        var service = new ChessComGamesService(store, archiveClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
+        var profileClient = new NullPlayerProfileClient();
+        var service = new ChessComGamesService(store, archiveClient, profileClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
 
         var result = await service.GetGamesPageAsync("  Test_User ", 1, 12, CancellationToken.None);
 
@@ -35,7 +37,8 @@ public sealed class ChessComGamesServiceTests
         var cachedGames = ChessGameSummaryFactory.BuildGames(12, now.AddMinutes(-30), now.AddMinutes(-2));
         var store = new FakeGameIndexStore(cachedGames);
         var archiveClient = new FakeArchiveClient([]);
-        var service = new ChessComGamesService(store, archiveClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
+        var profileClient = new NullPlayerProfileClient();
+        var service = new ChessComGamesService(store, archiveClient, profileClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
 
         var result = await service.GetGamesPageAsync("test_user", 1, 12, CancellationToken.None);
 
@@ -54,7 +57,8 @@ public sealed class ChessComGamesServiceTests
         var staleGames = ChessGameSummaryFactory.BuildGames(12, now.AddHours(-2), now.AddMinutes(-16));
         var store = new FakeGameIndexStore(staleGames);
         var archiveClient = new FakeArchiveClient([], throwOnFetch: true);
-        var service = new ChessComGamesService(store, archiveClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
+        var profileClient = new NullPlayerProfileClient();
+        var service = new ChessComGamesService(store, archiveClient, profileClient, timeProvider, NullLogger<ChessComGamesService>.Instance);
 
         await Assert.ThrowsAsync<ChessComDependencyException>(() =>
             service.GetGamesPageAsync("test_user", 1, 12, CancellationToken.None));
@@ -83,6 +87,12 @@ public sealed class TableGameIndexStoreKeyTests
         Assert.StartsWith("game%23", rowKey);
         Assert.EndsWith("%2312345", rowKey);
     }
+}
+
+internal sealed class NullPlayerProfileClient : IChessComPlayerProfileClient
+{
+    public Task<PlayerProfile?> GetPlayerProfileAsync(string normalizedUsername, CancellationToken cancellationToken)
+        => Task.FromResult<PlayerProfile?>(null);
 }
 
 internal sealed class FakeGameIndexStore(IReadOnlyList<ChessGameSummary> initialGames) : IGameIndexStore

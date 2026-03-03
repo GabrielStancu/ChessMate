@@ -26,7 +26,7 @@ import { evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
   `,
   styles: [`
     .eval-bar-container {
-      width: 44px;
+      width: 36px;
       flex-shrink: 0;
       display: flex;
       align-items: stretch;
@@ -36,7 +36,7 @@ import { evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
     .eval-bar-track {
       position: relative;
       width: 100%;
-      border-radius: var(--cm-radius-sm);
+      border-radius: 4px;
       overflow: hidden;
       /* Normal: black at top — track background is black */
       background: #111111;

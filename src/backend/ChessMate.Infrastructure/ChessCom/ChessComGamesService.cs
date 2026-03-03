@@ -8,6 +8,7 @@ public sealed class ChessComGamesService : IChessComGamesService
 {
     private readonly IGameIndexStore _gameIndexStore;
     private readonly IChessComArchiveClient _archiveClient;
+    private readonly IChessComPlayerProfileClient _profileClient;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<ChessComGamesService> _logger;
     private const int CacheTtlMinutes = 15;
@@ -15,11 +16,13 @@ public sealed class ChessComGamesService : IChessComGamesService
     public ChessComGamesService(
         IGameIndexStore gameIndexStore,
         IChessComArchiveClient archiveClient,
+        IChessComPlayerProfileClient profileClient,
         TimeProvider timeProvider,
         ILogger<ChessComGamesService> logger)
     {
         _gameIndexStore = gameIndexStore;
         _archiveClient = archiveClient;
+        _profileClient = profileClient;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -42,7 +45,9 @@ public sealed class ChessComGamesService : IChessComGamesService
                 normalizedUsername,
                 cachedGames.Count);
 
-            return BuildPageResult(cachedGames, page, pageSize, now, cacheStatus: "hit");
+            var cachedPageResult = BuildPageResult(cachedGames, page, pageSize, now, cacheStatus: "hit");
+            var enrichedCached = await EnrichWithProfilesAsync(cachedPageResult.Items, cancellationToken);
+            return cachedPageResult with { Items = enrichedCached };
         }
 
         var hadCachedGames = cachedGames.Count > 0;
@@ -81,7 +86,46 @@ public sealed class ChessComGamesService : IChessComGamesService
         var hydratedGames = fetchedGames.Select(game => game with { IngestedAtUtc = now }).ToArray();
         var cacheStatus = forceRefresh ? "bypassed" : hadCachedGames ? "stale" : "miss";
 
-        return BuildPageResult(hydratedGames, page, pageSize, now, cacheStatus);
+        var pageResult = BuildPageResult(hydratedGames, page, pageSize, now, cacheStatus);
+        var enrichedItems = await EnrichWithProfilesAsync(pageResult.Items, cancellationToken);
+        return pageResult with { Items = enrichedItems };
+    }
+
+    private async Task<IReadOnlyList<ChessGameSummary>> EnrichWithProfilesAsync(
+        IReadOnlyList<ChessGameSummary> items,
+        CancellationToken cancellationToken)
+    {
+        var uniqueUsernames = items
+            .SelectMany(s => new[] { s.WhitePlayer, s.BlackPlayer })
+            .Select(u => u.Trim().ToLowerInvariant())
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        var profileFetches = uniqueUsernames.ToDictionary(
+            u => u,
+            u => _profileClient.GetPlayerProfileAsync(u, cancellationToken));
+
+        await Task.WhenAll(profileFetches.Values);
+
+        var profiles = profileFetches.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.Result,
+            StringComparer.Ordinal);
+
+        return items
+            .Select(s =>
+            {
+                profiles.TryGetValue(s.WhitePlayer.Trim().ToLowerInvariant(), out var white);
+                profiles.TryGetValue(s.BlackPlayer.Trim().ToLowerInvariant(), out var black);
+                return s with
+                {
+                    WhiteAvatarUrl = white?.AvatarUrl,
+                    BlackAvatarUrl = black?.AvatarUrl,
+                    WhiteCountry = white?.CountryCode,
+                    BlackCountry = black?.CountryCode
+                };
+            })
+            .ToArray();
     }
 
     private static bool IsCacheFresh(IReadOnlyList<ChessGameSummary> cachedGames, DateTimeOffset now)

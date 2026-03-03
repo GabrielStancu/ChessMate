@@ -96,6 +96,9 @@
           <!-- White player row -->
           <div class="player-row">
             <span class="player-dot player-dot-white" aria-hidden="true"></span>
+            @if (flagEmoji(game.whiteCountry); as flag) {
+              <span class="player-flag" role="img" [attr.aria-label]="(game.whiteCountry ?? '') + ' flag'">{{ flag }}</span>
+            }
             <span class="player-name">{{ game.whitePlayer || 'Unknown' }}</span>
             <span class="player-rating" *ngIf="game.whiteRating">{{ game.whiteRating }}</span>
           </div>
@@ -103,6 +106,9 @@
           <!-- Black player row -->
           <div class="player-row">
             <span class="player-dot player-dot-black" aria-hidden="true"></span>
+            @if (flagEmoji(game.blackCountry); as flag) {
+              <span class="player-flag" role="img" [attr.aria-label]="(game.blackCountry ?? '') + ' flag'">{{ flag }}</span>
+            }
             <span class="player-name">{{ game.blackPlayer || 'Unknown' }}</span>
             <span class="player-rating" *ngIf="game.blackRating">{{ game.blackRating }}</span>
           </div>

@@ -376,5 +376,4 @@ Implement a custom SVG/CSS board consistent with the mature flat minimal visual 
   - Display the classification symbol (small emblem) in the upper-right corner of the destination square.
   - Render the "best move" arrow for move types where applicable (exclude `Book`, `Great`, `Brilliant`, and `Best`).
 - Ensure all UI changes are responsive and meet accessibility requirements (alt text, ARIA roles, keyboard focus).
-- Add unit/integration tests for captured-piece rendering, avatar/flag display, and move overlay behavior.
 - Update frontend README and design notes documenting the new UI components and contracts.
