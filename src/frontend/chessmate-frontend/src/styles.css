@@ -149,12 +149,12 @@ body {
 .cm-chessboard .arrow-bestmove .arrow-head {
 	fill: #4CAF50;
 	fill-rule: nonzero;
-	opacity: 0.65;
+	opacity: 0.85;
 }
 .cm-chessboard .arrow-bestmove .arrow-line {
 	stroke: #4CAF50;
 	stroke-linecap: round;
-	opacity: 0.45;
+	opacity: 0.65;
 }
 
 /* ── ChessMate board theme: dark squares, light white squares ── */
