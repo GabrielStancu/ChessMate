@@ -24,18 +24,18 @@ export interface AnalysisMetadata {
 export const QUICK_ENGINE_CONFIG: EngineConfig = {
   depth: 12,
   threads: 1,
-  timePerMoveMs: 150
+  timePerMoveMs: 250
 };
 
 export const DEEP_ENGINE_CONFIG: EngineConfig = {
-  depth: 20,
-  threads: 1,
-  timePerMoveMs: 600
+  depth: 18,
+  threads: 4,
+  timePerMoveMs: 1000
 };
 
 export const ENGINE_CONFIG_LIMITS = {
   depth: { min: 6, max: 24 },
-  threads: { min: 1, max: 1 },
+  threads: { min: 1, max: 6 },
   timePerMoveMs: { min: 50, max: 10_000 }
 } as const;
 
