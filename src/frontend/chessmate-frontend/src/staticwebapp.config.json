@@ -33,7 +33,7 @@
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
-    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.chesscomfiles.com; connect-src 'self' https://.azure.net https://.azurewebsites.net; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://images.chesscomfiles.com; connect-src 'self' https://.azure.net https://.azurewebsites.net https://*.switzerlandnorth-01.azurewebsites.net; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
   },
   "platform": {
     "apiRuntime": "dotnet-isolated:9.0"
