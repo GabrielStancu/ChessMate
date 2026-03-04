@@ -31,11 +31,22 @@ jobs:
           npm install
           npm run build
       
+      - name: List directory structure (debug)
+        run: |
+          echo "Listing src/frontend/chessmate-frontend directory:"
+          dir ./src/frontend/chessmate-frontend
+          echo "Checking for common build directories:"
+          if (Test-Path ./src/frontend/chessmate-frontend/build) { echo "build/ exists" } else { echo "build/ NOT FOUND" }
+          if (Test-Path ./src/frontend/chessmate-frontend/dist) { echo "dist/ exists" } else { echo "dist/ NOT FOUND" }
+          if (Test-Path ./src/frontend/chessmate-frontend/.next) { echo ".next/ exists" } else { echo ".next/ NOT FOUND" }
+        shell: pwsh
+      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./src/frontend/chessmate-frontend/build
+          path: ./src/frontend/chessmate-frontend/build  # Adjust based on debug output
+          if-no-files-found: error  # This will fail the job if no files are found
 
   deploy:
     runs-on: ubuntu-latest
