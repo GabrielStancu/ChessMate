@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./src/frontend/chessmate-frontend/dist/client
+          path: ./src/frontend/chessmate-frontend/dist/chessmate-frontend
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,5 +62,6 @@ jobs:
           app-name: 'chessmate'
           slot-name: 'Production'
           package: ./frontend-app
+
 
 
