@@ -31,16 +31,6 @@ jobs:
           npm install
           npm run build
       
-      - name: List directory structure (debug)
-        run: |
-          echo "Listing src/frontend/chessmate-frontend directory:"
-          dir ./src/frontend/chessmate-frontend
-          echo "Checking for common build directories:"
-          if (Test-Path ./src/frontend/chessmate-frontend/build) { echo "build/ exists" } else { echo "build/ NOT FOUND" }
-          if (Test-Path ./src/frontend/chessmate-frontend/dist) { echo "dist/ exists" } else { echo "dist/ NOT FOUND" }
-          if (Test-Path ./src/frontend/chessmate-frontend/.next) { echo ".next/ exists" } else { echo ".next/ NOT FOUND" }
-        shell: pwsh
-      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -60,6 +50,13 @@ jobs:
           name: node-app
           path: ./frontend-app
 
+      - name: Debug - List downloaded files
+        run: |
+          echo "Contents of frontend-app:"
+          ls -la ./frontend-app
+          echo "---"
+          find ./frontend-app -type f | head -20
+
       - name: 'Azure Login with OIDC'
         uses: azure/login@v2
         with:
@@ -73,4 +70,4 @@ jobs:
           app-name: 'chessmate'
           slot-name: 'Production'
           package: ./frontend-app
-
+          type: 'zip'  # Added: Specify deployment type
