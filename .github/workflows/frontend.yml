@@ -1,4 +1,4 @@
-name: Build and Deploy Frontend App
+name: Build and Deploy Frontend
 
 on:
   push:
@@ -9,12 +9,14 @@ on:
       - '.github/workflows/frontend.yml'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: windows-latest
-    permissions:
-      contents: read
-
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -46,12 +48,17 @@ jobs:
         with:
           name: node-app
           path: ./frontend-app
+
+      - name: 'Azure Login with OIDC'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v4
+        uses: azure/webapps-deploy@v3
         with:
           app-name: 'chessmate'
           slot-name: 'Production'
           package: ./frontend-app
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8A3E32D326E14393A9CA79248E3F0F5B }}
-
