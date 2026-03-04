@@ -30,7 +30,7 @@ export const QUICK_ENGINE_CONFIG: EngineConfig = {
 export const DEEP_ENGINE_CONFIG: EngineConfig = {
   depth: 20,
   threads: 4,
-  timePerMoveMs: 1000
+  timePerMoveMs: 600
 };
 
 export const ENGINE_CONFIG_LIMITS = {
