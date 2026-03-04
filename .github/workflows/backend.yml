@@ -1,4 +1,4 @@
-name: Build and deploy dotnet core app to Azure Function App - fa-chessmate-swn-001
+name: Build and Deploy Backend App
 
 on:
   push:
@@ -58,3 +58,4 @@ jobs:
           slot-name: 'Production'
           package: './output'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EED845ACDDAF45E39EA29C508815709B }}
+
