@@ -42,6 +42,7 @@ jobs:
         with:
           name: function-app
           path: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+          include-hidden-files: true
 
   deploy:
     runs-on: windows-latest
@@ -68,4 +69,5 @@ jobs:
           app-name: 'fa-chessmate-swn-001'
           slot-name: 'Production'
           package: './output'
+
 
