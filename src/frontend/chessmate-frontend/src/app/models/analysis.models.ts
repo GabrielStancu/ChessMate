@@ -28,7 +28,7 @@ export const QUICK_ENGINE_CONFIG: EngineConfig = {
 };
 
 export const DEEP_ENGINE_CONFIG: EngineConfig = {
-  depth: 18,
+  depth: 20,
   threads: 4,
   timePerMoveMs: 1000
 };
