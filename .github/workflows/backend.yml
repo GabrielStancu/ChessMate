@@ -7,6 +7,9 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend.yml'
   workflow_dispatch:
 
 env:
@@ -42,3 +45,4 @@ jobs:
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EED845ACDDAF45E39EA29C508815709B }}
+
