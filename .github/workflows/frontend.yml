@@ -33,7 +33,7 @@ jobs:
           npm run build --if-present
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./src/frontend/chessmate-frontend/* -r
+        run: Compress-Archive ./src/frontend/chessmate-frontend/* release.zip
       
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -52,7 +52,7 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: unzip release.zip
+        run: Expand-Archive release.zip
 
       - name: Delete zip artifact
         run: rm release.zip
@@ -66,4 +66,5 @@ jobs:
           package: .
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8A3E32D326E14393A9CA79248E3F0F5B }}
+
 
