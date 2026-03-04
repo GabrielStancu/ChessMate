@@ -53,7 +53,7 @@ jobs:
       - name: Debug - List downloaded files
         run: |
           echo "Contents of frontend-app:"
-          ls -la ./frontend-app
+          ls -la ./frontend-app/chessmate-frontend
           echo "---"
           find ./frontend-app -type f | head -20
 
@@ -71,3 +71,4 @@ jobs:
           slot-name: 'Production'
           package: ./frontend-app
           type: 'zip'  # Added: Specify deployment type
+
