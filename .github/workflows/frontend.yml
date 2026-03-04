@@ -52,7 +52,7 @@ jobs:
           name: node-app
 
       - name: Unzip artifact for deployment
-        run: Expand-Archive release.zip
+        run: unzip release.zip
 
       - name: Delete zip artifact
         run: rm release.zip
@@ -66,5 +66,6 @@ jobs:
           package: .
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8A3E32D326E14393A9CA79248E3F0F5B }}
+
 
 
