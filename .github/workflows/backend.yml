@@ -1,4 +1,4 @@
-name: Build and Deploy Backend App
+name: Build and Deploy Backend
 
 on:
   push:
@@ -6,8 +6,11 @@ on:
       - master
     paths:
       - 'src/backend/**'
-      - '.github/workflows/backend.yml'
   workflow_dispatch:
+
+permissions:
+  id-token: write 
+  contents: read
 
 env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/backend'
@@ -18,22 +21,22 @@ jobs:
     runs-on: windows-latest
     
     steps:
-      - name: 'Checkout GitHub Action'
+      - name: 'Checkout'
         uses: actions/checkout@v4
 
-      - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
+      - name: Setup DotNet
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: 'Resolve Project Dependencies Using Dotnet'
+      - name: 'Build'
         shell: pwsh
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet build --configuration Release --output ./output
           popd
       
-      - name: 'Upload Build Artifact'
+      - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: function-app
@@ -45,17 +48,22 @@ jobs:
     environment: production
     
     steps:
-      - name: 'Download Build Artifact'
+      - name: 'Download Artifact'
         uses: actions/download-artifact@v4
         with:
           name: function-app
           path: ./output
+
+      - name: 'Azure Login with OIDC'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - name: 'Run Azure Functions Action'
+      - name: 'Deploy to Function App'
         uses: Azure/functions-action@v1
         with:
           app-name: 'fa-chessmate-swn-001'
           slot-name: 'Production'
           package: './output'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EED845ACDDAF45E39EA29C508815709B }}
-
