@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/backend' # set this to the path to your web app project, defaults to the repository root
   DOTNET_VERSION: '9.0.x' # set this to the dotnet version to use
 
 jobs:
@@ -40,4 +40,5 @@ jobs:
           app-name: 'fa-chessmate-swn-001'
           slot-name: 'Production'
           package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EED845ACDDAF45E39EA29C508815709B }}
