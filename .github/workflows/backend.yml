@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and Deploy Backend App
+name: Build and deploy dotnet core app to Azure Function App - fa-chessmate-swn-001
 
 on:
   push:
@@ -13,11 +10,11 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/backend' # set this to the path to your web app project, defaults to the repository root
-  DOTNET_VERSION: '9.0.x' # set this to the dotnet version to use
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/backend'
+  DOTNET_VERSION: '9.0.x'
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: windows-latest
     
     steps:
@@ -36,14 +33,28 @@ jobs:
           dotnet build --configuration Release --output ./output
           popd
       
+      - name: 'Upload Build Artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: function-app
+          path: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    environment: production
+    
+    steps:
+      - name: 'Download Build Artifact'
+        uses: actions/download-artifact@v4
+        with:
+          name: function-app
+          path: ./output
+      
       - name: 'Run Azure Functions Action'
         uses: Azure/functions-action@v1
-        id: fa
         with:
           app-name: 'fa-chessmate-swn-001'
           slot-name: 'Production'
-          package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'
-
+          package: './output'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EED845ACDDAF45E39EA29C508815709B }}
-
-
