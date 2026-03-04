@@ -48,9 +48,10 @@ jobs:
           path: ./frontend-app
       
       - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v3
+        uses: azure/webapps-deploy@v4
         with:
           app-name: 'chessmate'
           slot-name: 'Production'
           package: ./frontend-app
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8A3E32D326E14393A9CA79248E3F0F5B }}
+
