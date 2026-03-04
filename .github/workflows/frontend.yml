@@ -35,8 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./src/frontend/chessmate-frontend/dist
-          if-no-files-found: error
+          path: ./src/frontend/chessmate-frontend/dist/client
 
   deploy:
     runs-on: ubuntu-latest
@@ -49,13 +48,6 @@ jobs:
         with:
           name: node-app
           path: ./frontend-app
-
-      - name: Debug - List downloaded files
-        run: |
-          echo "Contents of frontend-app:"
-          ls -la ./frontend-app/chessmate-frontend
-          echo "---"
-          find ./frontend-app -type f | head -20
 
       - name: 'Azure Login with OIDC'
         uses: azure/login@v2
@@ -70,5 +62,5 @@ jobs:
           app-name: 'chessmate'
           slot-name: 'Production'
           package: ./frontend-app
-          type: 'zip'  # Added: Specify deployment type
+
 
