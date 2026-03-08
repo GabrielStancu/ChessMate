@@ -64,6 +64,16 @@
                 "glob": "stockfish-18-single.wasm",
                 "input": "node_modules/stockfish/bin",
                 "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18.js",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18.wasm",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
               }
             ],
             "styles": [
@@ -106,6 +116,12 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "headers": {
+              "Cross-Origin-Opener-Policy": "same-origin",
+              "Cross-Origin-Embedder-Policy": "require-corp"
+            }
+          },
           "configurations": {
             "production": {
               "buildTarget": "chessmate-frontend:build:production"
@@ -145,6 +161,16 @@
               },
               {
                 "glob": "stockfish-18-single.wasm",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18.js",
+                "input": "node_modules/stockfish/bin",
+                "output": "/assets/stockfish"
+              },
+              {
+                "glob": "stockfish-18.wasm",
                 "input": "node_modules/stockfish/bin",
                 "output": "/assets/stockfish"
               }

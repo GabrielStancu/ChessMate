@@ -29,7 +29,7 @@ export const QUICK_ENGINE_CONFIG: EngineConfig = {
 
 export const DEEP_ENGINE_CONFIG: EngineConfig = {
   depth: 18,
-  threads: Math.min(navigator.hardwareConcurrency || 1, 4),
+  threads: 4,
   timePerMoveMs: 1000
 };
 

@@ -167,7 +167,7 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       return this.worker;
     }
 
-    const worker = new Worker('assets/stockfish/stockfish-18-single.js');
+    const worker = new Worker('assets/stockfish/stockfish-18.js');
     worker.onmessage = event => this.onWorkerMessage(String(event.data ?? ''));
     worker.onerror = error => this.onWorkerError(error);
     worker.onmessageerror = () => this.onWorkerFatal('Stockfish worker emitted an invalid message payload.');
@@ -184,7 +184,7 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       return;
     }
 
-    this.worker.postMessage('setoption name Threads value 1');
+    this.worker.postMessage(`setoption name Threads value ${config.threads}`);
     this.worker.postMessage(`setoption name MultiPV value 1`);
   }
 
