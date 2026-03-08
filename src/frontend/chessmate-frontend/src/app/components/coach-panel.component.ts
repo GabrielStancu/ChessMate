@@ -22,7 +22,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       <div class="coach-header">
         <app-coach-avatar />
         <div class="coach-identity">
-          <span class="coach-name">Mikhail Stall</span>
+          <span class="coach-name">José Capawnblanca</span>
           <ng-container *ngIf="currentMove() as move">
             <div
               class="coach-classification-pill"

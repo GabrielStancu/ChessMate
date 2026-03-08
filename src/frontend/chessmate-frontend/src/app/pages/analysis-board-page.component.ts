@@ -16,8 +16,7 @@ import {
   ClassifiedMove,
   FullGameAnalysisResult,
   CLASSIFICATION_COLORS,
-  CLASSIFICATION_SYMBOLS,
-  OVERLAY_ELIGIBLE_CLASSES
+  CLASSIFICATION_SYMBOLS
 } from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
 import { CoachPanelComponent } from '../components/coach-panel.component';
@@ -484,18 +483,13 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const isEligible = (OVERLAY_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(classifiedMove.classification);
-    if (!isEligible) {
-      return;
-    }
-
     const classKey = classifiedMove.classification.toLowerCase();
 
     const moveSquareMarker: MarkerType = { class: `marker-move-${classKey}`, slice: 'markerSquare' };
     this.chessboard.addMarker(moveSquareMarker, classifiedMove.from);
     this.chessboard.addMarker(moveSquareMarker, classifiedMove.to);
 
-    if (classifiedMove.bestMove) {
+    if (classifiedMove.bestMove && this.shouldDrawBestMoveArrow(classifiedMove.classification)) {
       const parsed = this.parseUciMove(classifiedMove.bestMove);
       if (parsed) {
         const arrowType: ArrowType = { class: 'arrow-bestmove' };
@@ -523,5 +517,10 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       from: normalized.slice(0, 2),
       to: normalized.slice(2, 4)
     };
+  }
+
+  private shouldDrawBestMoveArrow(classification: string): boolean {
+    const classKey = classification.toLowerCase();
+    return classKey === 'inaccuracy' || classKey === 'mistake' || classKey === 'miss' || classKey === 'blunder' || classKey === 'good';
   }
 }

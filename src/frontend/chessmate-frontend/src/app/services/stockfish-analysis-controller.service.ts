@@ -27,6 +27,11 @@ interface PendingEvaluationRequest {
   reject: (error: unknown) => void;
 }
 
+type InitPhase = 'none' | 'waiting-uciok' | 'waiting-readyok' | 'ready';
+
+/** Hash table size in MB. 128 MB gives good transposition reuse for game analysis. */
+const DEFAULT_HASH_MB = 128;
+
 @Injectable({ providedIn: 'root' })
 export class StockfishAnalysisControllerService implements OnDestroy {
   private static readonly stopGraceMs = 1_500;
@@ -35,6 +40,17 @@ export class StockfishAnalysisControllerService implements OnDestroy {
   private worker: Worker | null = null;
   private pendingRequest: PendingEvaluationRequest | null = null;
   private isReady = false;
+
+  private initPhase: InitPhase = 'none';
+  private initPromise: Promise<void> | null = null;
+  private initResolve: (() => void) | null = null;
+  private initReject: ((error: unknown) => void) | null = null;
+
+  /** Track currently applied options to avoid redundant setoption calls. */
+  private appliedThreads = 0;
+  private appliedHash = 0;
+
+  private pendingReadyResolve: (() => void) | null = null;
 
   public ngOnDestroy(): void {
     this.rejectPendingRequest(new StaleEvaluationError());
@@ -105,9 +121,11 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       };
     }
 
-    const worker = this.getOrCreateWorker();
+    await this.ensureEngineReady(config);
     this.cancelInFlightEvaluation();
-    this.configureWorkerForRequest(config);
+    await this.applyOptionsIfChanged(config);
+
+    const worker = this.worker!;
 
     return await new Promise<PositionEvaluation>((resolve, reject) => {
       const timeoutMs = config.timePerMoveMs + StockfishAnalysisControllerService.stopGraceMs;
@@ -162,33 +180,71 @@ export class StockfishAnalysisControllerService implements OnDestroy {
     return `${fen}|d:${config.depth}|t:${config.threads}|m:${config.timePerMoveMs}`;
   }
 
-  private getOrCreateWorker(): Worker {
-    if (this.worker) {
-      return this.worker;
+  /**
+   * Ensure the Stockfish worker is created and has completed the full UCI
+   * handshake: uci → uciok → setoption(s) → isready → readyok.
+   * Options are only sent after uciok so the engine actually applies them.
+   */
+  private async ensureEngineReady(config: EngineConfig): Promise<void> {
+    if (this.initPhase === 'ready') {
+      return;
     }
 
-    const worker = new Worker('assets/stockfish/stockfish-18.js');
-    worker.onmessage = event => this.onWorkerMessage(String(event.data ?? ''));
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = new Promise<void>((resolve, reject) => {
+      this.initResolve = resolve;
+      this.initReject = reject;
+      this.createWorker(config);
+    });
+
+    return this.initPromise;
+  }
+
+  private createWorker(initialConfig: EngineConfig): void {
+    const supportsThreads = typeof SharedArrayBuffer !== 'undefined';
+    const scriptName = supportsThreads
+      ? 'assets/stockfish/stockfish-18.js'
+      : 'assets/stockfish/stockfish-18-single.js';
+
+    const worker = new Worker(scriptName);
+    worker.onmessage = event => this.onWorkerMessage(String(event.data ?? ''), initialConfig);
     worker.onerror = error => this.onWorkerError(error);
     worker.onmessageerror = () => this.onWorkerFatal('Stockfish worker emitted an invalid message payload.');
 
     this.worker = worker;
+    this.initPhase = 'waiting-uciok';
     worker.postMessage('uci');
-    worker.postMessage('isready');
-
-    return worker;
   }
 
-  private configureWorkerForRequest(config: EngineConfig): void {
+  /**
+   * Send option changes only when values differ from what is already applied,
+   * then sync with isready/readyok before returning.
+   */
+  private async applyOptionsIfChanged(config: EngineConfig): Promise<void> {
     if (!this.worker) {
       return;
     }
 
-    this.worker.postMessage(`setoption name Threads value ${config.threads}`);
-    this.worker.postMessage(`setoption name MultiPV value 1`);
+    let changed = false;
+
+    if (config.threads !== this.appliedThreads) {
+      this.worker.postMessage(`setoption name Threads value ${config.threads}`);
+      this.appliedThreads = config.threads;
+      changed = true;
+    }
+
+    if (changed) {
+      this.worker.postMessage('isready');
+      await new Promise<void>(resolve => {
+        this.pendingReadyResolve = resolve;
+      });
+    }
   }
 
-  private onWorkerMessage(line: string): void {
+  private onWorkerMessage(line: string, initialConfig?: EngineConfig): void {
     if (!line) {
       return;
     }
@@ -198,8 +254,41 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       return;
     }
 
+    // UCI handshake phase 1: after receiving uciok, send initial options
+    if (line === 'uciok' && this.initPhase === 'waiting-uciok') {
+      const config = initialConfig ?? { threads: 1, depth: 12, timePerMoveMs: 250 };
+
+      this.worker!.postMessage(`setoption name Threads value ${config.threads}`);
+      this.appliedThreads = config.threads;
+
+      this.worker!.postMessage(`setoption name Hash value ${DEFAULT_HASH_MB}`);
+      this.appliedHash = DEFAULT_HASH_MB;
+
+      this.worker!.postMessage('setoption name MultiPV value 1');
+
+      this.initPhase = 'waiting-readyok';
+      this.worker!.postMessage('isready');
+      return;
+    }
+
     if (line === 'readyok') {
+      // Resolve init handshake
+      if (this.initPhase === 'waiting-readyok') {
+        this.initPhase = 'ready';
+        this.isReady = true;
+        this.initResolve?.();
+        this.initResolve = null;
+        this.initReject = null;
+        return;
+      }
+
+      // Resolve mid-session isready sync (option changes)
       this.isReady = true;
+      if (this.pendingReadyResolve) {
+        const resolve = this.pendingReadyResolve;
+        this.pendingReadyResolve = null;
+        resolve();
+      }
       return;
     }
 
@@ -241,7 +330,12 @@ export class StockfishAnalysisControllerService implements OnDestroy {
   }
 
   private onWorkerFatal(message: string): void {
-    this.rejectPendingRequest(new Error(message));
+    const fatalError = new Error(message);
+    this.rejectPendingRequest(fatalError);
+    this.initReject?.(fatalError);
+    this.initResolve = null;
+    this.initReject = null;
+    this.pendingReadyResolve = null;
     this.resetWorker();
   }
 
@@ -299,6 +393,10 @@ export class StockfishAnalysisControllerService implements OnDestroy {
     this.worker?.terminate();
     this.worker = null;
     this.isReady = false;
+    this.initPhase = 'none';
+    this.initPromise = null;
+    this.appliedThreads = 0;
+    this.appliedHash = 0;
   }
 
   private isFatalRuntimeMessage(line: string): boolean {

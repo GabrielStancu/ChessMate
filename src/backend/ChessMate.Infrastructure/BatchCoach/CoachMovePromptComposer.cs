@@ -60,7 +60,7 @@ public static class CoachMovePromptComposer
             : "- Field rule: use motifs when supported, otherwise stay grounded in positional themes.";
 
         var toneRule = verbosity == ConciseVerbosity
-            ? "- Tone: vivid, human, and practical in an attacking-school spirit (Tal-inspired energy), never theatrical or speculative."
+            ? "- Tone: vivid, human, and practical in a simplistic and warm spirit (Capablanca-inspired energy), never theatrical or speculative."
             : "- Tone: human, practical, and direct.";
 
         var groundingEscalation = strongerGrounding

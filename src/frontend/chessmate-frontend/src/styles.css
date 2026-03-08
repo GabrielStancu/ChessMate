@@ -120,6 +120,26 @@ body {
 
 
 /* ── Classification square fill markers (from/to squares take the classification color) ── */
+.cm-chessboard .markers .marker.marker-move-brilliant {
+	fill: #26C6DA;
+	opacity: 0.48;
+}
+
+.cm-chessboard .markers .marker.marker-move-great {
+	fill: #3949AB;
+	opacity: 0.48;
+}
+
+.cm-chessboard .markers .marker.marker-move-best {
+	fill: #2E7D32;
+	opacity: 0.48;
+}
+
+.cm-chessboard .markers .marker.marker-move-excellent {
+	fill: #00897B;
+	opacity: 0.48;
+}
+
 .cm-chessboard .markers .marker.marker-move-good {
 	fill: #66BB6A;
 	opacity: 0.48;
@@ -142,6 +162,11 @@ body {
 
 .cm-chessboard .markers .marker.marker-move-blunder {
 	fill: #B71C1C;
+	opacity: 0.48;
+}
+
+.cm-chessboard .markers .marker.marker-move-book {
+	fill: #78909C;
 	opacity: 0.48;
 }
 

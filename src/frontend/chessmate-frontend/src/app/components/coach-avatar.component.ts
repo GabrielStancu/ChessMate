@@ -4,7 +4,7 @@ import { Component } from '@angular/core';
   selector: 'app-coach-avatar',
   standalone: true,
   template: `
-    <img src="assets/images/coach.png" alt="Mikhail Stall" class="coach-avatar-img" />
+    <img src="assets/images/coach.png" alt="José Capawnblanca" class="coach-avatar-img" />
   `,
   styles: [`
     :host {
