@@ -1,0 +1,6 @@
+{
+  "universe_allowlist": ["inception"],
+  "max_agents": 25,
+  "overflow_strategy": "diegetic_expansion",
+  "version": "1.0"
+}

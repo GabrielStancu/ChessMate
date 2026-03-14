@@ -1,0 +1,18 @@
+{
+  "assignments": [
+    {
+      "assignment_id": "chessmate-2026-03-15",
+      "universe": "inception",
+      "created_at": "2026-03-15T00:00:00Z",
+      "project": "ChessMate",
+      "agents": [
+        { "name": "Cobb", "role": "Lead" },
+        { "name": "Yusuf", "role": "Backend Dev" },
+        { "name": "Ariadne", "role": "Frontend Dev" },
+        { "name": "Eames", "role": "Tester" },
+        { "name": "Scribe", "role": "Session Logger" },
+        { "name": "Ralph", "role": "Work Monitor" }
+      ]
+    }
+  ]
+}
