@@ -49,4 +49,4 @@
 
 ## Deployment (TKT-015)
 
-Full deployment configuration, environment contracts, managed identity requirements, and smoke test checklist are documented in [`docs/deployment/deployment-baseline.md`](../../docs/deployment/deployment-baseline.md).
+Full deployment configuration, environment contracts, managed identity requirements, and smoke test checklist are documented in [`docs/azure/deployment.md`](../../docs/azure/deployment.md).
