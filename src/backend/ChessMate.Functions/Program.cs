@@ -1,9 +1,8 @@
 using ChessMate.Application.Abstractions;
-using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Http;
 using ChessMate.Functions.Middleware;
 using ChessMate.Functions.Security;
-using ChessMate.Infrastructure.BatchCoach;
+using ChessMate.Infrastructure.BatchAnalysis;
 using ChessMate.Infrastructure.ChessCom;
 using ChessMate.Infrastructure.Configuration;
 using ChessMate.Infrastructure.Correlation;
@@ -72,11 +71,6 @@ var host = new HostBuilder()
             var secretClient = new SecretClient(new Uri(keyVaultUri), credential);
             services.AddSingleton(secretClient);
             services.AddSingleton<IKeyVaultSecretProvider, KeyVaultSecretProvider>();
-
-            // Resolve secrets from Key Vault at startup and inject into options
-            services.AddSingleton<IPostConfigureOptions<BackendOptions>>(sp =>
-                new KeyVaultPostConfigureOptions(sp.GetRequiredService<SecretClient>(),
-                    sp.GetRequiredService<ILogger<KeyVaultPostConfigureOptions>>()));
         }
 
         services.AddSingleton(serviceProvider =>
@@ -93,24 +87,12 @@ var host = new HostBuilder()
             return new TableGameIndexStore(serviceClient.GetTableClient("GameIndex"), logger);
         });
 
-        services.AddSingleton<IOperationStateStore>(serviceProvider =>
-        {
-            var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
-            var logger = serviceProvider.GetRequiredService<ILogger<TableOperationStateStore>>();
-            return new TableOperationStateStore(serviceClient.GetTableClient("OperationState"), logger);
-        });
-
         services.AddSingleton<IAnalysisBatchStore>(serviceProvider =>
         {
             var serviceClient = serviceProvider.GetRequiredService<TableServiceClient>();
             var logger = serviceProvider.GetRequiredService<ILogger<TableAnalysisBatchStore>>();
             return new TableAnalysisBatchStore(serviceClient.GetTableClient("AnalysisBatch"), logger);
         });
-
-        services.AddSingleton<IRequestHashProvider, CanonicalRequestHashProvider>();
-        services.AddSingleton<BatchCoachIdempotencyService>();
-        services.AddHttpClient<ICoachMoveGenerator, AzureOpenAiCoachMoveGenerator>()
-            .AddStandardResilienceHandler();
 
         services.AddSingleton<IChessComGamesService, ChessComGamesService>();
         services

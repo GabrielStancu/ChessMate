@@ -9,6 +9,16 @@ export function centipawnToWinExpectancy(cp: number): number {
 }
 
 /**
+ * Resolve 2nd-best centipawn, converting mate scores to large CP values.
+ */
+function resolveSecondBestCp(context: MoveContext): number {
+  if (context.secondBestMate !== null) {
+    return context.secondBestMate > 0 ? 10_000 : -10_000;
+  }
+  return context.secondBestCentipawn ?? 0;
+}
+
+/**
  * Classify a move using Chess.com-inspired Expected Points heuristics.
  *
  * Classification order:
@@ -32,6 +42,11 @@ export function classifyMove(
     return 'Book';
   }
 
+  // Forced: only one legal move — no choice regardless of quality
+  if (context.legalMoveCount === 1) {
+    return 'Forced';
+  }
+
   const weLoss = weBefore - weAfter;
   const cpLoss = context.cpMovingSideBefore - context.cpMovingSideAfter;
 
@@ -40,20 +55,24 @@ export function classifyMove(
   const isNearBest = cpLoss <= CLASSIFICATION_THRESHOLDS.nearBestCp;
 
   // --- Bad moves (CP-based thresholds, worst first) ---
-  if (cpLoss >= CLASSIFICATION_THRESHOLDS.blunderCp) {
-    return 'Blunder';
-  }
+  // Skip when the move IS the engine's top recommendation — the absolute CP loss
+  // may still be high in already-lost positions, but the move is objectively best.
+  if (!isBestMove) {
+    if (cpLoss >= CLASSIFICATION_THRESHOLDS.blunderCp) {
+      return 'Blunder';
+    }
 
-  if (cpLoss >= CLASSIFICATION_THRESHOLDS.missCp) {
-    return 'Miss';
-  }
+    if (cpLoss >= CLASSIFICATION_THRESHOLDS.missCp) {
+      return 'Miss';
+    }
 
-  if (cpLoss >= CLASSIFICATION_THRESHOLDS.mistakeCp) {
-    return 'Mistake';
-  }
+    if (cpLoss >= CLASSIFICATION_THRESHOLDS.mistakeCp) {
+      return 'Mistake';
+    }
 
-  if (cpLoss >= CLASSIFICATION_THRESHOLDS.inaccuracyCp) {
-    return 'Inaccuracy';
+    if (cpLoss >= CLASSIFICATION_THRESHOLDS.inaccuracyCp) {
+      return 'Inaccuracy';
+    }
   }
 
   // --- Good moves ---
@@ -65,21 +84,17 @@ export function classifyMove(
     return 'Brilliant';
   }
 
-  // Great: best or near-best move (within 20cp) where the position
-  // improved by at least 10cp, or involves a material sacrifice.
-  // Chess.com awards ~3-8 Great moves per player per game — this
-  // fires whenever you capitalize on opponent inaccuracy or sacrifice.
+  // Great: best or near-best move where the played move is the only one
+  // keeping/obtaining the advantage. Best must cross the winning/losing
+  // boundary vs 2nd-best, gap ≥ 200cp.
   const isNearBestForGreat = cpLoss <= CLASSIFICATION_THRESHOLDS.nearBestCpGreat;
-  if (isBestMove || isNearBestForGreat) {
-    const cpGain = context.cpMovingSideAfter - context.cpMovingSideBefore;
+  if ((isBestMove || isNearBestForGreat) && context.secondBestCentipawn !== null) {
+    const bestCp = context.cpMovingSideAfter;
+    const secondBestCp = resolveSecondBestCp(context);
+    const gap = Math.abs(bestCp - secondBestCp);
+    const crossesBoundary = (bestCp > 0 && secondBestCp < 0) || (bestCp < 0 && secondBestCp > 0);
 
-    // Position improved by ≥10cp — you exploited the opponent's error
-    const isImprovement = cpGain >= CLASSIFICATION_THRESHOLDS.greatCpGain;
-
-    // Material sacrifice (SEE-validated)
-    const isTrueSacrifice = context.isSacrifice;
-
-    if (isImprovement || isTrueSacrifice) {
+    if (crossesBoundary && gap >= 200) {
       return 'Great';
     }
   }

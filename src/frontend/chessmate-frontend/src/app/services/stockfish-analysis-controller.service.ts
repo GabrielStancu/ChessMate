@@ -14,6 +14,8 @@ interface StockfishInfoSnapshot {
   centipawn: number | null;
   mate: number | null;
   principalVariation: string | null;
+  secondBestCentipawn: number | null;
+  secondBestMate: number | null;
 }
 
 interface PendingEvaluationRequest {
@@ -154,7 +156,9 @@ export class StockfishAnalysisControllerService implements OnDestroy {
           depth: null,
           centipawn: null,
           mate: null,
-          principalVariation: null
+          principalVariation: null,
+          secondBestCentipawn: null,
+          secondBestMate: null
         },
         stopTimerId,
         timeoutId,
@@ -264,7 +268,7 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       this.worker!.postMessage(`setoption name Hash value ${DEFAULT_HASH_MB}`);
       this.appliedHash = DEFAULT_HASH_MB;
 
-      this.worker!.postMessage('setoption name MultiPV value 1');
+      this.worker!.postMessage('setoption name MultiPV value 2');
 
       this.initPhase = 'waiting-readyok';
       this.worker!.postMessage('isready');
@@ -318,7 +322,9 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       mate: request.latestInfo.mate,
       depth: request.latestInfo.depth,
       principalVariation: request.latestInfo.principalVariation,
-      cached: false
+      cached: false,
+      secondBestCentipawn: request.latestInfo.secondBestCentipawn,
+      secondBestMate: request.latestInfo.secondBestMate
     };
 
     this.evaluationCache.set(request.cacheKey, result);
@@ -369,7 +375,9 @@ export class StockfishAnalysisControllerService implements OnDestroy {
       mate: request.latestInfo.mate,
       depth: request.latestInfo.depth,
       principalVariation: request.latestInfo.principalVariation,
-      cached: false
+      cached: false,
+      secondBestCentipawn: request.latestInfo.secondBestCentipawn,
+      secondBestMate: request.latestInfo.secondBestMate
     };
 
     this.evaluationCache.set(request.cacheKey, result);
@@ -419,16 +427,29 @@ export class StockfishAnalysisControllerService implements OnDestroy {
   }
 
   private parseInfoLine(line: string, previous: StockfishInfoSnapshot): StockfishInfoSnapshot {
+    const multipvMatch = line.match(/\bmultipv\s+(\d+)/);
+    const pvIndex = multipvMatch ? Number(multipvMatch[1]) : 1;
+
     const depthMatch = line.match(/\bdepth\s+(\d+)/);
     const centipawnMatch = line.match(/\bscore\s+cp\s+(-?\d+)/);
     const mateMatch = line.match(/\bscore\s+mate\s+(-?\d+)/);
     const principalVariationMatch = line.match(/\bpv\s+(.+)$/);
 
+    if (pvIndex === 2) {
+      return {
+        ...previous,
+        secondBestCentipawn: centipawnMatch ? Number(centipawnMatch[1]) : previous.secondBestCentipawn,
+        secondBestMate: mateMatch ? Number(mateMatch[1]) : previous.secondBestMate
+      };
+    }
+
     return {
       depth: depthMatch ? Number(depthMatch[1]) : previous.depth,
       centipawn: centipawnMatch ? Number(centipawnMatch[1]) : previous.centipawn,
       mate: mateMatch ? Number(mateMatch[1]) : previous.mate,
-      principalVariation: principalVariationMatch ? principalVariationMatch[1] : previous.principalVariation
+      principalVariation: principalVariationMatch ? principalVariationMatch[1] : previous.principalVariation,
+      secondBestCentipawn: previous.secondBestCentipawn,
+      secondBestMate: previous.secondBestMate
     };
   }
 }

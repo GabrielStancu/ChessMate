@@ -2,7 +2,7 @@ namespace ChessMate.Infrastructure.Configuration;
 
 public static class PersistencePolicy
 {
-    public const string SchemaVersion = "v1";
+    public const string SchemaVersion = "v3";
 
     public static readonly TimeSpan RetentionWindow = TimeSpan.FromDays(30);
 

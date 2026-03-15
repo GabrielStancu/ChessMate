@@ -8,7 +8,8 @@ export type MoveClassification =
   | 'Mistake'
   | 'Miss'
   | 'Blunder'
-  | 'Book';
+  | 'Book'
+  | 'Forced';
 
 export interface ClassifiedMove {
   ply: number;
@@ -50,7 +51,8 @@ export const CLASSIFICATION_COLORS: Record<MoveClassification, string> = {
   Mistake: '#EF5350',
   Miss: '#D32F2F',
   Blunder: '#B71C1C',
-  Book: '#78909C'
+  Book: '#78909C',
+  Forced: '#43A047'
 };
 
 export const CLASSIFICATION_SYMBOLS: Record<MoveClassification, string> = {
@@ -63,7 +65,8 @@ export const CLASSIFICATION_SYMBOLS: Record<MoveClassification, string> = {
   Mistake: '?',
   Miss: '??',
   Blunder: '??',
-  Book: '\u{1F4D6}'
+  Book: '\u{1F4D6}',
+  Forced: '\u2192'
 };
 
 /**
@@ -100,6 +103,12 @@ export interface MoveContext {
    *       moved piece (losing exchange, e.g. queen takes pawn on attacked square).
    */
   isSacrifice: boolean;
+  /** Number of legal moves available in this position */
+  legalMoveCount: number;
+  /** Centipawn evaluation of the 2nd-best engine move (null if only 1 legal move) */
+  secondBestCentipawn: number | null;
+  /** Mate score of the 2nd-best engine move */
+  secondBestMate: number | null;
 }
 
 /**
@@ -129,16 +138,6 @@ export const CLASSIFICATION_THRESHOLDS = {
  */
 export const OVERLAY_ELIGIBLE_CLASSES: ReadonlyArray<MoveClassification> = [
   'Good',
-  'Inaccuracy',
-  'Mistake',
-  'Miss',
-  'Blunder'
-];
-
-/**
- * Move classes eligible for coaching (sent to batch-coach API).
- */
-export const COACHING_ELIGIBLE_CLASSES: ReadonlyArray<MoveClassification> = [
   'Inaccuracy',
   'Mistake',
   'Miss',

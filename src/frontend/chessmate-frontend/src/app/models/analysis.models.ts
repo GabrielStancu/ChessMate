@@ -14,6 +14,8 @@ export interface PositionEvaluation {
   depth: number | null;
   principalVariation: string | null;
   cached: boolean;
+  secondBestCentipawn: number | null;
+  secondBestMate: number | null;
 }
 
 export interface AnalysisMetadata {

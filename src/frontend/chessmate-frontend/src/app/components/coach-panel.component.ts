@@ -1,10 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import {
-  BatchCoachCoachingItemEnvelope,
-  BatchCoachResponseEnvelope
-} from '../models/batch-coach.models';
-import {
   ClassifiedMove,
   CLASSIFICATION_COLORS,
   CLASSIFICATION_SYMBOLS,
@@ -39,31 +35,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
         <div class="coach-bubble-tail"></div>
         <div class="coach-body">
           <ng-container *ngIf="currentMove() as move; else noMoveState">
-            <ng-container *ngIf="isCoachingLoaded(); else coachingUnavailable">
-              <ng-container *ngIf="coachSections() as sections">
-                <div class="coach-sections">
-                  <p class="coach-section" *ngIf="sections.youMoved">
-                    <span class="section-text">{{ sections.youMoved }}</span>
-                  </p>
-                  <p class="coach-section" *ngIf="sections.whyWrong">
-                    <span class="section-label">Why this was wrong:&nbsp;</span>
-                    <span class="section-text">{{ sections.whyWrong }}</span>
-                  </p>
-                  <p class="coach-section" *ngIf="sections.exploitPath">
-                    <span class="section-label">Exploit path:&nbsp;</span>
-                    <span class="section-text">{{ sections.exploitPath }}</span>
-                  </p>
-                  <p class="coach-section" *ngIf="sections.suggestedPlan">
-                    <span class="section-label">Suggested plan:&nbsp;</span>
-                    <span class="section-text">{{ sections.suggestedPlan }}</span>
-                  </p>
-                </div>
-              </ng-container>
-            </ng-container>
-
-            <ng-template #coachingUnavailable>
-              <p class="coach-unavailable">Coaching data unavailable. Re-run analysis to generate insights.</p>
-            </ng-template>
+            <p class="coach-explanation">{{ coachText() }}</p>
           </ng-container>
 
           <ng-template #noMoveState>
@@ -221,63 +193,19 @@ export class CoachPanelComponent {
   /** Currently selected classified move (null when at initial position). */
   public readonly currentMove = input<ClassifiedMove | null>(null);
 
-  /** Coaching lookup map: ply → coaching item. */
-  public readonly coachingLookup = input<Map<number, BatchCoachCoachingItemEnvelope>>(new Map());
-
-  /** Full batch-coach response for operation correlation. */
-  public readonly batchCoachResponse = input<BatchCoachResponseEnvelope | null>(null);
+  /** Human-readable coaching explanation for the current move. */
+  public readonly explanation = input<string>('');
 
   protected readonly coachText = computed(() => {
     const move = this.currentMove();
     if (!move) {
       return '';
     }
-
-    const lookup = this.coachingLookup();
-    const coachingItem = lookup.get(move.ply);
-
-    if (coachingItem && coachingItem.explanation) {
-      return coachingItem.explanation;
+    const explanationText = this.explanation();
+    if (explanationText) {
+      return explanationText;
     }
-
     return `${move.san} was ${move.classification}.`;
-  });
-
-  protected readonly coachSections = computed(() => {
-    const text = this.coachText();
-    if (!text) {
-      return null;
-    }
-
-    const whyLabel = 'Why this was wrong:';
-    const exploitLabel = 'Exploit path:';
-    const planLabel = 'Suggested plan:';
-
-    const whyIdx = text.indexOf(whyLabel);
-    const exploitIdx = text.indexOf(exploitLabel);
-    const planIdx = text.indexOf(planLabel);
-
-    const youMoved = whyIdx > -1 ? text.slice(0, whyIdx).trim() : text;
-    const whyWrong = whyIdx > -1
-      ? text.slice(whyIdx + whyLabel.length, exploitIdx > -1 ? exploitIdx : planIdx > -1 ? planIdx : undefined).trim()
-      : '';
-    const exploitPath = exploitIdx > -1
-      ? text.slice(exploitIdx + exploitLabel.length, planIdx > -1 ? planIdx : undefined).trim()
-      : '';
-    const suggestedPlan = planIdx > -1
-      ? text.slice(planIdx + planLabel.length).trim()
-      : '';
-
-    return { youMoved, whyWrong, exploitPath, suggestedPlan };
-  });
-
-  protected readonly isCoachingLoaded = computed(() => {
-    return this.batchCoachResponse() !== null;
-  });
-
-  protected readonly operationId = computed(() => {
-    const response = this.batchCoachResponse();
-    return response?.operationId ?? null;
   });
 
   protected getClassificationColor(classification: MoveClassification | string): string {

@@ -61,8 +61,7 @@
     <!-- Coach panel -->
     <app-coach-panel
       [currentMove]="currentClassifiedMove()"
-      [coachingLookup]="coachingLookup()"
-      [batchCoachResponse]="batchCoachResponse()">
+      [explanation]="currentExplanation()">
     </app-coach-panel>
 
     <!-- Move list — scrollable -->
@@ -70,7 +69,6 @@
       <app-move-list
         [moves]="analysis.classifiedMoves"
         [selectedPly]="selectedPly()"
-        [coachingLookup]="coachingLookup()"
         (plySelected)="onPlySelected($event)">
       </app-move-list>
     </div>

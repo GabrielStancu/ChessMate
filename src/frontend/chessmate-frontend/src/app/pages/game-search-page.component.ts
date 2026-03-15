@@ -8,10 +8,8 @@ import { firstValueFrom } from 'rxjs';
 import { AnalysisMode, EngineConfig } from '../models/analysis.models';
 import { ErrorResponseEnvelope, GetGamesItemEnvelope } from '../models/games.models';
 import { AnalysisLoadingDialogComponent, AnalysisLoadingDialogData } from './analysis-loading-dialog.component';
-import { buildBatchCoachPayload, generateIdempotencyKey, PromptVerbosity } from '../models/batch-coach.models';
-import { COACHING_ELIGIBLE_CLASSES } from '../models/classification.models';
+import { AnalysisCacheApiService } from '../services/analysis-cache-api.service';
 import { AnalysisSessionService } from '../services/analysis-session.service';
-import { BatchCoachApiService } from '../services/batch-coach-api.service';
 import { FullGameAnalysisService } from '../services/full-game-analysis.service';
 import { GamesApiService } from '../services/games-api.service';
 import { StockfishAnalysisControllerService } from '../services/stockfish-analysis-controller.service';
@@ -22,7 +20,6 @@ const DRAW_RESULTS = new Set([
 
 const LAST_SEARCHED_USERNAME_STORAGE_KEY = 'lastSearchedUsername';
 const LAST_ANALYSIS_MODE_STORAGE_KEY = 'lastAnalysisMode';
-const LAST_PROMPT_VERBOSITY_STORAGE_KEY = 'lastPromptVerbosity';
 
 @Component({
   selector: 'app-game-search-page',
@@ -39,16 +36,15 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   @ViewChild('gamesSection') private gamesSection?: ElementRef<HTMLElement>;
 
   private readonly gamesApiService = inject(GamesApiService);
+  private readonly analysisCacheApiService = inject(AnalysisCacheApiService);
   private readonly analysisSessionService = inject(AnalysisSessionService);
   private readonly fullGameAnalysisService = inject(FullGameAnalysisService);
-  private readonly batchCoachApiService = inject(BatchCoachApiService);
   private readonly stockfishController = inject(StockfishAnalysisControllerService);
   private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
 
   protected readonly pageSize = 12;
   protected readonly analysisMode = signal<AnalysisMode>('quick');
-  protected readonly promptVerbosity = signal<PromptVerbosity>('balanced');
   protected readonly analyzingGameId = signal<string | null>(null);
   protected readonly usernameControl = new FormControl('', {
     nonNullable: true,
@@ -169,11 +165,6 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     this.persistLastAnalysisMode(mode);
   }
 
-  protected setPromptVerbosity(verbosity: PromptVerbosity): void {
-    this.promptVerbosity.set(verbosity);
-    this.persistPromptVerbosity(verbosity);
-  }
-
   protected getResultClass(game: GetGamesItemEnvelope): 'win' | 'loss' | 'draw' {
     const result = game.result?.toLowerCase() ?? '';
     if (result === 'win') {
@@ -226,23 +217,13 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     const config: EngineConfig = this.stockfishController.getPreset(mode);
     const username = this.usernameControl.value.trim();
 
-    try {
-      const cacheResponse = await this.batchCoachApiService.getAnalysisCache(game.gameId, mode, config);
-      this.cacheStatus.set(`analysis-${cacheResponse.cacheStatus}:${cacheResponse.cacheReason}`);
-
-      if (
-        cacheResponse.cacheStatus === 'hit' &&
-        cacheResponse.analysisSnapshot &&
-        cacheResponse.batchCoachResponse
-      ) {
-        this.analysisSessionService.setFullGameAnalysis(cacheResponse.analysisSnapshot);
-        this.analysisSessionService.setBatchCoachResponse(cacheResponse.batchCoachResponse);
-        this.analyzingGameId.set(null);
-        void this.router.navigate(['/analysis', game.gameId]);
-        return;
-      }
-    } catch (error) {
-      console.warn('[ChessMate] Analysis cache lookup failed, falling back to fresh analysis:', error);
+    // Check backend cache first
+    const cached = await this.analysisCacheApiService.getCache(game.gameId, mode, config.depth);
+    if (cached) {
+      this.analysisSessionService.setFullGameAnalysis(cached);
+      this.analyzingGameId.set(null);
+      void this.router.navigate(['/analysis', game.gameId]);
+      return;
     }
 
     const dialogRef = this.dialog.open(AnalysisLoadingDialogComponent, {
@@ -276,8 +257,8 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
 
       this.analysisSessionService.setFullGameAnalysis(result);
 
-      // Submit coaching request for eligible moves (non-blocking on failure)
-      await this.submitCoachingRequest(result, mode, config);
+      // Store in backend cache (best-effort, don't block navigation)
+      this.analysisCacheApiService.putCache(game.gameId, mode, config.depth, result);
 
       dialogRef.close();
       this.analyzingGameId.set(null);
@@ -341,11 +322,6 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    const storedVerbosity = this.readFromLocalStorage(LAST_PROMPT_VERBOSITY_STORAGE_KEY);
-    if (storedVerbosity === 'concise' || storedVerbosity === 'balanced' || storedVerbosity === 'detailed') {
-      this.promptVerbosity.set(storedVerbosity);
-    }
-
     this.usernameControl.setValue(storedUsername);
 
     if (!this.usernameControl.invalid) {
@@ -359,10 +335,6 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
 
   private persistLastAnalysisMode(mode: AnalysisMode): void {
     this.writeToLocalStorage(LAST_ANALYSIS_MODE_STORAGE_KEY, mode);
-  }
-
-  private persistPromptVerbosity(verbosity: PromptVerbosity): void {
-    this.writeToLocalStorage(LAST_PROMPT_VERBOSITY_STORAGE_KEY, verbosity);
   }
 
   private readFromLocalStorage(key: string): string | null {
@@ -396,33 +368,4 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     this.errorMessage.set('Unable to retrieve games right now.');
   }
 
-  private async submitCoachingRequest(
-    result: import('../models/classification.models').FullGameAnalysisResult,
-    mode: AnalysisMode,
-    config: EngineConfig
-  ): Promise<void> {
-    const payload = buildBatchCoachPayload(result, this.promptVerbosity());
-
-    const hasEligibleMoves = result.classifiedMoves.some(
-      (m) => (COACHING_ELIGIBLE_CLASSES as ReadonlyArray<string>).includes(m.classification)
-    );
-
-    if (!hasEligibleMoves) {
-      return;
-    }
-
-    this.fullGameAnalysisService.progress.set({
-      current: 0,
-      total: 0,
-      phase: 'coaching'
-    });
-
-    try {
-      const idempotencyKey = generateIdempotencyKey(result.gameId, mode, config);
-      const coachResponse = await this.batchCoachApiService.submitBatchCoach(payload, idempotencyKey);
-      this.analysisSessionService.setBatchCoachResponse(coachResponse);
-    } catch (error) {
-      console.warn('[ChessMate] Coaching request failed (non-blocking):', error);
-    }
-  }
 }

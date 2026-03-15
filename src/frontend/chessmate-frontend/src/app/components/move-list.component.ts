@@ -9,13 +9,9 @@ import {
   output
 } from '@angular/core';
 import {
-  BatchCoachCoachingItemEnvelope
-} from '../models/batch-coach.models';
-import {
   ClassifiedMove,
   CLASSIFICATION_COLORS,
   CLASSIFICATION_SYMBOLS,
-  COACHING_ELIGIBLE_CLASSES,
   MoveClassification
 } from '../models/classification.models';
 
@@ -191,7 +187,6 @@ interface MovePair {
 export class MoveListComponent implements AfterViewChecked {
   public readonly moves = input<ClassifiedMove[]>([]);
   public readonly selectedPly = input<number>(0);
-  public readonly coachingLookup = input<Map<number, BatchCoachCoachingItemEnvelope>>(new Map());
   public readonly plySelected = output<number>();
 
   @ViewChild('scrollContainer')
@@ -251,16 +246,12 @@ export class MoveListComponent implements AfterViewChecked {
     return CLASSIFICATION_SYMBOLS[classification as MoveClassification] ?? '';
   }
 
-  protected hasCoaching(move: ClassifiedMove): boolean {
-    return this.coachingLookup().has(move.ply);
-  }
-
-  private scrollToSelectedMove(ply: number): void {
+  private scrollToSelectedMove(_ply: number): void {
     if (!this.scrollContainer) {
       return;
     }
     const container = this.scrollContainer.nativeElement;
-    const target = container.querySelector(`[data-ply="${ply}"]`) as HTMLElement | null;
+    const target = container.querySelector('.cell-selected') as HTMLElement | null;
     if (!target) {
       return;
     }
@@ -269,7 +260,7 @@ export class MoveListComponent implements AfterViewChecked {
     const targetTop = target.offsetTop;
     const targetBottom = targetTop + target.offsetHeight;
     if (targetTop < containerTop || targetBottom > containerBottom) {
-      target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
     }
   }
 }

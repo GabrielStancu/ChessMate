@@ -9,7 +9,7 @@ import { centipawnToWinExpectancy, classifyMove, flipWinExpectancy } from '../ut
 export interface AnalysisProgress {
   current: number;
   total: number;
-  phase: 'loading' | 'evaluating' | 'classifying' | 'coaching' | 'done' | 'error';
+  phase: 'loading' | 'evaluating' | 'classifying' | 'done' | 'error';
   errorMessage?: string;
 }
 
@@ -157,7 +157,9 @@ export class FullGameAnalysisService {
           mate: null,
           depth: null,
           principalVariation: null,
-          cached: false
+          cached: false,
+          secondBestCentipawn: null,
+          secondBestMate: null
         });
       }
     }
@@ -204,13 +206,19 @@ export class FullGameAnalysisService {
       const positionBeforeMove = positions[i];
       const isBookMove = ply <= 2 || this.openingBook.isBookPositionSync(positionBeforeMove);
 
+      const boardBeforeMove = new Chess(positions[i]);
+      const legalMoveCount = boardBeforeMove.moves().length;
+
       const moveContext: MoveContext = {
         piece: move.piece,
         captured: move.captured,
         cpMovingSideBefore,
         cpMovingSideAfter,
         ply,
-        isSacrifice: this.detectSacrifice(move, positions[i + 1])
+        isSacrifice: this.detectSacrifice(move, positions[i + 1]),
+        legalMoveCount,
+        secondBestCentipawn: this.resolveSecondBestCentipawn(evalBefore),
+        secondBestMate: evalBefore.secondBestMate
       };
 
       const classification = classifyMove(weBeforeForMovingSide, weAfterForMovingSide, isBestMove, isBookMove, moveContext);
@@ -258,6 +266,13 @@ export class FullGameAnalysisService {
     }
 
     return evaluation.centipawn ?? 0;
+  }
+
+  private resolveSecondBestCentipawn(evaluation: PositionEvaluation): number | null {
+    if (evaluation.secondBestMate !== null) {
+      return null; // Let the classifier handle mate via secondBestMate
+    }
+    return evaluation.secondBestCentipawn;
   }
 
   /**

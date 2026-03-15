@@ -8,11 +8,6 @@ import { ArrowType, BORDER_TYPE, Chessboard, COLOR, FEN, MarkerType } from 'cm-c
 import { Markers } from 'cm-chessboard/src/extensions/markers/Markers.js';
 import { Arrows } from 'cm-chessboard/src/extensions/arrows/Arrows.js';
 import {
-  BatchCoachCoachingItemEnvelope,
-  BatchCoachResponseEnvelope,
-  buildCoachingLookup
-} from '../models/batch-coach.models';
-import {
   ClassifiedMove,
   FullGameAnalysisResult,
   CLASSIFICATION_COLORS,
@@ -26,6 +21,7 @@ import { MoveListComponent } from '../components/move-list.component';
 import { PlayerBarComponent } from '../components/player-bar.component';
 import { AnalysisSessionService } from '../services/analysis-session.service';
 import { buildEvaluationTimeline } from '../utils/evaluation.utils';
+import { generateMoveExplanation } from '../utils/move-explanation.utils';
 
 interface MoveStep {
   moveNumber: number;
@@ -83,16 +79,13 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
   protected readonly classificationColors = CLASSIFICATION_COLORS;
   protected readonly classificationSymbols = CLASSIFICATION_SYMBOLS;
 
-  protected readonly batchCoachResponse = signal<BatchCoachResponseEnvelope | null>(this.resolveBatchCoachResponse());
-  protected readonly coachingLookup = computed(() => {
-    const response = this.batchCoachResponse();
-    const lookup = buildCoachingLookup(response);
-    if (response) {
-      console.info(`[ChessMate] Coaching data loaded: ${lookup.size} items for operationId ${response.operationId}`);
-    }
-    return lookup;
-  });
   protected readonly selectedPly = computed(() => this.selectedPositionIndex());
+
+  protected readonly currentExplanation = computed(() => {
+    const move = this.currentClassifiedMove();
+    if (!move) return '';
+    return generateMoveExplanation(move, move.fenBefore, move.fenAfter);
+  });
 
   protected readonly evaluationTimeline = computed(() => {
     const analysis = this.fullAnalysis();
@@ -461,14 +454,6 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     }
 
     return this.analysisSessionService.getFullGameAnalysis(this.gameId);
-  }
-
-  private resolveBatchCoachResponse(): BatchCoachResponseEnvelope | null {
-    if (!this.gameId) {
-      return null;
-    }
-
-    return this.analysisSessionService.getBatchCoachResponse(this.gameId);
   }
 
   private async syncBoardAndOverlays(fen: string, classifiedMove: ClassifiedMove | null): Promise<void> {

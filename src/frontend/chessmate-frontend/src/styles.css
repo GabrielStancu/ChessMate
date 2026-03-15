@@ -145,6 +145,11 @@ body {
 	opacity: 0.48;
 }
 
+.cm-chessboard .markers .marker.marker-move-forced {
+	fill: #abdfae;
+	opacity: 0.48;
+}
+
 .cm-chessboard .markers .marker.marker-move-inaccuracy {
 	fill: #F57C00;
 	opacity: 0.48;

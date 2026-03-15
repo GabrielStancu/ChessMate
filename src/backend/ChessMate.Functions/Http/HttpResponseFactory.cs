@@ -2,7 +2,6 @@ using System.Net;
 using System.Text.Json;
 using ChessMate.Application.Abstractions;
 using ChessMate.Application.Validation;
-using ChessMate.Functions.BatchCoach;
 using ChessMate.Functions.Contracts;
 using ChessMate.Functions.Security;
 using Microsoft.ApplicationInsights;
@@ -28,7 +27,7 @@ public sealed class HttpResponseFactory(
         var envelope = new ErrorResponseEnvelope(
             SchemaVersion,
             correlationAccessor.CorrelationId,
-            BatchCoachFailureCodes.ValidationError,
+            "ValidationError",
             exception.Message,
             exception.Errors);
 
@@ -51,7 +50,7 @@ public sealed class HttpResponseFactory(
         var envelope = new ErrorResponseEnvelope(
             SchemaVersion,
             correlationAccessor.CorrelationId,
-            BatchCoachFailureCodes.UpstreamUnavailable,
+            "UpstreamUnavailable",
             message);
 
         return await WriteJsonAsync(request, HttpStatusCode.BadGateway, envelope);
@@ -79,6 +78,32 @@ public sealed class HttpResponseFactory(
         return await WriteJsonAsync(request, HttpStatusCode.Forbidden, envelope);
     }
 
+    public Task<HttpResponseData> CreateNoContentAsync(HttpRequestData request)
+    {
+        var response = request.CreateResponse(HttpStatusCode.NoContent);
+
+        if (corsPolicy.TryGetAllowedOrigin(request, out var allowedOrigin))
+        {
+            response.Headers.Add("Access-Control-Allow-Origin", allowedOrigin!);
+            response.Headers.Add("Vary", "Origin");
+        }
+
+        return Task.FromResult(response);
+    }
+
+    public Task<HttpResponseData> CreateNotFoundAsync(HttpRequestData request)
+    {
+        var response = request.CreateResponse(HttpStatusCode.NotFound);
+
+        if (corsPolicy.TryGetAllowedOrigin(request, out var allowedOrigin))
+        {
+            response.Headers.Add("Access-Control-Allow-Origin", allowedOrigin!);
+            response.Headers.Add("Vary", "Origin");
+        }
+
+        return Task.FromResult(response);
+    }
+
     public Task<HttpResponseData> CreatePreflightAsync(HttpRequestData request)
     {
         var response = request.CreateResponse(HttpStatusCode.NoContent);
@@ -86,7 +111,7 @@ public sealed class HttpResponseFactory(
         if (corsPolicy.TryGetAllowedOrigin(request, out var allowedOrigin))
         {
             response.Headers.Add("Access-Control-Allow-Origin", allowedOrigin!);
-            response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
             response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Idempotency-Key");
             response.Headers.Add("Access-Control-Max-Age", "3600");
             response.Headers.Add("Vary", "Origin");

@@ -12,7 +12,7 @@ public sealed class RetentionCleanupFunctions
     private const string ScannedMetricName = "retention.cleanup.scanned";
     private const string DeletedMetricName = "retention.cleanup.deleted";
     private const string FailedMetricName = "retention.cleanup.failed";
-    private static readonly string[] TargetTables = new[] { "GameIndex", "AnalysisBatch", "OperationState" };
+    private static readonly string[] TargetTables = new[] { "GameIndex", "AnalysisBatch" };
 
     private readonly TableServiceClient _tableServiceClient;
     private readonly TimeProvider _timeProvider;
