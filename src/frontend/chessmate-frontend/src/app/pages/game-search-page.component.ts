@@ -141,13 +141,13 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     return item.gameId;
   }
 
-  protected flagEmoji(countryCode: string | null | undefined): string | null {
+  protected flagImageUrl(countryCode: string | null | undefined): string | null {
     if (!countryCode || countryCode.length !== 2) return null;
-    // Regional Indicator Symbol Letters start at U+1F1E6 ('A')
-    const base = 0x1F1E6;
-    const upper = countryCode.toUpperCase();
-    const points = [...upper].map(ch => base + ch.charCodeAt(0) - 0x41);
-    return String.fromCodePoint(...points);
+    return `https://flagcdn.com/w20/${countryCode.toLowerCase()}.png`;
+  }
+
+  protected onFlagError(event: Event): void {
+    (event.target as HTMLElement).style.display = 'none';
   }
 
   protected openAnalysis(game: GetGamesItemEnvelope): void {

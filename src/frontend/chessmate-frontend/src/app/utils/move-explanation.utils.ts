@@ -368,6 +368,71 @@ function isBadClassification(c: string): boolean {
   return c === 'Inaccuracy' || c === 'Mistake' || c === 'Miss' || c === 'Blunder';
 }
 
+// ── Contextual habit principles ──────────────────────────────────────────────
+
+function detectContextualPrinciple(
+  boardAfter: Chess,
+  move: ClassifiedMove,
+  movingColor: 'w' | 'b',
+  ply: number,
+  isCapture: boolean,
+  _classification: string
+): string | null {
+  const opponentColor: 'w' | 'b' = movingColor === 'w' ? 'b' : 'w';
+  const toSq = move.to as Square;
+
+  // A. Moved piece itself is now hanging on its new square
+  if (!isCapture
+    && boardAfter.isAttacked(toSq, opponentColor)
+    && !boardAfter.isAttacked(toSq, movingColor)) {
+    return pick(ply, [
+      'Always verify your destination square is safe before moving — a piece that lands in danger can be taken immediately.',
+      'Check that your new square is defended or hard to attack. Hanging pieces hand your opponent free material.',
+      'Before placing a piece, ask: can my opponent take it for free on the next move?',
+    ]);
+  }
+
+  // B. Queen deployed early
+  if (move.piece === 'q' && ply < 14) {
+    return pick(ply, [
+      'Moving the queen early risks losing tempos when it gets chased. Develop your knights and bishops first, then bring the queen to an active role.',
+      'The queen is powerful but vulnerable to tempo attacks. Develop minor pieces first — the queen will find the right square once the foundation is laid.',
+    ]);
+  }
+
+  // C. Flank pawn push in the opening
+  if (move.piece === 'p' && ply < 16) {
+    const file = move.to[0];
+    if (file === 'a' || file === 'b' || file === 'g' || file === 'h') {
+      return pick(ply, [
+        'Wing pawn moves in the opening delay development and can weaken your position. Focus on central control and getting your pieces into play first.',
+        "In the opening, every tempo counts. Flank pawn moves that don't control the center are often too slow.",
+      ]);
+    }
+  }
+
+  // D. King still uncastled in the middlegame — only fires when castling rights are
+  // still intact, so a king that castled and was later pushed back won't trigger this.
+  if (ply >= 20) {
+    const kingStartSq = (movingColor === 'w' ? 'e1' : 'e8') as Square;
+    const king = boardAfter.get(kingStartSq);
+    if (king && king.type === 'k' && king.color === movingColor) {
+      const castlingFen = boardAfter.fen().split(' ')[2] ?? '-';
+      const hasRights = movingColor === 'w'
+        ? castlingFen.includes('K') || castlingFen.includes('Q')
+        : castlingFen.includes('k') || castlingFen.includes('q');
+      if (hasRights) {
+        return pick(ply, [
+          'Your king is still uncastled in the middlegame. Prioritize castling — an exposed king in the center is a constant liability.',
+          'With your king still in the center, every inaccuracy costs more. Complete your development and castle as soon as possible.',
+        ]);
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * Generate a human-readable coaching explanation for a classified move.
  * Pure function -- no service dependencies.
@@ -538,6 +603,21 @@ export function generateMoveExplanation(
         ]);
   }
 
+  // -- Check prefix (always first when the move gives check) --
+  if (isCheck) {
+    parts.push(isUser
+      ? pick(ply, [
+          `Check! Your ${name} attacks the king from ${move.to}.`,
+          `Check — your ${name} reaches the king on ${move.to}.`,
+          `Your ${name} gives check from ${move.to}. The king must respond.`,
+        ])
+      : pick(ply, [
+          `Check! Your opponent's ${name} attacks your king from ${move.to}.`,
+          `Check — your opponent's ${name} reaches your king on ${move.to}.`,
+          `Your opponent's ${name} delivers check from ${move.to}.`,
+        ]));
+  }
+
   // -- Captures --
   if (isCapture) {
     // Motif-first capture descriptions
@@ -629,68 +709,59 @@ export function generateMoveExplanation(
     } else if (pin) {
       parts.push(isUser
         ? `${pin}. The pinned piece is restricted.`
-        : `Your opponent pins: ${pin.toLowerCase()}.`);
+        : `Your opponent is ${pin.toLowerCase()}.`);
     } else if (skewer) {
       parts.push(isUser
         ? `${skewer}.`
-        : `Your opponent skewers: ${skewer.toLowerCase()}.`);
+        : `Your opponent is ${skewer.toLowerCase()}.`);
     } else if (discovered) {
       parts.push(isUser
         ? `${discovered}! A hidden threat revealed.`
         : `Your opponent uncovers a ${discovered.toLowerCase()}.`);
-    } else if (isCheck) {
-      parts.push(isUser
-        ? pick(ply, [
-            `You check from ${move.to}. The king must respond.`,
-            `${capitalize(name)} delivers check on ${move.to}. Keeping the pressure.`,
-            `Check! Your ${name} attacks the king from ${move.to}.`
-          ])
-        : pick(ply, [
-            `Your opponent checks from ${move.to}. You must respond.`,
-            `${capitalize(name)} delivers check on ${move.to}.`,
-            `Check from your opponent's ${name} on ${move.to}.`
-          ]));
-    } else if (development) {
-      parts.push(`${development}.`);
-    } else if (move.piece === 'p') {
-      const pawnColor = movingColor;
-      if (detectPassedPawn(boardAfter, move.to as Square, pawnColor)) {
-        parts.push(isUser
-          ? pick(ply, [
-              'You advance the passed pawn. No enemy pawns can stop it.',
-              'Pushing the passed pawn forward. Each step closer to promotion counts.',
-              'Your passed pawn moves ahead. Keep it going.'
-            ])
-          : pick(ply, [
-              'Your opponent advances a passed pawn. Watch it carefully.',
-              'The passed pawn pushes forward. No pawns blocking its path.',
-              'Your opponent pushes the passed pawn. This could become dangerous.'
-            ]));
+    } else if (!isCheck) {
+      // Only add a default description when there's no check already in parts
+      if (development) {
+        parts.push(`${development}.`);
+      } else if (move.piece === 'p') {
+        const pawnColor = movingColor;
+        if (detectPassedPawn(boardAfter, move.to as Square, pawnColor)) {
+          parts.push(isUser
+            ? pick(ply, [
+                'You advance the passed pawn. No enemy pawns can stop it.',
+                'Pushing the passed pawn forward. Each step closer to promotion counts.',
+                'Your passed pawn moves ahead. Keep it going.'
+              ])
+            : pick(ply, [
+                'Your opponent advances a passed pawn. Watch it carefully.',
+                'The passed pawn pushes forward. No pawns blocking its path.',
+                'Your opponent pushes the passed pawn. This could become dangerous.'
+              ]));
+        } else {
+          parts.push(isUser
+            ? pick(ply, [
+                `You push the pawn to ${move.to}.`,
+                `Pawn to ${move.to}. Steady progress.`,
+                `You advance to ${move.to}.`
+              ])
+            : pick(ply, [
+                `Your opponent pushes the pawn to ${move.to}.`,
+                `Pawn to ${move.to} by your opponent.`,
+                `Your opponent advances to ${move.to}.`
+              ]));
+        }
       } else {
         parts.push(isUser
           ? pick(ply, [
-              `You push the pawn to ${move.to}.`,
-              `Pawn to ${move.to}. Steady progress.`,
-              `You advance to ${move.to}.`
+              `You move the ${name} to ${move.to}.`,
+              `${capitalize(name)} to ${move.to}. Improving the piece's position.`,
+              `You place the ${name} on ${move.to}.`
             ])
           : pick(ply, [
-              `Your opponent pushes the pawn to ${move.to}.`,
-              `Pawn to ${move.to} by your opponent.`,
-              `Your opponent advances to ${move.to}.`
+              `Your opponent moves the ${name} to ${move.to}.`,
+              `${capitalize(name)} to ${move.to} for your opponent.`,
+              `Your opponent repositions the ${name} to ${move.to}.`
             ]));
       }
-    } else {
-      parts.push(isUser
-        ? pick(ply, [
-            `You move the ${name} to ${move.to}.`,
-            `${capitalize(name)} to ${move.to}. Improving the piece's position.`,
-            `You place the ${name} on ${move.to}.`
-          ])
-        : pick(ply, [
-            `Your opponent moves the ${name} to ${move.to}.`,
-            `${capitalize(name)} to ${move.to} for your opponent.`,
-            `Your opponent repositions the ${name} to ${move.to}.`
-          ]));
     }
   }
 
@@ -736,6 +807,14 @@ export function generateMoveExplanation(
             `This gives you ${opponentSan}, improving your situation.`,
             `You have ${opponentSan} available, pressing the advantage.`
           ]));
+    }
+  }
+
+  // -- Contextual principles (bad/inaccurate user moves only) --
+  if (isBad && isUser) {
+    const principle = detectContextualPrinciple(boardAfter, move, movingColor, ply, isCapture, classification);
+    if (principle) {
+      parts.push(principle);
     }
   }
 

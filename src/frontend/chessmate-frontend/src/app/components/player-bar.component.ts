@@ -24,9 +24,15 @@ import { CapturedPiecesComponent } from './captured-pieces.component';
       <!-- Info block: name row + captured pieces -->
       <div class="player-info">
         <div class="player-name-row">
-          @if (flagEmoji()) {
-            <span class="player-flag" role="img" [attr.aria-label]="(countryCode() ?? '') + ' flag'">{{ flagEmoji() }}</span>
-          }
+          <span class="player-flag-slot">
+            @if (flagImageUrl()) {
+              <img
+                class="player-flag-img"
+                [src]="flagImageUrl()!"
+                [attr.alt]="(countryCode() ?? '') + ' flag'"
+                (error)="onFlagError()" />
+            }
+          </span>
           <span class="player-name">{{ username() }}</span>
           @if (rating()) {
             <span class="player-rating">({{ rating() }})</span>
@@ -91,10 +97,23 @@ import { CapturedPiecesComponent } from './captured-pieces.component';
       flex-wrap: nowrap;
     }
 
-    .player-flag {
-      font-size: 0.9rem;
-      line-height: 1;
+    .player-flag-slot {
+      display: inline-flex;
+      align-items: center;
+      width: 20px;
+      height: 13px;
+      background-color: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(200, 200, 200, 0.3);
       flex-shrink: 0;
+      overflow: hidden;
+      vertical-align: middle;
+    }
+
+    .player-flag-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     .player-name {
@@ -123,6 +142,7 @@ export class PlayerBarComponent {
   readonly position = input<'top' | 'bottom'>('bottom');
 
   private readonly avatarLoadFailed = signal(false);
+  private readonly flagLoadFailed = signal(false);
 
   readonly initials = computed(() => {
     const name = this.username();
@@ -135,17 +155,18 @@ export class PlayerBarComponent {
     return url ?? null;
   });
 
-  readonly flagEmoji = computed(() => {
+  readonly flagImageUrl = computed(() => {
+    if (this.flagLoadFailed()) return null;
     const code = this.countryCode();
     if (!code || code.length !== 2) return null;
-    // Regional Indicator Symbol Letters start at U+1F1E6 ('A')
-    const base = 0x1F1E6;
-    const upper = code.toUpperCase();
-    const points = [...upper].map(ch => base + ch.charCodeAt(0) - 0x41);
-    return String.fromCodePoint(...points);
+    return `https://flagcdn.com/w20/${code.toLowerCase()}.png`;
   });
 
   protected onAvatarError(): void {
     this.avatarLoadFailed.set(true);
+  }
+
+  protected onFlagError(): void {
+    this.flagLoadFailed.set(true);
   }
 }
