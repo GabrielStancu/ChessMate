@@ -7,6 +7,9 @@
 :root {
 	color-scheme: dark;
 
+	/* Navbar */
+	--navbar-height: 67px;
+
 	/* Background surfaces */
 	--cm-bg-app: #0a0a14;
 	--cm-bg-card: #13131f;

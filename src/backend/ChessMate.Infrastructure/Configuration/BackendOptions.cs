@@ -11,6 +11,8 @@ public sealed class BackendOptions
     public StorageOptions Storage { get; init; } = new();
 
     public TelemetryOptions Telemetry { get; init; } = new();
+
+    public LichessOptions Lichess { get; init; } = new();
 }
 
 public sealed class KeyVaultOptions
@@ -31,4 +33,11 @@ public sealed class StorageOptions
 public sealed class TelemetryOptions
 {
     public bool EnableAdaptiveSampling { get; init; }
+}
+
+public sealed class LichessOptions
+{
+    public string BaseUrl { get; init; } = "https://explorer.lichess.org";
+
+    public string TokenSecretName { get; init; } = "LichessApiToken";
 }

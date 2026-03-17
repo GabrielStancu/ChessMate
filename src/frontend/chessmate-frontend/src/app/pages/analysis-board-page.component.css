@@ -16,7 +16,7 @@
   display: flex;
   justify-content: center;
   align-items: stretch;
-  height: 100vh;
+  height: calc(100vh - var(--navbar-height, 0px));
   overflow: hidden;
   background: var(--cm-bg-app);
 }
@@ -29,7 +29,7 @@
   flex-direction: column;
   justify-content: center;
   padding: 1rem 1rem 1rem 1.25rem;
-  height: 100vh;
+  height: calc(100vh - var(--navbar-height, 0px));
   box-sizing: border-box;
   overflow: hidden;
   /* Shrink to fit content so board stays centered */
@@ -70,7 +70,7 @@ app-player-bar {
 .analysis-panel {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100vh - var(--navbar-height, 0px));
   overflow: hidden;
   background: var(--cm-bg-card);
   border-left: 1px solid var(--cm-border);

@@ -119,6 +119,8 @@ var host = new HostBuilder()
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
             .AddStandardResilienceHandler();
+
+        services.AddHttpClient("Lichess");
     })
     .Build();
 

@@ -1,0 +1,232 @@
+<div class="explorer-layout" [class.catalog-view]="!selectedOpening()">
+
+  <!-- ───── CATALOG VIEW ───── -->
+  <div class="catalog-container" *ngIf="!selectedOpening()">
+    <header class="catalog-header">
+      <h1 class="catalog-title">Opening Explorer</h1>
+      <p class="catalog-subtitle">
+        Choose an opening to explore its theory. See the most common
+        continuations, win rates, and coaching insights for every move.
+      </p>
+
+      <!-- Side tabs -->
+      <div class="catalog-tabs">
+        <button class="catalog-tab"
+                [class.active]="activeCatalogSide() === 'white'"
+                (click)="activeCatalogSide.set('white')">
+          <span class="side-icon side-white">♔</span> White Openings
+        </button>
+        <button class="catalog-tab"
+                [class.active]="activeCatalogSide() === 'black'"
+                (click)="activeCatalogSide.set('black')">
+          <span class="side-icon side-black">♚</span> Black Openings
+        </button>
+      </div>
+
+      <input
+        type="text"
+        class="catalog-search"
+        placeholder="Filter openings..."
+        [value]="catalogFilter()"
+        (input)="onFilterInput($event)" />
+    </header>
+
+    <div class="openings-grid">
+      @for (opening of getOpeningsForSide(activeCatalogSide()); track opening.id) {
+        <button class="opening-card" (click)="selectOpening(opening)">
+          <span class="opening-eco">{{ opening.eco }}</span>
+          <span class="opening-name">{{ opening.name }}</span>
+          <span class="opening-desc">{{ opening.description }}</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ───── EXPLORER VIEW ───── -->
+  <ng-container *ngIf="selectedOpening()">
+    <!-- Left column: board (enlarged, no controls) -->
+    <div class="board-column">
+      <div class="board-wrapper">
+        <div #boardHost class="board-host"></div>
+      </div>
+    </div>
+
+    <!-- Right column: header, controls, coach, meta, continuations -->
+    <div class="info-column">
+
+      <!-- Panel header (analysis-board style) -->
+      <div class="panel-header">
+        <button class="header-icon-btn" (click)="selectedOpening.set(null)" aria-label="Back to catalog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </button>
+        <div class="header-title-block">
+          <span class="panel-title-text">
+            <span class="eco-badge">{{ selectedOpening()!.eco }}</span>
+            {{ selectedOpening()!.name }}
+          </span>
+        </div>
+        <span class="perspective-pill">
+          Playing as <strong>{{ playerColor() === 'white' ? 'White' : 'Black' }}</strong>
+        </span>
+      </div>
+
+      <!-- Coach panel (comic-style) -->
+      <div class="coach-panel">
+        <div class="coach-header">
+          <app-coach-avatar />
+          <div class="coach-identity">
+            <span class="coach-name">José Capawnblanca</span>
+            <span class="coach-context">{{ currentMoveLabel() }}</span>
+          </div>
+        </div>
+        <div class="coach-bubble-wrapper">
+          <div class="coach-bubble-tail"></div>
+          <div class="coach-body">
+            <p class="coach-text">{{ coachText() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opening moves strip -->
+      <div class="opening-moves-panel" *ngIf="selectedOpening() && openingMoveTokens().length > 0">
+        <h4 class="opening-moves-title">Opening Moves</h4>
+        <div class="opening-moves-row">
+          @for (token of openingMoveTokens(); track token.uci) {
+            @if (token.isWhite) {
+              <span class="move-number">{{ token.moveNumber }}.</span>
+            }
+            <button class="opening-move-chip"
+                    (mouseenter)="hoveredMoveUci.set(token.uci)"
+                    (mouseleave)="hoveredMoveUci.set(null)">
+              {{ token.san }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Opening meta with tabbed navigation -->
+      <div class="meta-tabs" *ngIf="moveHistory().length <= 1 && selectedOpening()">
+        <div class="tab-bar">
+          <button class="tab-btn"
+                  [class.active]="activeMetaTab() === 'advantages'"
+                  (click)="activeMetaTab.set('advantages')">
+            <span class="tab-icon">✦</span> Pros
+          </button>
+          <button class="tab-btn"
+                  [class.active]="activeMetaTab() === 'drawbacks'"
+                  (click)="activeMetaTab.set('drawbacks')">
+            <span class="tab-icon">✦</span> Cons
+          </button>
+          <button class="tab-btn"
+                  [class.active]="activeMetaTab() === 'goals'"
+                  (click)="activeMetaTab.set('goals')">
+            <span class="tab-icon">✦</span> Goals
+          </button>
+        </div>
+        <div class="tab-content">
+          <ul class="meta-list" *ngIf="activeMetaTab() === 'advantages'">
+            @for (item of selectedOpening()!.advantages; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+          <ul class="meta-list" *ngIf="activeMetaTab() === 'drawbacks'">
+            @for (item of selectedOpening()!.drawbacks; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+          <ul class="meta-list" *ngIf="activeMetaTab() === 'goals'">
+            @for (item of selectedOpening()!.goals; track item) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <!-- Continuations panel -->
+      <div class="continuations-panel">
+        <h3 class="cont-panel-title">
+          Top Continuations
+          <span class="side-badge" [class.white-to-move]="sideToMove() === 'white'"
+                [class.black-to-move]="sideToMove() === 'black'">
+            {{ sideToMove() === 'white' ? '● White' : '● Black' }} to move
+          </span>
+        </h3>
+
+        <div class="continuations-loading" *ngIf="loadingContinuations()">
+          <div class="spinner"></div>
+          Loading continuations...
+        </div>
+
+        <div class="continuations-empty"
+             *ngIf="!loadingContinuations() && continuations().length === 0">
+          No continuations found for this position.
+        </div>
+
+        <div class="continuations-list" *ngIf="!loadingContinuations() && continuations().length > 0">
+          @for (cont of continuations(); track cont.uci) {
+            <button class="continuation-row"
+                    (click)="selectContinuation(cont)"
+                    (mouseenter)="hoveredMoveUci.set(cont.uci)"
+                    (mouseleave)="hoveredMoveUci.set(null)">
+              <div class="cont-move">
+                <span class="cont-san">{{ cont.san }}</span>
+                <span class="cont-games">{{ cont.totalGames | number }} games</span>
+              </div>
+              <div class="cont-stats">
+                <div class="stat-bar-container">
+                  <div class="stat-bar stat-bar-play" [style.width]="getBarWidth(cont.playRate)">
+                    {{ formatPlayRate(cont.playRate) }}%
+                  </div>
+                </div>
+                <div class="win-rate-pill" [ngClass]="getWinRateClass(cont.winRateFromPerspective)">
+                  {{ formatWinRate(cont.winRateFromPerspective) }}% win
+                </div>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Bottom dock: breadcrumbs + nav controls -->
+      <div class="panel-dock">
+        <div class="move-breadcrumbs">
+          @for (entry of moveHistory(); track $index) {
+            @if (entry.sideToMove === 'white') {
+              <span class="move-number">{{ entry.moveNumber }}.</span>
+            }
+            <button class="breadcrumb-btn"
+                    [class.active]="selectedMoveIndex() === $index"
+                    (click)="goToMove($index)">{{ entry.san }}</button>
+          }
+        </div>
+        <div class="nav-controls">
+          <!-- Play: start exploring (only when in initial setup with key squares) -->
+          <button class="nav-btn nav-btn-play" (click)="startExploring()" [disabled]="!isInitialPosition()" aria-label="Start exploring">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="nav-btn" (click)="goToStart()" [disabled]="moveHistory().length === 0" aria-label="Skip to start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm11 0v12L7 12z"/></svg>
+          </button>
+          <button class="nav-btn" (click)="goBack()" [disabled]="moveHistory().length === 0" aria-label="Go back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59 10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+          </button>
+          <span class="nav-position">{{ currentMoveLabel() }}</span>
+          <button class="nav-btn" [disabled]="true" aria-label="Forward (use continuations)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+          </button>
+          <button class="nav-btn" [disabled]="true" aria-label="Skip to end">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5 18V6l10 6zm11-12h2v12h-2z"/></svg>
+          </button>
+          <!-- Reset: return to initial position with key squares -->
+          <button class="nav-btn nav-btn-reset" (click)="resetToInitial()" [disabled]="isInitialPosition()" aria-label="Reset to initial position">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </ng-container>
+</div>
