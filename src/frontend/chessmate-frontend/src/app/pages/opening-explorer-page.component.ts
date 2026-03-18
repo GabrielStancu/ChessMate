@@ -312,13 +312,6 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     await this.loadContinuations(this.chess.fen());
   }
 
-  protected startExploring(): void {
-    // Remove key square markers to signal exploration has begun
-    if (this.chessboard) {
-      this.chessboard.removeMarkers();
-    }
-  }
-
   protected async resetToInitial(): Promise<void> {
     await this.goToStart();
   }
@@ -355,6 +348,12 @@ export class OpeningExplorerPageComponent implements OnDestroy {
       return 'win-rate-neutral';
     }
     return 'win-rate-bad';
+  }
+
+  protected onOpeningMoveHover(uci: string): void {
+    if (this.isInitialPosition()) {
+      this.hoveredMoveUci.set(uci);
+    }
   }
 
   // ── Private methods ──

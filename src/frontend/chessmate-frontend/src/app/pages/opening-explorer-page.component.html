@@ -99,7 +99,7 @@
               <span class="move-number">{{ token.moveNumber }}.</span>
             }
             <button class="opening-move-chip"
-                    (mouseenter)="hoveredMoveUci.set(token.uci)"
+                    (mouseenter)="onOpeningMoveHover(token.uci)"
                     (mouseleave)="hoveredMoveUci.set(null)">
               {{ token.san }}
             </button>
@@ -203,26 +203,11 @@
           }
         </div>
         <div class="nav-controls">
-          <!-- Play: start exploring (only when in initial setup with key squares) -->
-          <button class="nav-btn nav-btn-play" (click)="startExploring()" [disabled]="!isInitialPosition()" aria-label="Start exploring">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <button class="nav-btn" (click)="goToStart()" [disabled]="moveHistory().length === 0" aria-label="Skip to start">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm11 0v12L7 12z"/></svg>
+          <button class="nav-btn" (click)="goToStart()" [disabled]="moveHistory().length === 0" aria-label="Reset to start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
           <button class="nav-btn" (click)="goBack()" [disabled]="moveHistory().length === 0" aria-label="Go back">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59 10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
-          </button>
-          <span class="nav-position">{{ currentMoveLabel() }}</span>
-          <button class="nav-btn" [disabled]="true" aria-label="Forward (use continuations)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-          </button>
-          <button class="nav-btn" [disabled]="true" aria-label="Skip to end">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M5 18V6l10 6zm11-12h2v12h-2z"/></svg>
-          </button>
-          <!-- Reset: return to initial position with key squares -->
-          <button class="nav-btn nav-btn-reset" (click)="resetToInitial()" [disabled]="isInitialPosition()" aria-label="Reset to initial position">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
           </button>
         </div>
       </div>

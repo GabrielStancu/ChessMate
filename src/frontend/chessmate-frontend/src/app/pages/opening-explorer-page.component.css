@@ -26,8 +26,6 @@
   display: grid;
   grid-template-columns: 1fr minmax(320px, 420px);
   gap: 0;
-  max-width: 1400px;
-  margin: 0 auto;
   height: calc(100vh - var(--navbar-height, 0px));
   box-sizing: border-box;
 }
@@ -758,28 +756,9 @@
   cursor: not-allowed;
 }
 
-.nav-btn-play:not(:disabled) {
-  border-color: var(--cm-accent);
-  color: var(--cm-accent);
-}
-
-.nav-btn-play:not(:disabled):hover {
-  background: var(--cm-accent);
-  color: #1a1a1a;
-}
-
 .nav-btn-reset:not(:disabled):hover {
   border-color: var(--cm-accent);
   color: var(--cm-accent);
-}
-
-.nav-position {
-  flex: 1;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--cm-text);
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── Key Square Markers ── */

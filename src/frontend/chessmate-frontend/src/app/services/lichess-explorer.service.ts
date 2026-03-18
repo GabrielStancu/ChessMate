@@ -13,10 +13,10 @@ export class LichessExplorerService {
     maxMoves: number = 5
   ): Promise<ExplorerContinuation[]> {
     try {
-      return await this.fetchFromMasters(fen, playerColor, maxMoves);
+      return await this.fetchFromLichess(fen, playerColor, maxMoves);
     } catch {
       try {
-        return await this.fetchFromLichess(fen, playerColor, maxMoves);
+        return await this.fetchFromMasters(fen, playerColor, maxMoves);
       } catch {
         return [];
       }
@@ -44,7 +44,7 @@ export class LichessExplorerService {
     playerColor: 'white' | 'black',
     maxMoves: number
   ): Promise<ExplorerContinuation[]> {
-    const url = `${this.lichessUrl}?fen=${encodeURIComponent(fen)}&ratings=1600,1800,2000&speeds=rapid,classical&moves=${maxMoves}`;
+    const url = `${this.lichessUrl}?fen=${encodeURIComponent(fen)}&ratings=1000,1200,1400,1600,1800,2000,2200,2500&speeds=bullet,blitz,rapid,classical&moves=${maxMoves}`;
     const response = await fetch(url, {
       headers: { 'Accept': 'application/json' }
     });
