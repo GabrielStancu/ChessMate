@@ -3,37 +3,42 @@
   <!-- ══ Board column ════════════════════════════════════════════════ -->
   <div class="board-column">
 
-    <!-- Top player bar (opponent side) -->
-    <app-player-bar
-      [username]="topPlayerUsername()"
-      [rating]="topPlayerRating()"
-      [avatarUrl]="topPlayerAvatarUrl()"
-      [countryCode]="topPlayerCountry()"
-      [fen]="currentFen()"
-      [capturedByColor]="topCapturedByColor()"
-      position="top">
-    </app-player-bar>
+    <!-- Inner wrapper sizes to board content so player bars share its width for alignment -->
+    <div class="board-inner">
 
-    <!-- Eval bar + board -->
-    <div class="board-area">
-      <app-evaluation-bar
-        *ngIf="fullAnalysis()"
-        [score]="currentEvaluation()"
-        [playerColor]="playerColor()">
-      </app-evaluation-bar>
-      <div #boardHost class="board-host" aria-label="Chessboard"></div>
+      <!-- Top player bar (opponent side) -->
+      <app-player-bar
+        [username]="topPlayerUsername()"
+        [rating]="topPlayerRating()"
+        [avatarUrl]="topPlayerAvatarUrl()"
+        [countryCode]="topPlayerCountry()"
+        [fen]="currentFen()"
+        [capturedByColor]="topCapturedByColor()"
+        position="top">
+      </app-player-bar>
+
+      <!-- Eval bar + board -->
+      <div class="board-area">
+        <app-evaluation-bar
+          *ngIf="fullAnalysis()"
+          [score]="currentEvaluation()"
+          [playerColor]="playerColor()">
+        </app-evaluation-bar>
+        <div #boardHost class="board-host" aria-label="Chessboard"></div>
+      </div>
+
+      <!-- Bottom player bar (user side) -->
+      <app-player-bar
+        [username]="bottomPlayerUsername()"
+        [rating]="bottomPlayerRating()"
+        [avatarUrl]="bottomPlayerAvatarUrl()"
+        [countryCode]="bottomPlayerCountry()"
+        [fen]="currentFen()"
+        [capturedByColor]="bottomCapturedByColor()"
+        position="bottom">
+      </app-player-bar>
+
     </div>
-
-    <!-- Bottom player bar (user side) -->
-    <app-player-bar
-      [username]="bottomPlayerUsername()"
-      [rating]="bottomPlayerRating()"
-      [avatarUrl]="bottomPlayerAvatarUrl()"
-      [countryCode]="bottomPlayerCountry()"
-      [fen]="currentFen()"
-      [capturedByColor]="bottomCapturedByColor()"
-      position="bottom">
-    </app-player-bar>
 
   </div>
 
