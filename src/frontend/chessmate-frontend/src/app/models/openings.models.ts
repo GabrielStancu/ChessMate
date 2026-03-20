@@ -12,6 +12,7 @@ export interface OpeningDefinition {
   drawbacks: string[];
   goals: string[];
   keySquares: string[];
+  pawnBreaks?: string[];
 }
 
 export interface LichessExplorerMove {

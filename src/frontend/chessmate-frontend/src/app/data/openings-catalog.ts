@@ -25,7 +25,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Castle early and connect rooks',
       'Prepare d4 push to open the center'
     ],
-    keySquares: ['c4', 'f7', 'd4', 'e4']
+    keySquares: ['c4', 'f7', 'd4', 'e4'],
+    pawnBreaks: ['d4', 'f4']
   },
   {
     id: 'ruy-lopez',
@@ -50,7 +51,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Use the bishop pair in the middlegame',
       'Prepare a kingside or central attack'
     ],
-    keySquares: ['b5', 'e5', 'd4', 'f5']
+    keySquares: ['b5', 'e5', 'd4', 'f5'],
+    pawnBreaks: ['d4', 'f4']
   },
   {
     id: 'sicilian-defense',
@@ -75,7 +77,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Create queenside counterplay on the c-file',
       'Trade a flank pawn (c5) for a center pawn (d4)'
     ],
-    keySquares: ['d4', 'c5', 'e5', 'd5']
+    keySquares: ['d4', 'c5', 'e5', 'd5'],
+    pawnBreaks: ['d5', 'b5', 'f5']
   },
   {
     id: 'french-defense',
@@ -100,7 +103,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Undermine White\'s pawn chain with ...c5',
       'Activate the "bad" light-squared bishop'
     ],
-    keySquares: ['d5', 'e4', 'c5', 'f5']
+    keySquares: ['d5', 'e4', 'c5', 'f5'],
+    pawnBreaks: ['c5', 'f6']
   },
   {
     id: 'caro-kann',
@@ -125,7 +129,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop the light-squared bishop before playing ...e6',
       'Reach a solid, slightly cramped but resilient position'
     ],
-    keySquares: ['d5', 'e4', 'c6', 'e6']
+    keySquares: ['d5', 'e4', 'c6', 'e6'],
+    pawnBreaks: ['c5', 'b5', 'f5']
   },
   {
     id: 'scandinavian-defense',
@@ -150,7 +155,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop quickly to compensate for the early queen move',
       'Aim for solid pawn structure and piece activity'
     ],
-    keySquares: ['d5', 'e4', 'd4', 'c6']
+    keySquares: ['d5', 'e4', 'd4', 'c6'],
+    pawnBreaks: ['c5', 'b5']
   },
   {
     id: 'pirc-defense',
@@ -175,7 +181,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Strike with ...e5 or ...c5 to undermine White\'s center',
       'Use the flexible pawn structure for counterplay'
     ],
-    keySquares: ['g7', 'e5', 'c5', 'd4']
+    keySquares: ['g7', 'e5', 'c5', 'd4'],
+    pawnBreaks: ['c5', 'e5', 'b5']
   },
   {
     id: 'kings-gambit',
@@ -200,7 +207,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop rapidly and castle queenside',
       'Use the f-file and diagonals for attacking chances'
     ],
-    keySquares: ['f4', 'f7', 'e5', 'd4']
+    keySquares: ['f4', 'f7', 'e5', 'd4'],
+    pawnBreaks: ['d4', 'e5']
   },
   {
     id: 'scotch-game',
@@ -225,7 +233,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop quickly and fight for the initiative',
       'Use the half-open d-file and active bishops'
     ],
-    keySquares: ['d4', 'e5', 'c3', 'f4']
+    keySquares: ['d4', 'e5', 'c3', 'f4'],
+    pawnBreaks: ['f4', 'e5']
   },
   {
     id: 'vienna-game',
@@ -250,7 +259,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Keep the position flexible for multiple plans',
       'Develop pieces in harmony toward the kingside'
     ],
-    keySquares: ['e4', 'f4', 'c3', 'd5']
+    keySquares: ['e4', 'f4', 'c3', 'd5'],
+    pawnBreaks: ['f4', 'd4']
   },
 
   // ── Queen's Pawn (1. d4) ──────────────────────────────────────────
@@ -277,7 +287,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop minor pieces quickly (Nc3, Nf3, Bg5/Bf4)',
       'Exploit any weakness in Black\'s pawn structure'
     ],
-    keySquares: ['c4', 'd5', 'e4', 'd4']
+    keySquares: ['c4', 'd5', 'e4', 'd4'],
+    pawnBreaks: ['e4', 'c5']
   },
   {
     id: 'queens-gambit-declined',
@@ -302,7 +313,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Find an active role for the light-squared bishop',
       'Prepare ...c5 or ...e5 breaks to free the position'
     ],
-    keySquares: ['d5', 'e6', 'c5', 'e5']
+    keySquares: ['d5', 'e6', 'c5', 'e5'],
+    pawnBreaks: ['c5', 'e5']
   },
   {
     id: 'slav-defense',
@@ -327,7 +339,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop the light-squared bishop to f5 or g4',
       'Prepare ...e6 and ...Nbd7 for a solid setup'
     ],
-    keySquares: ['d5', 'c6', 'f5', 'e6']
+    keySquares: ['d5', 'c6', 'f5', 'e6'],
+    pawnBreaks: ['c5', 'e5', 'b5']
   },
   {
     id: 'london-system',
@@ -352,7 +365,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Build a solid pyramid with pawns on d4, e3, c3',
       'Castle kingside and prepare a kingside or central break'
     ],
-    keySquares: ['f4', 'd4', 'e3', 'c3']
+    keySquares: ['f4', 'd4', 'e3', 'c3'],
+    pawnBreaks: ['e4', 'c4']
   },
   {
     id: 'catalan-opening',
@@ -377,7 +391,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Maintain the c4/d4 center and restrict Black\'s counterplay',
       'Recover the gambit pawn (if taken) with positional compensation'
     ],
-    keySquares: ['g2', 'c4', 'd5', 'e4']
+    keySquares: ['g2', 'c4', 'd5', 'e4'],
+    pawnBreaks: ['e4']
   },
 
   // ── Indian Defenses (1. d4 Nf6) ──────────────────────────────────
@@ -404,7 +419,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Launch a kingside pawn storm with ...f5, ...g5, ...h5',
       'Activate the bishop on g7 for long-term power'
     ],
-    keySquares: ['g7', 'e5', 'f5', 'd6']
+    keySquares: ['g7', 'e5', 'f5', 'd6'],
+    pawnBreaks: ['e5', 'f5', 'c5']
   },
   {
     id: 'nimzo-indian-defense',
@@ -429,7 +445,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Play ...d5 or ...c5 to challenge the center',
       'Be ready to trade bishop for knight when strategically advantageous'
     ],
-    keySquares: ['b4', 'e4', 'c3', 'd5']
+    keySquares: ['b4', 'e4', 'c3', 'd5'],
+    pawnBreaks: ['e5', 'c5', 'd5']
   },
   {
     id: 'queens-indian-defense',
@@ -454,7 +471,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Contest the e4 square indirectly',
       'Aim for a solid position with counterplay based on ...d5 or ...c5'
     ],
-    keySquares: ['b7', 'e4', 'b6', 'd5']
+    keySquares: ['b7', 'e4', 'b6', 'd5'],
+    pawnBreaks: ['c5', 'd5', 'e5']
   },
   {
     id: 'grunfeld-defense',
@@ -479,7 +497,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Pressure the center with the fianchettoed bishop on g7',
       'Dismantle White\'s center with ...c5 and tactical strikes'
     ],
-    keySquares: ['d5', 'd4', 'g7', 'c5']
+    keySquares: ['d5', 'd4', 'g7', 'c5'],
+    pawnBreaks: ['c5', 'e5']
   },
   {
     id: 'benoni-defense',
@@ -504,7 +523,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Counter White\'s kingside expansion with ...f5 or ...b5',
       'Use the fianchettoed bishop and semi-open e-file'
     ],
-    keySquares: ['d5', 'c5', 'e6', 'b5']
+    keySquares: ['d5', 'c5', 'e6', 'b5'],
+    pawnBreaks: ['b5', 'f5', 'e5']
   },
 
   // ── Flank Openings ──────────────────────────────────────────
@@ -531,7 +551,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Maintain flexibility in the center (d3/d4 options)',
       'Aim for long-term positional pressure'
     ],
-    keySquares: ['c4', 'd5', 'g2', 'e4']
+    keySquares: ['c4', 'd5', 'g2', 'e4'],
+    pawnBreaks: ['d4', 'e4', 'b4']
   },
   {
     id: 'reti-opening',
@@ -556,7 +577,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Fianchetto one or both bishops (g2, b2)',
       'Strike at the center later when optimally placed'
     ],
-    keySquares: ['c4', 'd5', 'g2', 'e4']
+    keySquares: ['c4', 'd5', 'g2', 'e4'],
+    pawnBreaks: ['d4', 'e4']
   },
   {
     id: 'kings-indian-attack',
@@ -581,7 +603,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Push e4-e5 to gain space and cramp Black',
       'Launch a kingside attack with f4, h4, etc.'
     ],
-    keySquares: ['g2', 'e4', 'e5', 'f4']
+    keySquares: ['g2', 'e4', 'e5', 'f4'],
+    pawnBreaks: ['e5', 'f4', 'd4']
   },
   {
     id: 'bird-opening',
@@ -606,7 +629,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Fianchetto the bishop and castle kingside',
       'Expand on the kingside with pieces behind the f-pawn'
     ],
-    keySquares: ['f4', 'e5', 'g2', 'd4']
+    keySquares: ['f4', 'e5', 'g2', 'd4'],
+    pawnBreaks: ['f5', 'e4', 'd4']
   },
   {
     id: 'dutch-defense',
@@ -631,7 +655,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Choose a setup: Stonewall (...d5, ...e6), Leningrad (...g6, ...Bg7), or Classical',
       'Create kingside attacking chances while maintaining solid defense'
     ],
-    keySquares: ['e4', 'f5', 'd5', 'g7']
+    keySquares: ['e4', 'f5', 'd5', 'g7'],
+    pawnBreaks: ['e5', 'c5']
   },
   {
     id: 'alekhines-defense',
@@ -656,7 +681,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Undermine the overextended center with ...d6, ...c5',
       'Counter-attack the center once White lacks piece support'
     ],
-    keySquares: ['e5', 'd6', 'c5', 'f6']
+    keySquares: ['e5', 'd6', 'c5', 'f6'],
+    pawnBreaks: ['d5', 'c5', 'e5']
   },
   {
     id: 'philidor-defense',
@@ -681,7 +707,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Develop pieces behind the pawn chain (Nf6, Be7, O-O)',
       'Prepare ...f5 for a central or kingside break'
     ],
-    keySquares: ['e5', 'd6', 'f5', 'c6']
+    keySquares: ['e5', 'd6', 'f5', 'c6'],
+    pawnBreaks: ['f5', 'c5']
   },
   {
     id: 'petrov-defense',
@@ -706,7 +733,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Simplify the position and reach a balanced middlegame or endgame',
       'Avoid falling into tactical traps in the early moves'
     ],
-    keySquares: ['e4', 'e5', 'd4', 'f6']
+    keySquares: ['e4', 'e5', 'd4', 'f6'],
+    pawnBreaks: ['d5', 'f5']
   },
   {
     id: 'trompowsky-attack',
@@ -731,7 +759,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Force Black to make early decisions about pawn structure',
       'Transition into a favorable middlegame with initiative'
     ],
-    keySquares: ['g5', 'f6', 'e4', 'd5']
+    keySquares: ['g5', 'f6', 'e4', 'd5'],
+    pawnBreaks: ['e4', 'f4']
   },
   {
     id: 'bishops-opening',
@@ -756,7 +785,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Maintain flexibility for f4, Nf3, or d3 plans',
       'Prepare a central or kingside attack'
     ],
-    keySquares: ['c4', 'f7', 'e4', 'f4']
+    keySquares: ['c4', 'f7', 'e4', 'f4'],
+    pawnBreaks: ['d4', 'f4']
   },
   {
     id: 'four-knights-game',
@@ -781,7 +811,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Fight for the center with d4 at the right moment',
       'Choose between quiet (Bb5) or sharp (Nd5, Bc4) plans'
     ],
-    keySquares: ['e4', 'e5', 'd4', 'c3']
+    keySquares: ['e4', 'e5', 'd4', 'c3'],
+    pawnBreaks: ['d4', 'f4']
   },
   {
     id: 'colle-system',
@@ -806,7 +837,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Prepare the e4 break to open the position',
       'Develop the dark-squared bishop to d3 or b2 (Colle-Zukertort)'
     ],
-    keySquares: ['d4', 'e3', 'e4', 'c3']
+    keySquares: ['d4', 'e3', 'e4', 'c3'],
+    pawnBreaks: ['e4', 'c4']
   },
 
   // ── Additional White Openings ──────────────────────────────────────
@@ -833,7 +865,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Build a powerful pawn center and develop quickly',
       'Launch a kingside attack before Black consolidates'
     ],
-    keySquares: ['b4', 'c3', 'd4', 'f7']
+    keySquares: ['b4', 'c3', 'd4', 'f7'],
+    pawnBreaks: ['d4', 'f4']
   },
   {
     id: 'nimzo-larsen-attack',
@@ -858,7 +891,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Control e5 and d4 indirectly',
       'Maintain a flexible structure and adapt to Black\'s setup'
     ],
-    keySquares: ['b2', 'e5', 'd4', 'f3']
+    keySquares: ['b2', 'e5', 'd4', 'f3'],
+    pawnBreaks: ['e4', 'd4']
   },
 
   // ── Additional Black Openings ──────────────────────────────────────
@@ -885,7 +919,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Strike at the center with ...d6 followed by ...e5 or ...c5',
       'Use the flexible pawn structure to create counterplay'
     ],
-    keySquares: ['g7', 'e5', 'c5', 'd6']
+    keySquares: ['g7', 'e5', 'c5', 'd6'],
+    pawnBreaks: ['c5', 'e5', 'd5']
   },
   {
     id: 'bogo-indian-defense',
@@ -910,7 +945,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Play ...d5 or ...c5 to challenge the center',
       'Reach a solid position with good minor piece activity'
     ],
-    keySquares: ['b4', 'e4', 'd5', 'c5']
+    keySquares: ['b4', 'e4', 'd5', 'c5'],
+    pawnBreaks: ['c5', 'd5']
   },
 ];
 

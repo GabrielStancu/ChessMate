@@ -63,6 +63,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly fieldErrors = signal<Record<string, string[]> | null>(null);
   protected readonly searched = signal(false);
+  protected readonly analyzedGameIds = signal<Set<string>>(new Set());
   protected readonly canGoPrevious = computed(() => this.page() > 1 && !this.loading());
   protected readonly canGoNext = computed(() => this.hasMore() && !this.loading());
 
@@ -163,6 +164,13 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   protected setAnalysisMode(mode: AnalysisMode): void {
     this.analysisMode.set(mode);
     this.persistLastAnalysisMode(mode);
+    if (this.games().length > 0) {
+      void this.refreshAnalyzedStatus();
+    }
+  }
+
+  protected isAnalyzed(gameId: string): boolean {
+    return this.analyzedGameIds().has(gameId);
   }
 
   protected getResultClass(game: GetGamesItemEnvelope): 'win' | 'loss' | 'draw' {
@@ -193,6 +201,12 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     return isWhite ? '0-1' : '1-0';
   }
 
+  protected formatGameDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
   protected formatTimeControl(tc: string): string {
     if (!tc) {
       return tc;
@@ -220,6 +234,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
     // Check backend cache first
     const cached = await this.analysisCacheApiService.getCache(game.gameId, mode, config.depth);
     if (cached) {
+      this.analyzedGameIds.update(ids => new Set([...ids, game.gameId]));
       this.analysisSessionService.setFullGameAnalysis(cached);
       this.analyzingGameId.set(null);
       void this.router.navigate(['/analysis', game.gameId]);
@@ -256,6 +271,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
       );
 
       this.analysisSessionService.setFullGameAnalysis(result);
+      this.analyzedGameIds.update(ids => new Set([...ids, game.gameId]));
 
       // Store in backend cache (best-effort, don't block navigation)
       this.analysisCacheApiService.putCache(game.gameId, mode, config.depth, result);
@@ -270,6 +286,19 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
         error instanceof Error ? error.message : 'Full-game analysis failed.'
       );
     }
+  }
+
+  private async refreshAnalyzedStatus(): Promise<void> {
+    const mode = this.analysisMode();
+    const config: EngineConfig = this.stockfishController.getPreset(mode);
+    const games = this.games();
+    const ids = await Promise.all(
+      games.map(async game => {
+        const cached = await this.analysisCacheApiService.getCache(game.gameId, mode, config.depth);
+        return cached ? game.gameId : null;
+      })
+    );
+    this.analyzedGameIds.set(new Set(ids.filter((id): id is string => id !== null)));
   }
 
   private scrollToGames(): void {
@@ -293,6 +322,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
       this.hasMore.set(response.hasMore);
       this.sourceTimestamp.set(response.sourceTimestamp);
       this.cacheStatus.set(response.cacheStatus);
+      void this.refreshAnalyzedStatus();
     } catch (error) {
       this.games.set([]);
       this.hasMore.set(false);

@@ -64,8 +64,7 @@
 
 .catalog-search {
   width: 100%;
-  max-width: 400px;
-  padding: 0.6rem 0.6rem 0.6rem 1.25rem;
+  padding: 0.6rem 2.6rem 0.6rem 1.25rem;
   background: var(--cm-bg-input);
   border: 1px solid var(--cm-accent);
   border-radius: var(--cm-radius);
@@ -81,6 +80,34 @@
 
 .catalog-search::placeholder {
   color: var(--cm-text-muted);
+}
+
+.catalog-search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.catalog-search-icon {
+  position: absolute;
+  right: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--cm-accent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.catalog-search-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: #0a0a14;
 }
 
 /* ── Catalog Tabs ── */
@@ -651,6 +678,90 @@
   color: var(--cm-red);
 }
 
+/* ── Best Move Star ── */
+
+/* (removed — win rate is not equivalent to engine best move) */
+
+/* ── Squares Legend Panel ── */
+
+.squares-legend-panel {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--cm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--cm-bg-input);
+  flex-shrink: 0;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.dot-key-square {
+  background: rgba(76, 175, 80, 0.6);
+  border: 1px solid rgba(76, 175, 80, 0.9);
+}
+
+.dot-pawn-break {
+  background: rgba(41, 121, 255, 0.35);
+  border: 1px solid rgba(41, 121, 255, 0.55);
+}
+
+.legend-row-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cm-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  min-width: 76px;
+}
+
+.legend-sq-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.legend-sq-chip {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  padding: 1px 6px;
+  border-radius: var(--cm-radius-sm);
+  letter-spacing: 0.02em;
+}
+
+.chip-key {
+  background: rgba(76, 175, 80, 0.15);
+  color: #66bb6a;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.chip-break {
+  background: rgba(41, 121, 255, 0.15);
+  color: #6699ff;
+  border: 1px solid rgba(41, 121, 255, 0.3);
+}
+
+.chip-both {
+  background: rgba(0, 200, 180, 0.15);
+  color: #4dd0c8;
+  border: 1px solid rgba(0, 200, 180, 0.32);
+}
+
 /* ── Opening moves panel ───────────────────────────────────────────── */
 .opening-moves-panel {
   padding: 10px 12px 8px;
@@ -764,7 +875,15 @@
 /* ── Key Square Markers ── */
 
 :host ::ng-deep .marker-key-square {
-  fill: rgba(76, 175, 80, 0.25);
+  fill: rgba(76, 175, 80, 0.28);
+}
+
+:host ::ng-deep .marker-pawn-break {
+  fill: rgba(41, 121, 255, 0.16);
+}
+
+:host ::ng-deep .marker-key-pawn-break {
+  fill: rgba(0, 200, 180, 0.19);
 }
 
 /* ── Arrow Styling ── */

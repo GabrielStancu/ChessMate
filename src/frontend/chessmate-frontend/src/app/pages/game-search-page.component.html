@@ -82,7 +82,8 @@
       <div *ngIf="games().length > 0; else emptyState" class="games-grid">
         <article
           *ngFor="let game of displayedGames(); trackBy: trackByGameId"
-          class="game-card">
+          class="game-card"
+          [class.game-card-analyzed]="isAnalyzed(game.gameId)">
 
           <!-- White player row -->
           <div class="player-row">
@@ -111,17 +112,21 @@
           <!-- Card meta row -->
           <div class="game-card-meta">
             <span class="game-time-control">{{ formatTimeControl(game.timeControl) }}</span>
-            <span
-              class="game-result-badge"
-              [class.result-win]="getResultClass(game) === 'win'"
-              [class.result-loss]="getResultClass(game) === 'loss'"
-              [class.result-draw]="getResultClass(game) === 'draw'">
-              {{ formatResult(game) }}
-            </span>
+            <div class="meta-right">
+              <span *ngIf="isAnalyzed(game.gameId)" class="analyzed-dot" title="Already analyzed"></span>
+              <span
+                class="game-result-badge"
+                [class.result-win]="getResultClass(game) === 'win'"
+                [class.result-loss]="getResultClass(game) === 'loss'"
+                [class.result-draw]="getResultClass(game) === 'draw'">
+                {{ formatResult(game) }}
+              </span>
+            </div>
           </div>
 
           <!-- Actions -->
           <div class="game-card-actions">
+            <span class="game-date">{{ formatGameDate(game.playedAtUtc) }}</span>
             <a [href]="game.url" target="_blank" rel="noreferrer" class="view-link">View</a>
             <button
               class="analyze-btn"

@@ -83,6 +83,10 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   // hovered move UCI — drives single-arrow hover display (opening moves & continuations)
   protected readonly hoveredMoveUci = signal<string | null>(null);
 
+  // UCI of the continuation with the best win rate (shown only when 2+ continuations)
+  protected readonly selectedKeySquares = computed(() => this.selectedOpening()?.keySquares ?? []);
+  protected readonly selectedPawnBreaks = computed(() => this.selectedOpening()?.pawnBreaks ?? []);
+
   // parsed tokens from the opening's defining move sequence
   protected readonly openingMoveTokens = computed(() => {
     const opening = this.selectedOpening();
@@ -232,6 +236,11 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     const moveNumber = activeAfterMove === 'b' ? fullMoveNumber : fullMoveNumber - 1;
     const history = this.moveHistory();
 
+    // On the first continuation move, clear the initial-position board markers
+    if (history.length === 0 && this.chessboard) {
+      this.chessboard.removeMarkers();
+    }
+
     this.moveHistory.set([
       ...history,
       { fen: newFen, san: move.san, uci, moveNumber, sideToMove }
@@ -301,11 +310,12 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     this.currentFen.set(this.chess.fen());
     this.selectedMoveIndex.set(-1);
 
-    // Re-highlight key squares
+    // Re-highlight key squares and pawn breaks
     if (this.chessboard) {
-      this.chessboard.removeMarkers();
       if (opening) {
-        this.highlightKeySquares(opening);
+        this.highlightBoardMarkers(opening);
+      } else {
+        this.chessboard.removeMarkers();
       }
     }
 
@@ -350,6 +360,12 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     return 'win-rate-bad';
   }
 
+  protected isKeyAndBreakSquare(sq: string): boolean {
+    const opening = this.selectedOpening();
+    if (!opening) return false;
+    return (opening.keySquares ?? []).includes(sq) && (opening.pawnBreaks ?? []).includes(sq);
+  }
+
   protected onOpeningMoveHover(uci: string): void {
     if (this.isInitialPosition()) {
       this.hoveredMoveUci.set(uci);
@@ -392,8 +408,8 @@ export class OpeningExplorerPageComponent implements OnDestroy {
           ]
         });
 
-        // Highlight key squares with a dim green marker
-        this.highlightKeySquares(opening);
+        // Highlight key squares and pawn breaks
+        this.highlightBoardMarkers(opening);
       }
 
       void this.loadContinuations(newFen);
@@ -465,13 +481,29 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     }
   }
 
-  private highlightKeySquares(opening: OpeningDefinition): void {
-    if (!this.chessboard || !opening.keySquares?.length) {
-      return;
-    }
-    const keySquareMarker: MarkerType = { class: 'marker-key-square', slice: 'markerSquare' };
-    for (const sq of opening.keySquares) {
-      this.chessboard.addMarker(keySquareMarker, sq);
+  private highlightBoardMarkers(opening: OpeningDefinition): void {
+    if (!this.chessboard) return;
+
+    this.chessboard.removeMarkers();
+
+    const keySet = new Set(opening.keySquares ?? []);
+    const breakSet = new Set(opening.pawnBreaks ?? []);
+    const allSquares = new Set([...keySet, ...breakSet]);
+
+    const keyOnlyMarker: MarkerType = { class: 'marker-key-square', slice: 'markerSquare' };
+    const breakOnlyMarker: MarkerType = { class: 'marker-pawn-break', slice: 'markerSquare' };
+    const bothMarker: MarkerType = { class: 'marker-key-pawn-break', slice: 'markerSquare' };
+
+    for (const sq of allSquares) {
+      const isKey = keySet.has(sq);
+      const isBreak = breakSet.has(sq);
+      if (isKey && isBreak) {
+        this.chessboard.addMarker(bothMarker, sq);
+      } else if (isKey) {
+        this.chessboard.addMarker(keyOnlyMarker, sq);
+      } else {
+        this.chessboard.addMarker(breakOnlyMarker, sq);
+      }
     }
   }
 }
