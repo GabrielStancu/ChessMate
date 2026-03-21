@@ -11,6 +11,26 @@ export type MoveClassification =
   | 'Book'
   | 'Forced';
 
+/** A single step in a coach-suggested continuation line. */
+export interface CoachLineStep {
+  /** Standard algebraic notation (e.g. "Nxd5"). */
+  san: string;
+  /** UCI notation (e.g. "c3d5"). */
+  uci: string;
+  /** FEN after this move is played. */
+  fenAfter: string;
+}
+
+/** A tactical continuation line the coach suggests exploring. */
+export interface CoachLine {
+  /** The sequence of best moves (alternating sides, max 10 half-moves / 5 per side). */
+  steps: CoachLineStep[];
+  /** Human-readable description of the significant motif found at the end. */
+  motifDescription: string;
+  /** The type of significant motif that terminates the line. */
+  motifType: 'capture' | 'fork' | 'pin' | 'check' | 'checkmate' | 'skewer';
+}
+
 export interface ClassifiedMove {
   ply: number;
   san: string;
@@ -29,6 +49,8 @@ export interface ClassifiedMove {
   centipawnLoss: number;
   fenBefore: string;
   fenAfter: string;
+  /** Coach continuation line when a mistake leads to a tactical motif. */
+  coachLine?: CoachLine | null;
 }
 
 export interface FullGameAnalysisResult {

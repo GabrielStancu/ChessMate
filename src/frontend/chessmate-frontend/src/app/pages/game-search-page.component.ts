@@ -208,22 +208,25 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   }
 
   protected formatTimeControl(tc: string): string {
-    if (!tc) {
-      return tc;
-    }
+    if (!tc) return tc;
 
     const match = tc.match(/^(\d+)(\+\d+)?(.*)$/);
-
-    if (!match) {
-      return tc;
-    }
+    if (!match) return tc;
 
     const seconds = parseInt(match[1], 10);
     const increment = match[2] ?? '';
     const rest = match[3] ?? '';
-    const minutes = seconds < 60 ? seconds : Math.round(seconds / 60);
+    const displayTime = seconds < 60 ? seconds : Math.round(seconds / 60);
 
-    return `${minutes}${increment}${rest}`;
+    const label = this.timeControlLabel(seconds);
+    return `${label} | ${displayTime}${increment}${rest}`;
+  }
+
+  private timeControlLabel(seconds: number): string {
+    if (seconds < 180) return 'Bullet';
+    if (seconds < 600) return 'Blitz';
+    if (seconds < 1800) return 'Rapid';
+    return 'Classical';
   }
 
   private async runFullAnalysisAndNavigate(game: GetGamesItemEnvelope): Promise<void> {

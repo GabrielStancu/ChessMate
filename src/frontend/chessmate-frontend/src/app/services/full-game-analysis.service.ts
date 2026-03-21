@@ -5,6 +5,7 @@ import { AnalysisMode, EngineConfig, PositionEvaluation } from '../models/analys
 import { StockfishAnalysisControllerService } from './stockfish-analysis-controller.service';
 import { OpeningBookService } from './opening-book.service';
 import { centipawnToWinExpectancy, classifyMove, flipWinExpectancy } from '../utils/win-expectancy.utils';
+import { buildCoachLine } from '../utils/coach-line.utils';
 
 export interface AnalysisProgress {
   current: number;
@@ -65,6 +66,8 @@ export class FullGameAnalysisService {
       evaluations,
       playerColor
     );
+
+    this.enrichWithCoachLines(classifiedMoves);
 
     this.progress.set({ current: totalMoves, total: totalMoves, phase: 'done' });
 
@@ -378,5 +381,21 @@ export class FullGameAnalysisService {
     // score = what the first capturer (opponent) gains from the exchange.
     // The moving side's perspective is the negative.
     return -score;
+  }
+
+  private readonly BAD_MOVE_CLASSES: ReadonlySet<string> = new Set(['Inaccuracy', 'Mistake', 'Miss', 'Blunder']);
+
+  private enrichWithCoachLines(classifiedMoves: ClassifiedMove[]): void {
+    for (const move of classifiedMoves) {
+      if (!this.BAD_MOVE_CLASSES.has(move.classification)) continue;
+
+      const line = buildCoachLine(
+        move.fenAfter,
+        move.opponentBestResponse,
+        null
+      );
+
+      move.coachLine = line;
+    }
   }
 }

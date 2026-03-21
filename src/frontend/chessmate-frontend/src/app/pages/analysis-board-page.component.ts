@@ -9,6 +9,8 @@ import { Markers } from 'cm-chessboard/src/extensions/markers/Markers.js';
 import { Arrows } from 'cm-chessboard/src/extensions/arrows/Arrows.js';
 import {
   ClassifiedMove,
+  CoachLine,
+  CoachLineStep,
   FullGameAnalysisResult,
   CLASSIFICATION_COLORS,
   CLASSIFICATION_SYMBOLS
@@ -54,9 +56,30 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
   protected readonly selectedPositionIndex = signal(0);
   protected readonly timelineWarning = signal<string | null>(null);
 
-  protected readonly currentFen = computed(
-    () => this.positionTimeline()[Math.min(this.selectedPositionIndex(), this.positionTimeline().length - 1)]
-  );
+  // ── Coach line navigation state ──────────────────────────────────────────────
+  protected readonly isLineMode = signal(false);
+  protected readonly lineSteps = signal<CoachLineStep[]>([]);
+  protected readonly lineStepIndex = signal(0);
+  protected readonly lineMotifDescription = signal('');
+  /** FEN of the position where the line starts (before the first line step). */
+  protected readonly lineBaseFen = signal(FEN.start);
+
+  protected readonly currentLineFen = computed(() => {
+    if (!this.isLineMode()) return null;
+    const steps = this.lineSteps();
+    const idx = this.lineStepIndex();
+    if (idx === 0) return this.lineBaseFen();
+    return steps[idx - 1]?.fenAfter ?? this.lineBaseFen();
+  });
+
+  protected readonly canGoLinePrevious = computed(() => this.isLineMode() && this.lineStepIndex() > 0);
+  protected readonly canGoLineNext = computed(() => this.isLineMode() && this.lineStepIndex() < this.lineSteps().length);
+
+  protected readonly currentFen = computed(() => {
+    const lineFen = this.currentLineFen();
+    if (lineFen !== null) return lineFen;
+    return this.positionTimeline()[Math.min(this.selectedPositionIndex(), this.positionTimeline().length - 1)];
+  });
   protected readonly previousFen = computed(() => {
     const index = this.selectedPositionIndex();
     if (index === 0) {
@@ -223,10 +246,12 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.exitLineMode();
     this.selectedPositionIndex.set(ply);
   }
 
   protected goFirst(): void {
+    this.exitLineMode();
     this.selectedPositionIndex.set(0);
   }
 
@@ -235,6 +260,7 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.exitLineMode();
     this.selectedPositionIndex.set(this.selectedPositionIndex() - 1);
   }
 
@@ -243,11 +269,54 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    this.exitLineMode();
     this.selectedPositionIndex.set(this.selectedPositionIndex() + 1);
   }
 
   protected goLast(): void {
     this.selectedPositionIndex.set(this.positionTimeline().length - 1);
+  }
+
+  // ── Coach line navigation ────────────────────────────────────────────────────
+
+  protected onShowLine(): void {
+    const move = this.currentClassifiedMove();
+    if (move?.coachLine) {
+      this.enterLineMode(move.coachLine, move.fenAfter);
+    }
+  }
+
+  protected enterLineMode(line: CoachLine, baseFen: string): void {
+    this.lineSteps.set(line.steps);
+    this.lineMotifDescription.set(line.motifDescription);
+    this.lineBaseFen.set(baseFen);
+    this.lineStepIndex.set(0);
+    this.isLineMode.set(true);
+  }
+
+  protected exitLineMode(): void {
+    this.isLineMode.set(false);
+    this.lineSteps.set([]);
+    this.lineStepIndex.set(0);
+    this.lineMotifDescription.set('');
+  }
+
+  protected goLinePrevious(): void {
+    if (!this.canGoLinePrevious()) return;
+    this.lineStepIndex.set(this.lineStepIndex() - 1);
+  }
+
+  protected goLineNext(): void {
+    if (!this.canGoLineNext()) return;
+    this.lineStepIndex.set(this.lineStepIndex() + 1);
+  }
+
+  protected goLineFirst(): void {
+    this.lineStepIndex.set(0);
+  }
+
+  protected goLineLast(): void {
+    this.lineStepIndex.set(this.lineSteps().length);
   }
 
   protected formatTimeControl(tc: string): string {

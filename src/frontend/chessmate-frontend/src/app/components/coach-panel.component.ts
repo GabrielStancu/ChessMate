@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import {
   ClassifiedMove,
+  CoachLine,
+  CoachLineStep,
   CLASSIFICATION_COLORS,
   CLASSIFICATION_SYMBOLS,
   MoveClassification
@@ -34,12 +36,40 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       <div class="coach-bubble-wrapper">
         <div class="coach-bubble-tail"></div>
         <div class="coach-body">
-          <ng-container *ngIf="currentMove() as move; else noMoveState">
-            <p class="coach-explanation">{{ coachText() }}</p>
+          <ng-container *ngIf="isLineMode(); else normalMode">
+            <!-- Line mode display -->
+            <div class="coach-line-mode">
+              <p class="coach-line-header">Suggested continuation</p>
+              <p class="coach-line-moves">{{ lineMovesDisplay() }}</p>
+              <p class="coach-line-motif">{{ lineMotifDescription() }}</p>
+
+              <!-- Line navigation -->
+              <div class="coach-line-nav">
+                <button class="line-nav-btn" (click)="lineFirst.emit()" [disabled]="!canLinePrev()" aria-label="Line start">⏮</button>
+                <button class="line-nav-btn" (click)="linePrev.emit()" [disabled]="!canLinePrev()" aria-label="Previous line move">◀</button>
+                <span class="line-nav-position">{{ lineStepIndex() }} / {{ lineSteps().length }}</span>
+                <button class="line-nav-btn" (click)="lineNext.emit()" [disabled]="!canLineNext()" aria-label="Next line move">▶</button>
+                <button class="line-nav-btn" (click)="lineLast.emit()" [disabled]="!canLineNext()" aria-label="Line end">⏭</button>
+              </div>
+
+              <button class="coach-line-cancel-btn" (click)="cancelLine.emit()">Cancel line</button>
+            </div>
           </ng-container>
 
-          <ng-template #noMoveState>
-            <p class="coach-empty">Navigate to a move to see coaching insights.</p>
+          <ng-template #normalMode>
+            <ng-container *ngIf="currentMove() as move; else noMoveState">
+              <p class="coach-explanation">{{ coachText() }}</p>
+              <button
+                *ngIf="hasCoachLine()"
+                class="coach-line-show-btn"
+                (click)="showLine.emit()">
+                Show line
+              </button>
+            </ng-container>
+
+            <ng-template #noMoveState>
+              <p class="coach-empty">Navigate to a move to see coaching insights.</p>
+            </ng-template>
           </ng-template>
         </div>
       </div>
@@ -136,8 +166,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     }
 
     .coach-body {
-      height: 155px;
-      overflow-y: auto;
+      min-height: 155px;
       overflow-x: hidden;
       background: var(--cm-bg-panel);
       border: 1px solid var(--cm-border);
@@ -187,6 +216,121 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       font-size: 0.88rem;
       margin: 0;
     }
+
+    /* Show line button */
+    .coach-line-show-btn {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.3rem 0.85rem;
+      border-radius: 2rem;
+      border: 1px solid var(--cm-accent, #4fc3f7);
+      background: transparent;
+      color: var(--cm-accent, #4fc3f7);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .coach-line-show-btn:hover {
+      background: var(--cm-accent, #4fc3f7);
+      color: #000;
+    }
+
+    /* Line mode display */
+    .coach-line-mode {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .coach-line-header {
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--cm-accent, #4fc3f7);
+    }
+
+    .coach-line-moves {
+      margin: 0;
+      font-size: 0.88rem;
+      font-family: monospace;
+      color: #ffffff;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .coach-line-motif {
+      margin: 0;
+      font-size: 0.85rem;
+      color: #f5c518;
+      font-weight: 600;
+    }
+
+    /* Line navigation */
+    .coach-line-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+    }
+
+    .line-nav-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--cm-border-strong, rgba(255,255,255,0.14));
+      background: #000;
+      color: var(--cm-text-secondary, #aaa);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .line-nav-btn:hover:not(:disabled) {
+      border-color: var(--cm-accent, #4fc3f7);
+      color: var(--cm-accent, #4fc3f7);
+    }
+
+    .line-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .line-nav-position {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--cm-text-primary, #fff);
+      font-variant-numeric: tabular-nums;
+      min-width: 3rem;
+      text-align: center;
+    }
+
+    /* Cancel line button */
+    .coach-line-cancel-btn {
+      display: inline-block;
+      margin-top: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 2rem;
+      border: 1px solid #ef5350;
+      background: transparent;
+      color: #ef5350;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      align-self: center;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .coach-line-cancel-btn:hover {
+      background: #ef5350;
+      color: #fff;
+    }
   `]
 })
 export class CoachPanelComponent {
@@ -195,6 +339,36 @@ export class CoachPanelComponent {
 
   /** Human-readable coaching explanation for the current move. */
   public readonly explanation = input<string>('');
+
+  /** Whether we're currently navigating a coach line. */
+  public readonly isLineMode = input(false);
+
+  /** The line steps being navigated. */
+  public readonly lineSteps = input<CoachLineStep[]>([]);
+
+  /** Current step index within the line (0 = base position before first step). */
+  public readonly lineStepIndex = input(0);
+
+  /** Motif description for the active line. */
+  public readonly lineMotifDescription = input('');
+
+  /** Whether the user can navigate backwards in the line. */
+  public readonly canLinePrev = input(false);
+
+  /** Whether the user can navigate forwards in the line. */
+  public readonly canLineNext = input(false);
+
+  /** Emitted when the user clicks "Show line". */
+  public readonly showLine = output<void>();
+
+  /** Emitted when the user clicks "Cancel line". */
+  public readonly cancelLine = output<void>();
+
+  /** Line move navigation events. */
+  public readonly lineFirst = output<void>();
+  public readonly linePrev = output<void>();
+  public readonly lineNext = output<void>();
+  public readonly lineLast = output<void>();
 
   protected readonly coachText = computed(() => {
     const move = this.currentMove();
@@ -206,6 +380,26 @@ export class CoachPanelComponent {
       return explanationText;
     }
     return `${move.san} was ${move.classification}.`;
+  });
+
+  protected hasCoachLine(): boolean {
+    const move = this.currentMove();
+    return !!move?.coachLine && move.coachLine.steps.length > 0;
+  }
+
+  protected readonly lineMovesDisplay = computed(() => {
+    const steps = this.lineSteps();
+    if (steps.length === 0) return '';
+    const parts: string[] = [];
+    for (let i = 0; i < steps.length; i++) {
+      const moveNum = Math.floor(i / 2) + 1;
+      if (i % 2 === 0) {
+        parts.push(`${moveNum}. ${steps[i].san}`);
+      } else {
+        parts.push(steps[i].san);
+      }
+    }
+    return parts.join(' ');
   });
 
   protected getClassificationColor(classification: MoveClassification | string): string {
