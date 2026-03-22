@@ -13,6 +13,7 @@ export interface OpeningDefinition {
   goals: string[];
   keySquares: string[];
   pawnBreaks?: string[];
+  isGambit?: boolean;
 }
 
 export interface LichessExplorerMove {

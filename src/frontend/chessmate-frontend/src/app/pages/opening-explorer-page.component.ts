@@ -25,6 +25,9 @@ import {
 } from '../models/openings.models';
 
 type MetaTab = 'advantages' | 'drawbacks' | 'goals';
+type CatalogGambitFilter = 'all' | 'gambit' | 'non-gambit';
+
+const PAGE_SIZE = 9;
 
 @Component({
   selector: 'app-opening-explorer-page',
@@ -51,12 +54,18 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     'kings-indian-attack', 'vienna-game', 'four-knights-game',
     'trompowsky-attack', 'bishops-opening', 'colle-system',
     'kings-gambit', 'evans-gambit', 'birds-opening', 'nimzo-larsen-attack',
+    // New white openings
+    'scotch-gambit', 'smith-morra-gambit', 'milner-barry-gambit',
+    'caro-kann-advance-tal', 'mieses-gambit', 'austrian-attack-pirc',
     // Black (sorted by popularity descending)
     'sicilian-defense', 'french-defense', 'caro-kann', 'queens-gambit-declined',
     'kings-indian-defense', 'nimzo-indian-defense', 'slav-defense',
     'grunfeld-defense', 'petrov-defense', 'queens-indian-defense',
     'bogo-indian-defense', 'dutch-defense', 'pirc-defense', 'benoni-defense',
-    'scandinavian-defense', 'philidor-defense', 'alekhines-defense', 'modern-defense'
+    'scandinavian-defense', 'philidor-defense', 'alekhines-defense', 'modern-defense',
+    // New black openings
+    'sicilian-dragon', 'benko-gambit', 'leningrad-dutch',
+    'reversed-sicilian-english', 'kings-indian-setup-reti', 'budapest-gambit',
   ];
 
   protected readonly catalog = [...OPENINGS_CATALOG].sort((a, b) => {
@@ -70,6 +79,9 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   protected readonly playerColor = signal<'white' | 'black'>('white');
   protected readonly catalogFilter = signal('');
   protected readonly activeCatalogSide = signal<OpeningSide>('white');
+  protected readonly catalogGambitFilter = signal<CatalogGambitFilter>('all');
+  protected readonly catalogPageWhite = signal(1);
+  protected readonly catalogPageBlack = signal(1);
 
   // ── Explorer state ──
   protected readonly currentFen = signal(FEN.start);
@@ -183,6 +195,14 @@ export class OpeningExplorerPageComponent implements OnDestroy {
       const hoveredUci = this.hoveredMoveUci();
       void this.syncBoard(fen, hoveredUci);
     });
+
+    // Reset pagination whenever the text filter or gambit filter changes
+    effect(() => {
+      this.catalogFilter();
+      this.catalogGambitFilter();
+      this.catalogPageWhite.set(1);
+      this.catalogPageBlack.set(1);
+    });
   }
 
   public ngOnDestroy(): void {
@@ -193,7 +213,43 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   // ── Catalog actions ──
 
   protected getOpeningsForSide(side: OpeningSide): OpeningDefinition[] {
-    return this.filteredCatalog().filter(o => o.forSide === side);
+    const all = this.getFilteredOpeningsForSide(side);
+    const page = side === 'white' ? this.catalogPageWhite() : this.catalogPageBlack();
+    const start = (page - 1) * PAGE_SIZE;
+    return all.slice(start, start + PAGE_SIZE);
+  }
+
+  protected getTotalPagesForSide(side: OpeningSide): number {
+    return Math.max(1, Math.ceil(this.getFilteredOpeningsForSide(side).length / PAGE_SIZE));
+  }
+
+  protected getCurrentPage(side: OpeningSide): number {
+    return side === 'white' ? this.catalogPageWhite() : this.catalogPageBlack();
+  }
+
+  protected nextPage(side: OpeningSide): void {
+    const total = this.getTotalPagesForSide(side);
+    if (side === 'white') {
+      if (this.catalogPageWhite() < total) this.catalogPageWhite.update(p => p + 1);
+    } else {
+      if (this.catalogPageBlack() < total) this.catalogPageBlack.update(p => p + 1);
+    }
+  }
+
+  protected prevPage(side: OpeningSide): void {
+    if (side === 'white') {
+      if (this.catalogPageWhite() > 1) this.catalogPageWhite.update(p => p - 1);
+    } else {
+      if (this.catalogPageBlack() > 1) this.catalogPageBlack.update(p => p - 1);
+    }
+  }
+
+  private getFilteredOpeningsForSide(side: OpeningSide): OpeningDefinition[] {
+    const gambitFilter = this.catalogGambitFilter();
+    const items = this.filteredCatalog().filter(o => o.forSide === side);
+    if (gambitFilter === 'gambit') return items.filter(o => !!o.isGambit);
+    if (gambitFilter === 'non-gambit') return items.filter(o => !o.isGambit);
+    return items;
   }
 
   protected onFilterInput(event: Event): void {

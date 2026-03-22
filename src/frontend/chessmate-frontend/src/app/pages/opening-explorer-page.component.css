@@ -157,6 +157,96 @@
   border-left-color: var(--cm-accent);
 }
 
+/* ── Gambit Filter Tabs ── */
+
+.gambit-filter-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 16px;
+}
+
+.gambit-tab {
+  padding: 0.4rem 1.1rem;
+  background: transparent;
+  border: 1px solid var(--cm-border);
+  color: var(--cm-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.gambit-tab:first-child {
+  border-radius: var(--cm-radius) 0 0 var(--cm-radius);
+  border-right: none;
+}
+
+.gambit-tab:nth-child(2) {
+  border-right: none;
+}
+
+.gambit-tab:last-child {
+  border-radius: 0 var(--cm-radius) var(--cm-radius) 0;
+}
+
+.gambit-tab:hover {
+  color: var(--cm-text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gambit-tab.active {
+  color: var(--cm-accent);
+  border-color: var(--cm-accent);
+  background: var(--cm-accent-dim, rgba(212, 168, 67, 0.12));
+}
+
+.gambit-tab.active + .gambit-tab {
+  border-left-color: var(--cm-accent);
+}
+
+/* ── Pagination Controls ── */
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 20px 0 32px;
+}
+
+.page-btn {
+  padding: 0.45rem 1.1rem;
+  background: var(--cm-bg-card);
+  border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius);
+  color: var(--cm-text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--cm-accent);
+  color: var(--cm-accent);
+  background: var(--cm-accent-dim, rgba(212, 168, 67, 0.1));
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cm-text-muted);
+  min-width: 48px;
+  text-align: center;
+}
+
 .openings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

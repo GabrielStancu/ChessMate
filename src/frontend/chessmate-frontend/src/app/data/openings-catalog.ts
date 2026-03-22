@@ -208,7 +208,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Use the f-file and diagonals for attacking chances'
     ],
     keySquares: ['f4', 'f7', 'e5', 'd4'],
-    pawnBreaks: ['d4', 'e5']
+    pawnBreaks: ['d4', 'e5'],
+    isGambit: true
   },
   {
     id: 'scotch-game',
@@ -288,7 +289,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Exploit any weakness in Black\'s pawn structure'
     ],
     keySquares: ['c4', 'd5', 'e4', 'd4'],
-    pawnBreaks: ['e4', 'c5']
+    pawnBreaks: ['e4', 'c5'],
+    isGambit: true
   },
   {
     id: 'queens-gambit-declined',
@@ -866,7 +868,8 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
       'Launch a kingside attack before Black consolidates'
     ],
     keySquares: ['b4', 'c3', 'd4', 'f7'],
-    pawnBreaks: ['d4', 'f4']
+    pawnBreaks: ['d4', 'f4'],
+    isGambit: true
   },
   {
     id: 'nimzo-larsen-attack',
@@ -947,6 +950,328 @@ export const OPENINGS_CATALOG: OpeningDefinition[] = [
     ],
     keySquares: ['b4', 'e4', 'd5', 'c5'],
     pawnBreaks: ['c5', 'd5']
+  },
+
+  // ── Sharp White Openings (user-requested) ────────────────────────────────
+  {
+    id: 'scotch-gambit',
+    name: 'Scotch Gambit',
+    eco: 'C44',
+    forSide: 'white',
+    moves: '1. e4 e5 2. Nf3 Nc6 3. d4 exd4 4. Bc4',
+    fen: 'r1bqkbnr/pppp1ppp/2n5/8/2BpP3/5N2/PPP2PPP/RNBQK2R b KQkq - 1 4',
+    description: 'A romantic attacking gambit that blasts the center open, forcing Black to defend f7 and the advanced d4 pawn simultaneously.',
+    advantages: [
+      'Forces Black to defend multiple threats at once (f7 and d4)',
+      'Rapid piece development with powerful bishop on c4',
+      'Rich tactical complications that reward the attacker'
+    ],
+    drawbacks: [
+      'Black holds the extra d4 pawn temporarily',
+      'Requires precise follow-up with Ng5 or O-O',
+      'Modern engines have found solid defensive setups'
+    ],
+    goals: [
+      'Develop rapidly toward the kingside',
+      'Pressure f7 with Bc4 and Ng5',
+      'Recover the d4 pawn with initiative or launch a direct attack'
+    ],
+    keySquares: ['c4', 'f7', 'd4', 'e4'],
+    pawnBreaks: ['d4', 'f4'],
+    isGambit: true
+  },
+  {
+    id: 'smith-morra-gambit',
+    name: 'Smith-Morra Gambit',
+    eco: 'B21',
+    forSide: 'white',
+    moves: '1. e4 c5 2. d4 cxd4 3. c3',
+    fen: 'rnbqkbnr/pp1ppppp/8/8/3pP3/2P5/PP3PPP/RNBQKBNR b KQkq - 0 3',
+    description: 'A pawn sacrifice against the Sicilian that gives White rapid development, open files, and attacking chances most 1200-1600 rated players struggle to handle.',
+    advantages: [
+      'Rapid open-file development compensates for the pawn',
+      'Black must defend passively — White has a natural attacking setup',
+      'Most club players are completely unprepared for it'
+    ],
+    drawbacks: [
+      'A real pawn sacrifice — solid Sicilian players can hold the material',
+      'White\'s compensation requires accurate piece coordination',
+      'Less effective against experienced Smith-Morra defenders'
+    ],
+    goals: [
+      'Recapture with dxc3 and develop Nc3, Nf3, Bc4 rapidly',
+      'Open files and diagonals for a central and kingside attack',
+      'Exploit Black\'s underdeveloped queenside before it comes to life'
+    ],
+    keySquares: ['c4', 'd4', 'e4', 'f7'],
+    pawnBreaks: ['e5', 'f4'],
+    isGambit: true
+  },
+  {
+    id: 'milner-barry-gambit',
+    name: 'Milner-Barry Gambit',
+    eco: 'C02',
+    forSide: 'white',
+    moves: '1. e4 e6 2. d4 d5 3. e5 c5 4. c3 Nc6 5. Nf3 Qb6 6. Bd3',
+    fen: 'r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2PB1N2/PP3PPP/RNBQK2R b KQkq - 1 6',
+    description: 'In the French Advance, White sacrifices the d4 pawn to keep Black\'s king stuck in the center and launch a devastating kingside attack.',
+    advantages: [
+      'Sacrificing d4 keeps Black\'s king centralized and exposed',
+      'White develops rapidly with a massive kingside initiative',
+      'Black\'s queen on b6 is misplaced and far from the kingside defense'
+    ],
+    drawbacks: [
+      'White is objectively worse with correct defensive play',
+      'Requires sharp tactical calculation to make the attack work',
+      'Black can defuse with accurate piece coordination'
+    ],
+    goals: [
+      'Sacrifice d4 willingly to open lines toward the king',
+      'Castle queenside to activate the rook on the d-file',
+      'Force the Black king to remain stuck on e8 while attacking'
+    ],
+    keySquares: ['d4', 'e5', 'd3', 'f7'],
+    pawnBreaks: ['f4', 'g4'],
+    isGambit: true
+  },
+  {
+    id: 'caro-kann-advance-tal',
+    name: 'Advance Caro-Kann (Tal Var.)',
+    eco: 'B12',
+    forSide: 'white',
+    moves: '1. e4 c6 2. d4 d5 3. e5 Bf5 4. h4',
+    fen: 'rn1qkbnr/pp2pppp/2p5/3pPb2/3P3P/8/PPP2PP1/RNBQKBNR b KQkq - 0 4',
+    description: 'Play 3.e5 then 4.h4! to hunt the light-squared bishop and create a kingside pawn storm before Black can consolidate.',
+    advantages: [
+      'Immediately targets the Bf5 bishop with h4-h5',
+      'Creates a kingside space advantage and attacking potential',
+      'Black\'s usual Caro-Kann plan is severely disrupted'
+    ],
+    drawbacks: [
+      'Weakens the g4 and g3 squares',
+      'The h-pawn advance can overextend if Black defends correctly',
+      'Requires follow-up knowledge of g4 and h5 plans'
+    ],
+    goals: [
+      'Chase the bishop with h4-h5 and force it to a passive square',
+      'Build a kingside space advantage with g4-g5',
+      'Launch a pawn storm while Black has poor piece coordination'
+    ],
+    keySquares: ['e5', 'f5', 'h4', 'g4'],
+    pawnBreaks: ['g4', 'h5']
+  },
+  {
+    id: 'mieses-gambit',
+    name: 'Mieses Gambit',
+    eco: 'B01',
+    forSide: 'white',
+    moves: '1. e4 d5 2. exd5 Qxd5 3. Nc3 Qa5 4. b4',
+    fen: 'rnb1kbnr/ppp1pppp/8/q7/1P6/2N5/P1PP1PPP/R1BQKBNR b KQkq - 0 4',
+    description: 'A Wing Gambit against the Scandinavian: after 3...Qa5, play 4.b4! to sacrifice a pawn, ruin Black\'s setup, and seize the initiative.',
+    advantages: [
+      'Destroys Black\'s usual Scandinavian structure and plans',
+      'Queenside expansion gives White rapid space and initiative',
+      'Black\'s queen is suddenly under fire and completely misplaced'
+    ],
+    drawbacks: [
+      'White gives up a real pawn with no immediate recovery',
+      'Black can accept and try to hold the extra material',
+      'Requires concrete follow-up — White must attack quickly'
+    ],
+    goals: [
+      'After ...Qxb4, play Rb1 to trap or chase the queen',
+      'Open files on the queenside with a4 and b5 advances',
+      'Develop rapidly and attack before Black consolidates'
+    ],
+    keySquares: ['b4', 'a5', 'c3', 'd5'],
+    pawnBreaks: ['a4', 'd4'],
+    isGambit: true
+  },
+  {
+    id: 'austrian-attack-pirc',
+    name: 'Austrian Attack (Pirc/Modern)',
+    eco: 'B09',
+    forSide: 'white',
+    moves: '1. e4 d6 2. d4 Nf6 3. Nc3 g6 4. f4',
+    fen: 'rnbqkb1r/ppp1pp1p/3p1np1/8/3PPP2/2N5/PPP3PP/R1BQKBNR b KQkq - 0 4',
+    description: 'Build a massive 3-pawn center (e4, d4, f4) against the Pirc/Modern and simply steamroll. Black\'s hypermodern counter-attacking plan gets overwhelmed by sheer space.',
+    advantages: [
+      'Three-pawn center creates enormous space advantage',
+      'Direct kingside attack with f4-f5 is concrete and difficult to meet',
+      'Black\'s typical counter with ...e5 or ...c5 runs into tactical problems'
+    ],
+    drawbacks: [
+      'The center can become a target if over-extended',
+      'Requires precise piece coordination to support the advance',
+      'Black has specific defensive setups that challenge the center'
+    ],
+    goals: [
+      'Advance f4-f5 to blast open the kingside',
+      'Support the center with Be2 and Nf3 before advancing',
+      'Castle kingside and use the open f-file for a direct attack'
+    ],
+    keySquares: ['e4', 'f4', 'f5', 'd4'],
+    pawnBreaks: ['f5', 'e5']
+  },
+
+  // ── Sharp Black Openings (user-requested) ────────────────────────────────
+  {
+    id: 'sicilian-dragon',
+    name: 'Sicilian Dragon',
+    eco: 'B70',
+    forSide: 'black',
+    moves: '1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 g6',
+    fen: 'rnbqkb1r/pp2pp1p/3p1np1/8/3NP3/2N5/PPP2PPP/R1BQKB1R w KQkq - 0 6',
+    description: 'Pure tactical race: Black uses the g7 bishop to tear open White\'s queenside while White storms the kingside. The most aggressive Sicilian variation.',
+    advantages: [
+      'The Bg7 bishop becomes a monster on the long diagonal',
+      'Classic mutual castling opposite sides creates a tactical race',
+      'Rich theory with well-tested attacking motifs for Black'
+    ],
+    drawbacks: [
+      'White\'s Yugoslav Attack (Be3, f3, g4) is extremely dangerous',
+      'One mistake in the main lines can be immediately fatal',
+      'Heavy theory requirement in the critical Yugoslav lines'
+    ],
+    goals: [
+      'Castle queenside to create a tactical race against the White king',
+      'Use the Bg7 to pressure d4 and tear open the queenside with ...b5',
+      'Coordinate rooks on c8 and d8 for maximum queenside pressure'
+    ],
+    keySquares: ['g7', 'd4', 'b5', 'c4'],
+    pawnBreaks: ['b5', 'd5']
+  },
+  {
+    id: 'benko-gambit',
+    name: 'Benko Gambit',
+    eco: 'A57',
+    forSide: 'black',
+    moves: '1. d4 Nf6 2. c4 c5 3. d5 b5',
+    fen: 'rnbqkb1r/p2ppppp/5n2/1ppP4/2P5/8/PP2PPPP/RNBQKBNR w KQkq b6 0 4',
+    description: 'Sacrifice a pawn for permanent, annoying queenside pressure. The a-file and b-file become Black\'s highways for long-term positional compensation.',
+    advantages: [
+      'Semi-permanent queenside compensation — hard for White to return',
+      'Black gets open a and b files for rooks without using extra tempos',
+      'A well-tested tournament weapon with clear strategic plans'
+    ],
+    drawbacks: [
+      'White can decline and simply get a space advantage',
+      'The pawn sacrifice requires understanding of queenside pressure',
+      'White can choose quieter variations to avoid the main lines'
+    ],
+    goals: [
+      'Open the a and b files after ...bxc4 and ...axb5',
+      'Place rooks on a8 and b8 for maximum queenside pressure',
+      'Use the fianchettoed Bg7 to support the queenside counterplay'
+    ],
+    keySquares: ['b5', 'a6', 'g7', 'b2'],
+    pawnBreaks: ['e6', 'f5'],
+    isGambit: true
+  },
+  {
+    id: 'leningrad-dutch',
+    name: 'Leningrad Dutch',
+    eco: 'A86',
+    forSide: 'black',
+    moves: '1. d4 f5 2. c4 Nf6 3. g3 g6 4. Bg2 Bg7',
+    fen: 'rnbqk2r/ppppp1bp/5np1/5p2/2PP4/6P1/PP2PPBP/RNBQK1NR w KQkq - 2 5',
+    description: 'The most aggressive way to fight 1.d4. You fight for the e4 square from move 1 with f5 and set up a powerful kingside structure with g6, Bg7, and Nf6.',
+    advantages: [
+      'Active fighting stance against d4 from the first move',
+      'Powerful kingside structure with Bg7 and the f5-g6 pawn duo',
+      'Black can launch a kingside attack before White activates the queenside'
+    ],
+    drawbacks: [
+      'The f5 pawn weakens e5 and the e8-h5 diagonal',
+      'Requires careful handling of the Staunton Gambit (2.e4)',
+      'White can get a dangerous center with e4 in some lines'
+    ],
+    goals: [
+      'Fianchetto the bishop to g7 for kingside control',
+      'Fight for the e4 square with ...d6 and ...Nc6 or ...e5',
+      'Launch a kingside attack with ...h5 and ...Ng4 plans'
+    ],
+    keySquares: ['e4', 'f5', 'g7', 'd5'],
+    pawnBreaks: ['e5', 'd5']
+  },
+  {
+    id: 'reversed-sicilian-english',
+    name: 'Reversed Sicilian',
+    eco: 'A25',
+    forSide: 'black',
+    moves: '1. c4 e5',
+    fen: 'rnbqkbnr/pppp1ppp/8/4p3/2P5/8/PP1PPPPP/RNBQKBNR w KQkq e6 0 2',
+    description: 'Play 1...e5 against the English Opening and treat it like you are playing the White side of a Sicilian — with familiar attacking ideas and an extra tempo.',
+    advantages: [
+      'Familiar Sicilian-style positions but with an extra tempo',
+      'Active piece play with natural development toward the center',
+      'White has no forcing lines — Black dictates the pace'
+    ],
+    drawbacks: [
+      'White has flexible transposition options (e4 to reach an Open Sicilian)',
+      'Less concrete theory means less concrete winning plans',
+      'Positions can become symmetrical and drawish in quiet lines'
+    ],
+    goals: [
+      'Develop naturally with ...Nc6, ...Nf6, ...d6 or ...Bc5',
+      'Exploit familiar Sicilian themes: d5 break, f5 advance, queenside pressure',
+      'Use the extra tempo to seize the initiative over White'
+    ],
+    keySquares: ['e5', 'd4', 'c4', 'f4'],
+    pawnBreaks: ['d5', 'f5']
+  },
+  {
+    id: 'kings-indian-setup-reti',
+    name: "King's Indian Setup (vs Reti)",
+    eco: 'A48',
+    forSide: 'black',
+    moves: '1. Nf3 d6 2. g3 g6 3. Bg2 Bg7 4. O-O Nf6',
+    fen: 'rnbqk2r/ppp1ppbp/3p1np1/8/8/5NPP/PPPPPPB1/RNBQ1RK1 w kq - 4 5',
+    description: 'Use your King\'s Indian Defense knowledge against the Reti, fianchettoing to g7 and looking for the e5 break much faster than White can prepare against it.',
+    advantages: [
+      'Mirror White\'s hypermodern setup with familiar KID plans',
+      'The Bg7 exerts immediate pressure on d4 and e5',
+      'The ...e5 break arrives faster since White has not committed with d4'
+    ],
+    drawbacks: [
+      'White can choose a flexible non-committal setup to avoid the main lines',
+      'Black must switch plans if White avoids the standard KID structure',
+      'Less forcing than the main-line KID against 1.d4'
+    ],
+    goals: [
+      'Establish the KID structure: g6, Bg7, d6, Nf6, castle kingside',
+      'Break with ...e5 when well-timed to challenge the center',
+      'Use the Bg7 on the long diagonal to dominate positionally'
+    ],
+    keySquares: ['g7', 'e5', 'd4', 'f5'],
+    pawnBreaks: ['e5', 'c5']
+  },
+  {
+    id: 'budapest-gambit',
+    name: 'Budapest Gambit',
+    eco: 'A51',
+    forSide: 'black',
+    moves: '1. d4 Nf6 2. c4 e5',
+    fen: 'rnbqkb1r/pppp1ppp/5n2/4p3/2PP4/8/PP2PPPP/RNBQKBNR w KQkq e6 0 3',
+    description: 'A surprise gambit against 1.d4 — sacrifice the e5 pawn immediately for rapid development, pressure on d4, and an initiative that White never quite expected.',
+    advantages: [
+      'Excellent surprise value — most d4 players are unprepared',
+      'Immediate piece activity and pressure on the d4 pawn',
+      'Black\'s compensation is positional and long-lasting'
+    ],
+    drawbacks: [
+      'White can consolidate the extra pawn with careful play',
+      'Less popular at GM level — objectively below equality',
+      'Requires faith in positional compensation over raw material'
+    ],
+    goals: [
+      'Recover the pawn with active piece play or keep the initiative',
+      'Use rapid development (Nc6, Bc5, Bg4) to pressure White',
+      'Target the d4 pawn as the weak point in White\'s structure'
+    ],
+    keySquares: ['d4', 'e5', 'f2', 'c5'],
+    pawnBreaks: ['d5', 'f5'],
+    isGambit: true
   },
 ];
 
