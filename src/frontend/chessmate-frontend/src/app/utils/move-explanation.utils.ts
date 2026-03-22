@@ -183,8 +183,6 @@ function getRays(square: Square, pieceType: string): Square[][] {
 function detectDiscoveredAttack(boardBefore: Chess, boardAfter: Chess, move: ClassifiedMove): string | null {
   const movingColor = move.ply % 2 === 1 ? 'w' : 'b';
   const opponentColor = movingColor === 'w' ? 'b' : 'w';
-  // When the piece moves away from its square, it might uncover an attack by a
-  // friendly sliding piece on a valuable enemy piece.
   const fromSq = move.from as Square;
   const sqs = allSquares();
   for (const sq of sqs) {
@@ -193,13 +191,32 @@ function detectDiscoveredAttack(boardBefore: Chess, boardAfter: Chess, move: Cla
     const wasAttacked = boardBefore.isAttacked(sq, movingColor);
     const nowAttacked = boardAfter.isAttacked(sq, movingColor);
     if (!wasAttacked && nowAttacked) {
-      // Verify it's actually discovered — check that the newly attacking piece
-      // is NOT the moved piece itself
-      const fen = boardAfter.fen();
-      const movedPieceSq = move.to as Square;
-      // Quick heuristic: if the target is on the same ray as the fromSquare
+      // Find which friendly sliding piece is now attacking the target
       if (areOnSameRay(fromSq, sq)) {
-        return `Discovered attack on the ${pieceName(target.type)}`;
+        // Walk the ray from fromSq toward sq to identify the unmasked attacker
+        const file = fromSq.charCodeAt(0) - 'a'.charCodeAt(0);
+        const rank = parseInt(fromSq[1], 10);
+        const tFile = sq.charCodeAt(0) - 'a'.charCodeAt(0);
+        const tRank = parseInt(sq[1], 10);
+        const df = Math.sign(tFile - file);
+        const dr = Math.sign(tRank - rank);
+        let attackerName = 'piece';
+        let attackerSq = '';
+        for (let i = 1; i < 8; i++) {
+          const f = file + df * i;
+          const r = rank + dr * i;
+          if (f < 0 || f > 7 || r < 1 || r > 8) break;
+          const candidate = `${String.fromCharCode('a'.charCodeAt(0) + f)}${r}` as Square;
+          if (candidate === (move.to as Square)) continue; // skip moved piece's new square
+          const p = boardAfter.get(candidate);
+          if (p && p.color === movingColor) {
+            attackerName = pieceName(p.type);
+            attackerSq = candidate;
+            break;
+          }
+          if (p) break; // blocked by opponent piece before we found a friendly
+        }
+        return `Moving the ${pieceName(move.piece)} creates a discovered attack from your ${attackerName}, which now threatens the ${pieceName(target.type)} on ${sq}`;
       }
     }
   }
@@ -269,6 +286,253 @@ function detectPassedPawn(board: Chess, square: Square, color: string): boolean 
     }
   }
   return true;
+}
+
+// ── Positional purpose detection ────────────────────────────────────────────────
+
+const CENTRAL_SQUARES = new Set(['d4', 'd5', 'e4', 'e5']);
+const EXTENDED_CENTER = new Set(['c3', 'c4', 'c5', 'c6', 'd3', 'd6', 'e3', 'e6', 'f3', 'f4', 'f5', 'f6']);
+
+/** True when the square is on an open file (no pawns of either colour on that file). */
+function isOpenFile(board: Chess, square: Square): boolean {
+  const file = square[0];
+  for (let r = 1; r <= 8; r++) {
+    const p = board.get(`${file}${r}` as Square);
+    if (p && p.type === 'p') return false;
+  }
+  return true;
+}
+
+/** True when the file has pawns of one colour only (semi-open for the piece's colour). */
+function isSemiOpenFile(board: Chess, square: Square, color: 'w' | 'b'): boolean {
+  const file = square[0];
+  let ownPawn = false;
+  let oppPawn = false;
+  for (let r = 1; r <= 8; r++) {
+    const p = board.get(`${file}${r}` as Square);
+    if (!p || p.type !== 'p') continue;
+    if (p.color === color) ownPawn = true; else oppPawn = true;
+  }
+  return !ownPawn && oppPawn;
+}
+
+/** True when the square cannot be attacked by an enemy pawn. */
+function isOutpostSquare(board: Chess, square: Square, color: 'w' | 'b'): boolean {
+  const opp = color === 'w' ? 'b' : 'w';
+  const file = square.charCodeAt(0) - 'a'.charCodeAt(0);
+  const rank = parseInt(square[1], 10);
+  const dir = opp === 'w' ? 1 : -1;
+  for (const df of [-1, 1]) {
+    for (let dr = 1; dr < 8; dr++) {
+      const f = file + df;
+      const r = rank + dir * dr;
+      if (f < 0 || f > 7 || r < 1 || r > 8) break;
+      const p = board.get(`${String.fromCharCode('a'.charCodeAt(0) + f)}${r}` as Square);
+      if (p && p.type === 'p' && p.color === opp) return false;
+    }
+  }
+  return true;
+}
+
+/** True when all four rooks (own + opponent) cover the given file. */
+function isConnectedRooks(board: Chess, square: Square, color: 'w' | 'b'): boolean {
+  const file = square[0];
+  const rooks: Square[] = [];
+  for (let r = 1; r <= 8; r++) {
+    const p = board.get(`${file}${r}` as Square);
+    if (p && p.type === 'r' && p.color === color) rooks.push(`${file}${r}` as Square);
+  }
+  return rooks.length >= 2;
+}
+
+/**
+ * Returns a short description of the positional purpose of a non-capture, non-tactical move,
+ * for use both in "good move" praise and as context in bad-move criticism.
+ */
+function detectPositionalPurpose(
+  boardBefore: Chess,
+  boardAfter: Chess,
+  move: ClassifiedMove,
+  movingColor: 'w' | 'b',
+  ply: number,
+  isUser: boolean
+): string | null {
+  const piece = move.piece;
+  const toSq = move.to as Square;
+  const fromSq = move.from as Square;
+  const toFile = toSq[0];
+  const toRank = parseInt(toSq[1], 10);
+  const name = pieceName(piece);
+  const from = fromSq;
+  const to = toSq;
+  const opponentColor: 'w' | 'b' = movingColor === 'w' ? 'b' : 'w';
+
+  // 1. Rook to open file
+  if (piece === 'r' && isOpenFile(boardAfter, to)) {
+    return isUser
+      ? pick(ply, [
+          `You place the rook on an open file — it has no pawns blocking its path and maximum range.`,
+          `The rook lands on the open ${toFile}-file. Open files are highways for rooks.`,
+          `Your rook seizes the open ${toFile}-file, putting immediate pressure down the board.`
+        ])
+      : pick(ply, [
+          `Your opponent's rook occupies an open file, gaining long-term pressure along the ${toFile}-file.`,
+          `The rook claims the open ${toFile}-file. Expect activity from there.`
+        ]);
+  }
+
+  // 2. Rook to semi-open file
+  if (piece === 'r' && isSemiOpenFile(boardAfter, to, movingColor)) {
+    return isUser
+      ? pick(ply, [
+          `The rook moves to the semi-open ${toFile}-file, targeting the opponent's pawn with no own pawn in the way.`,
+          `Your rook eyes the ${toFile}-file — it's clear of your own pawns and bears down on the enemy.`
+        ])
+      : pick(ply, [
+          `Your opponent posts the rook on a semi-open file, putting your pawn under scrutiny.`
+        ]);
+  }
+
+  // 3. Knight or bishop to outpost
+  if ((piece === 'n' || piece === 'b') && EXTENDED_CENTER.has(to) && isOutpostSquare(boardAfter, to, movingColor)) {
+    return isUser
+      ? pick(ply, [
+          `Your ${name} settles on an outpost at ${to} — enemy pawns cannot chase it away from here.`,
+          `${capitalize(name)} to ${to}: a strong outpost. Pieces planted on squares that pawns can't attack become long-term threats.`,
+          `You anchor the ${name} on ${to}. With no enemy pawn able to dislodge it, this piece can dominate.`
+        ])
+      : pick(ply, [
+          `Your opponent places the ${name} on an outpost at ${to}. It's hard to push away.`,
+          `The ${name} finds an outpost at ${to}. Outpost pieces can be very difficult to neutralise.`
+        ]);
+  }
+
+  // 4. Piece to central square
+  if (CENTRAL_SQUARES.has(to)) {
+    return isUser
+      ? pick(ply, [
+          `Your ${name} heads to ${to} — a central square where it controls the most board space.`,
+          `Centralising the ${name} on ${to}. Central pieces radiate influence in all directions.`,
+          `${capitalize(name)} takes up a commanding central post on ${to}.`
+        ])
+      : pick(ply, [
+          `Your opponent centralises the ${name} on ${to}, increasing its influence across the board.`,
+          `The ${name} reaches the centre. Central control is a foundational advantage.`
+        ]);
+  }
+
+  // 5. Extended-centre piece activity
+  if (EXTENDED_CENTER.has(to) && (piece === 'n' || piece === 'b')) {
+    return isUser
+      ? pick(ply, [
+          `You improve the ${name} to ${to}, bringing it closer to the centre of the action.`,
+          `${capitalize(name)} to ${to}: a more active square, increasing piece coordination.`
+        ])
+      : pick(ply, [
+          `Your opponent improves the ${name} to ${to}, enhancing its activity.`
+        ]);
+  }
+
+  // 6. King activity in the endgame
+  if (piece === 'k' && ply > 60) {
+    return isUser
+      ? pick(ply, [
+          `The king becomes an attacking piece in the endgame — activating it is often essential.`,
+          `Your king steps forward. In the endgame, an active king is a powerful weapon.`
+        ])
+      : pick(ply, [
+          `Your opponent's king advances. Active king play in endgames is often decisive.`
+        ]);
+  }
+
+  // 7. Piece retreating — improvement
+  if (piece !== 'p' && piece !== 'k') {
+    const fromFile = from.charCodeAt(0) - 'a'.charCodeAt(0);
+    const toFile2 = to.charCodeAt(0) - 'a'.charCodeAt(0);
+    const fromRank = parseInt(from[1], 10);
+    const movingTowardsOwn = (movingColor === 'w' && toRank < fromRank) || (movingColor === 'b' && toRank > fromRank);
+    if (movingTowardsOwn) {
+      return isUser
+        ? pick(ply, [
+            `You reposition the ${name} to ${to}. Sometimes a step back improves the piece's long-term scope.`,
+            `The ${name} retreats to ${to} — regrouping to a better square before re-entering the action.`
+          ])
+        : pick(ply, [
+            `Your opponent regroups the ${name} to ${to}, seeking a better diagonal or file.`
+          ]);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Generates a short explanation of WHY a move is bad, based on the resulting position.
+ * Supplements the best-move suggestion for Mistake/Blunder/Miss/Inaccuracy.
+ */
+function detectBadMoveProblem(
+  boardBefore: Chess,
+  boardAfter: Chess,
+  move: ClassifiedMove,
+  movingColor: 'w' | 'b',
+  ply: number
+): string | null {
+  const opponentColor: 'w' | 'b' = movingColor === 'w' ? 'b' : 'w';
+  const toSq = move.to as Square;
+  const fromSq = move.from as Square;
+  const name = pieceName(move.piece);
+
+  // A. Moved piece lands on a square attacked by a less valuable piece
+  const landingAttackers = boardAfter.moves({ verbose: true })
+    .filter(m => m.to === toSq && boardAfter.get(m.from as Square)?.color === opponentColor);
+  if (landingAttackers.length > 0) {
+    const cheapestAttacker = landingAttackers.reduce((best, m) => {
+      const v = PIECE_VALUES[boardAfter.get(m.from as Square)?.type ?? 'p'] ?? 0;
+      return v < best ? v : best;
+    }, 99);
+    const movedValue = PIECE_VALUES[move.piece] ?? 0;
+    if (cheapestAttacker < movedValue) {
+      const attackerPiece = landingAttackers.find(m => (PIECE_VALUES[boardAfter.get(m.from as Square)?.type ?? 'p'] ?? 0) === cheapestAttacker);
+      const attackerName = attackerPiece ? pieceName(boardAfter.get(attackerPiece.from as Square)?.type ?? 'p') : 'a piece';
+      return pick(ply, [
+        `The ${name} lands on ${toSq} where it can be taken by the ${attackerName} — a less valuable piece wins material.`,
+        `After this, your opponent can capture the ${name} on ${toSq} with the ${attackerName} and come out ahead.`,
+        `${capitalize(name)} on ${toSq} is immediately under threat from the ${attackerName}.`
+      ]);
+    }
+  }
+
+  // B. Move abandons defence of an attacked friendly piece
+  const sqs = allSquares();
+  for (const sq of sqs) {
+    if (sq === fromSq) continue;
+    const p = boardAfter.get(sq);
+    if (!p || p.color !== movingColor || p.type === 'k') continue;
+    const wasDefended = boardBefore.isAttacked(sq, movingColor);
+    const nowDefended = boardAfter.isAttacked(sq, movingColor);
+    const isAttacked = boardAfter.isAttacked(sq, opponentColor);
+    if (wasDefended && !nowDefended && isAttacked) {
+      return pick(ply, [
+        `This move stops defending the ${pieceName(p.type)} on ${sq}, which is now left unprotected.`,
+        `The ${pieceName(p.type)} on ${sq} loses its defender — it can now be captured for free.`,
+        `By moving away, you leave the ${pieceName(p.type)} on ${sq} without support. It's now a target.`
+      ]);
+    }
+  }
+
+  // C. Move opens a file or diagonal toward your own king
+  const kingSquare = sqs.find(sq => { const p = boardAfter.get(sq); return p?.type === 'k' && p.color === movingColor; });
+  if (kingSquare && areOnSameRay(fromSq, kingSquare as Square)) {
+    const kingNowExposed = boardAfter.isAttacked(kingSquare as Square, opponentColor);
+    if (kingNowExposed) {
+      return pick(ply, [
+        `Moving away from ${fromSq} opens a line toward your king — your opponent can now target it directly.`,
+        `This creates a dangerous line to your king. The king's safety has been compromised.`
+      ]);
+    }
+  }
+
+  return null;
 }
 
 // ── Missed-motif analysis (for bad moves) ───────────────────────────────────────
@@ -380,6 +644,7 @@ function detectContextualPrinciple(
 ): string | null {
   const opponentColor: 'w' | 'b' = movingColor === 'w' ? 'b' : 'w';
   const toSq = move.to as Square;
+  const fromSq = move.from as Square;
 
   // A. Moved piece itself is now hanging on its new square
   if (!isCapture
@@ -389,6 +654,7 @@ function detectContextualPrinciple(
       'Always verify your destination square is safe before moving — a piece that lands in danger can be taken immediately.',
       'Check that your new square is defended or hard to attack. Hanging pieces hand your opponent free material.',
       'Before placing a piece, ask: can my opponent take it for free on the next move?',
+      'Every move should answer: is my piece safe here? This one lands on a square your opponent can exploit.',
     ]);
   }
 
@@ -397,6 +663,7 @@ function detectContextualPrinciple(
     return pick(ply, [
       'Moving the queen early risks losing tempos when it gets chased. Develop your knights and bishops first, then bring the queen to an active role.',
       'The queen is powerful but vulnerable to tempo attacks. Develop minor pieces first — the queen will find the right square once the foundation is laid.',
+      'Early queen moves invite your opponent to gain time by chasing it. Minor piece development first is a more durable approach.',
     ]);
   }
 
@@ -407,12 +674,12 @@ function detectContextualPrinciple(
       return pick(ply, [
         'Wing pawn moves in the opening delay development and can weaken your position. Focus on central control and getting your pieces into play first.',
         "In the opening, every tempo counts. Flank pawn moves that don't control the center are often too slow.",
+        'Flank pawn advances are risky before the center is secured. Your opponent may exploit the delay in development.',
       ]);
     }
   }
 
-  // D. King still uncastled in the middlegame — only fires when castling rights are
-  // still intact, so a king that castled and was later pushed back won't trigger this.
+  // D. King still uncastled in the middlegame
   if (ply >= 20) {
     const kingStartSq = (movingColor === 'w' ? 'e1' : 'e8') as Square;
     const king = boardAfter.get(kingStartSq);
@@ -425,8 +692,41 @@ function detectContextualPrinciple(
         return pick(ply, [
           'Your king is still uncastled in the middlegame. Prioritize castling — an exposed king in the center is a constant liability.',
           'With your king still in the center, every inaccuracy costs more. Complete your development and castle as soon as possible.',
+          'An uncastled king in the middlegame is a target. Getting it to safety should take priority over other plans.',
+          'The king needs to castle. Leaving it in the center gives your opponent attacking possibilities on every open file.',
         ]);
       }
+    }
+  }
+
+  // E. Moving the same piece twice in the opening (wasting tempo)
+  if (ply < 20 && move.piece !== 'p' && move.piece !== 'k') {
+    const color = ply % 2 === 1 ? 'w' : 'b';
+    const startRankW = move.piece === 'n' ? '1' : '1';
+    const startRankB = '8';
+    const isStartRank = (color === 'w' && fromSq[1] === startRankW) || (color === 'b' && fromSq[1] === startRankB);
+    // Only flag if the piece is NOT on its start rank (i.e. it already moved once)
+    if (!isStartRank) {
+      return pick(ply, [
+        'Moving the same piece twice in the opening costs you a development tempo. Each move should bring a new piece into play.',
+        "Retreating or repositioning an already-moved piece in the opening can fall behind on development. Try to develop a new piece instead.",
+      ]);
+    }
+  }
+
+  // F. Piece trade that leaves doubled pawns (captures handled upstream; target isolated/doubled pawn structures)
+  if (isCapture && move.piece === 'p') {
+    const file = toSq[0];
+    let count = 0;
+    for (let r = 1; r <= 8; r++) {
+      const p = boardAfter.get(`${file}${r}` as Square);
+      if (p && p.type === 'p' && p.color === movingColor) count++;
+    }
+    if (count >= 2) {
+      return pick(ply, [
+        `This capture creates doubled pawns on the ${file}-file. Doubled pawns are harder to defend and limit pawn mobility.`,
+        `You now have doubled pawns on the ${file}-file — a long-term structural weakness worth keeping in mind.`,
+      ]);
     }
   }
 
@@ -483,12 +783,15 @@ export function generateMoveExplanation(
       ? pick(ply, [
           'You play a book move. Solid and well-tested.',
           'Following known theory here. Nothing fancy, just sound play.',
-          'A standard line. This has been tested in many games before.'
+          'A standard line. This has been tested in many games before.',
+          'Theory. A reliable choice backed by years of top-level practice.',
+          'A book move — well-charted territory. Solid foundation for what comes next.'
         ])
       : pick(ply, [
           'Your opponent plays a book move. A known continuation.',
           'Theory from your opponent. Following established lines.',
-          'A standard response. Well-known and reliable.'
+          'A standard response. Well-known and reliable.',
+          'Your opponent stays in theory. A solid, tested reply.'
         ]);
   }
 
@@ -507,12 +810,14 @@ export function generateMoveExplanation(
       ? pick(ply, [
           'The only legal move. The position leaves you no choice.',
           'Forced. There was nothing else available.',
-          'No alternatives here. This is the only legal option.'
+          'No alternatives here. This is the only legal option.',
+          'Only one legal move — the position dictates it.'
         ])
       : pick(ply, [
           'The only legal move for your opponent.',
           'Forced. Your opponent had no other option.',
-          'No choice for your opponent. Only one legal move.'
+          'No choice for your opponent. Only one legal move.',
+          'Your opponent had to play this — forced by the position.'
         ]);
   }
 
@@ -521,22 +826,30 @@ export function generateMoveExplanation(
       ? pick(ply, [
           'Checkmate! Well played.',
           'Checkmate! Clean and decisive.',
-          'Checkmate! That closes it out.'
+          'Checkmate! That closes it out.',
+          'Checkmate! The position is won and the game is over.',
+          'Checkmate. A fitting end to the game.'
         ])
       : pick(ply, [
           'Checkmate. The game is over.',
           'Your opponent delivers checkmate.',
-          'Checkmate. Nothing could be done to prevent it.'
+          'Checkmate. Nothing could be done to prevent it.',
+          'Checkmate. A decisive finish from your opponent.'
         ]);
   }
 
   // -- Gather motifs --
-  const fork = detectFork(boardAfter, move);
-  const pin = detectPin(boardAfter, move);
-  const skewer = detectSkewer(boardAfter, move);
+  // Tactical motif labels (fork, pin, skewer) are only surfaced for strong moves
+  // to avoid every move being described purely in tactical terms.
+  const isHighQuality = classification === 'Brilliant' || classification === 'Great' || classification === 'Best';
+  const fork = isHighQuality ? detectFork(boardAfter, move) : null;
+  const pin = isHighQuality ? detectPin(boardAfter, move) : null;
+  const skewer = isHighQuality ? detectSkewer(boardAfter, move) : null;
   const discovered = detectDiscoveredAttack(boardBefore, boardAfter, move);
   const development = detectDevelopment(move, ply, isUser);
   const isBad = isBadClassification(classification);
+  const positionalPurpose = !isCapture ? detectPositionalPurpose(boardBefore, boardAfter, move, movingColor, ply, isUser) : null;
+  const badMoveProblem = (isBad && isUser) ? detectBadMoveProblem(boardBefore, boardAfter, move, movingColor, ply) : null;
 
   // Exclude destination from hanging check when capture is equal or advantageous
   const hangExcludeSquare: Square | undefined =
@@ -641,29 +954,50 @@ export function generateMoveExplanation(
         ? `You take the ${capturedName}. ${skewer}.`
         : `Your opponent takes the ${capturedName}. ${skewer}.`);
     } else if (movedValue === capturedValue) {
-      // Exchange: equal value trade
-      parts.push(isUser
-        ? pick(ply, [
-            `You exchange ${name}s. Neither side gains material.`,
-            `${capitalize(name)} for ${capturedName}. An even exchange.`,
-            `You trade ${name}s. The material balance stays equal.`
-          ])
-        : pick(ply, [
-            `Your opponent exchanges ${name}s. An even trade.`,
-            `${capitalize(name)} for ${capturedName}. Your opponent keeps the balance.`,
-            `Your opponent trades ${name}s. Material stays equal.`
-          ]));
+      // True exchange: equal value AND the capturing piece can itself be recaptured
+      const toSq = move.to as Square;
+      const opponentCanRecapture = boardAfter.isAttacked(toSq, movingColor === 'w' ? 'b' : 'w');
+      if (opponentCanRecapture) {
+        parts.push(isUser
+          ? pick(ply, [
+              `You exchange ${name}s. Neither side gains material.`,
+              `${capitalize(name)} for ${capturedName}. An even exchange.`,
+              `You trade the ${name} for the ${capturedName}. The material balance stays equal.`
+            ])
+          : pick(ply, [
+              `Your opponent exchanges ${name}s. An even trade.`,
+              `${capitalize(name)} for ${capturedName}. Material stays balanced.`,
+              `Your opponent trades the ${name} for the ${capturedName}. Nothing changes on the material ledger.`
+            ]));
+      } else {
+        // Capturing piece cannot be recaptured — straightforward capture, not an exchange
+        parts.push(isUser
+          ? pick(ply, [
+              `You capture the ${capturedName} with the ${name}.`,
+              `${capitalize(name)} takes the ${capturedName}. A clean pick-up.`,
+              `You win the ${capturedName} — the ${name} lands safely.`
+            ])
+          : pick(ply, [
+              `Your opponent captures the ${capturedName} with the ${name}.`,
+              `The ${capturedName} falls to your opponent's ${name}.`,
+              `Your opponent takes the ${capturedName} and the ${name} cannot be challenged.`
+            ]));
+      }
     } else if (capturedValue > movedValue) {
       // Capture: winning material
       parts.push(isUser
         ? pick(ply, [
             `You win the ${capturedName} with your ${name}. Good capture.`,
             `You take the ${capturedName}. Material advantage gained.`,
-            `${capitalize(name)} captures the ${capturedName}. A concrete advantage.`
+            `${capitalize(name)} captures the ${capturedName}. A concrete advantage.`,
+            `The ${capturedName} is yours — a clean pick-up that tips the balance.`,
+            `Nice. The ${capturedName} falls to your ${name}, shifting the material count in your favour.`
           ])
         : pick(ply, [
             `Your opponent wins the ${capturedName}. A material setback for you.`,
-            `The ${capturedName} falls. A costly loss.`
+            `The ${capturedName} falls. A costly loss.`,
+            `Your opponent picks up the ${capturedName} — you're down material now.`,
+            `The ${capturedName} is taken. A setback that demands a concrete plan to compensate.`
           ]));
     } else {
       // Capturing piece is MORE valuable -- check if actually a sacrifice
@@ -673,11 +1007,13 @@ export function generateMoveExplanation(
           ? pick(ply, [
               `You give the ${name} for a ${capturedName}. A sacrifice: the position must justify it.`,
               `${capitalize(name)} for a ${capturedName}. You invest material for positional or tactical compensation.`,
-              `You sacrifice the ${name} for the ${capturedName}. Bold, but it needs to be backed by calculation.`
+              `You sacrifice the ${name} for the ${capturedName}. Bold, but it needs to be backed by calculation.`,
+              `Deliberately trading the ${name} for a ${capturedName}. The value is in what comes next, not the material count.`
             ])
           : pick(ply, [
               `Your opponent sacrifices the ${name} for a ${capturedName}. A calculated risk.`,
-              `Your opponent gives the ${name} for the ${capturedName}. A sacrifice looking for compensation.`
+              `Your opponent gives the ${name} for the ${capturedName}. A sacrifice looking for compensation.`,
+              `The ${name} is offered — your opponent judges the resulting position to be worth it.`
             ]));
       } else {
         // Capturing a less-valuable piece with a more-valuable one, not truly given up
@@ -685,11 +1021,13 @@ export function generateMoveExplanation(
           ? pick(ply, [
               `You take the ${capturedName} with the ${name}.`,
               `You capture the ${capturedName}.`,
-              `${capitalize(name)} captures the ${capturedName}.`
+              `${capitalize(name)} captures the ${capturedName}.`,
+              `The ${capturedName} is removed — a straightforward capture.`
             ])
           : pick(ply, [
               `Your opponent takes the ${capturedName} with the ${name}.`,
-              `Your opponent captures the ${capturedName}.`
+              `Your opponent captures the ${capturedName}.`,
+              `The ${capturedName} is cleared by your opponent's ${name}.`
             ]));
       }
     }
@@ -716,12 +1054,14 @@ export function generateMoveExplanation(
         : `Your opponent is ${skewer.toLowerCase()}.`);
     } else if (discovered) {
       parts.push(isUser
-        ? `${discovered}! A hidden threat revealed.`
-        : `Your opponent uncovers a ${discovered.toLowerCase()}.`);
+        ? `${discovered}.`
+        : `Your opponent: ${discovered.replace('your', "their")}.`);
     } else if (!isCheck) {
       // Only add a default description when there's no check already in parts
       if (development) {
         parts.push(`${development}.`);
+      } else if (positionalPurpose) {
+        parts.push(`${positionalPurpose}.`);
       } else if (move.piece === 'p') {
         const pawnColor = movingColor;
         if (detectPassedPawn(boardAfter, move.to as Square, pawnColor)) {
@@ -729,37 +1069,42 @@ export function generateMoveExplanation(
             ? pick(ply, [
                 'You advance the passed pawn. No enemy pawns can stop it.',
                 'Pushing the passed pawn forward. Each step closer to promotion counts.',
-                'Your passed pawn moves ahead. Keep it going.'
+                'Your passed pawn moves ahead — with the road clear, every push counts.',
+                'The passed pawn rolls forward. The opponent must scramble to contain it.'
               ])
             : pick(ply, [
                 'Your opponent advances a passed pawn. Watch it carefully.',
                 'The passed pawn pushes forward. No pawns blocking its path.',
-                'Your opponent pushes the passed pawn. This could become dangerous.'
+                'Your opponent pushes the passed pawn — an urgent long-term threat.',
+                'The passed pawn advances. Creating a blocker should be a priority.'
               ]));
         } else {
           parts.push(isUser
             ? pick(ply, [
                 `You push the pawn to ${move.to}.`,
                 `Pawn to ${move.to}. Steady progress.`,
-                `You advance to ${move.to}.`
+                `You advance to ${move.to}.`,
+                `The pawn steps to ${move.to}, contesting space.`
               ])
             : pick(ply, [
                 `Your opponent pushes the pawn to ${move.to}.`,
                 `Pawn to ${move.to} by your opponent.`,
-                `Your opponent advances to ${move.to}.`
+                `Your opponent advances to ${move.to}, claiming ground.`
               ]));
         }
       } else {
         parts.push(isUser
           ? pick(ply, [
               `You move the ${name} to ${move.to}.`,
-              `${capitalize(name)} to ${move.to}. Improving the piece's position.`,
-              `You place the ${name} on ${move.to}.`
+              `${capitalize(name)} to ${move.to}. The piece finds a new square.`,
+              `You place the ${name} on ${move.to}.`,
+              `${capitalize(name)} relocates to ${move.to}, looking for a more active role.`
             ])
           : pick(ply, [
               `Your opponent moves the ${name} to ${move.to}.`,
               `${capitalize(name)} to ${move.to} for your opponent.`,
-              `Your opponent repositions the ${name} to ${move.to}.`
+              `Your opponent repositions the ${name} to ${move.to}.`,
+              `The ${name} shifts to ${move.to} — worth tracking its new targets.`
             ]));
       }
     }
@@ -768,6 +1113,11 @@ export function generateMoveExplanation(
   // -- Hanging-piece warnings (bad moves only) --
   if (hangingText && !fork) {
     parts.push(hangingText);
+  }
+
+  // -- Why the move is bad (bad user moves only) --
+  if (badMoveProblem) {
+    parts.push(badMoveProblem);
   }
 
   // -- Best-move suggestion with missed-motif analysis (bad moves only) --
@@ -782,11 +1132,14 @@ export function generateMoveExplanation(
           ? pick(ply, [
               `${bestMotif.san} was the stronger choice here.`,
               `${bestMotif.san} kept the position under control.`,
-              `You had ${bestMotif.san}, which was more solid.`
+              `You had ${bestMotif.san}, which was more solid.`,
+              `${bestMotif.san} was the move — sharper and more precise.`,
+              `Worth noting: ${bestMotif.san} would have kept the tension and stayed ahead.`
             ])
           : pick(ply, [
               `Your opponent could have played ${bestMotif.san} instead.`,
-              `${bestMotif.san} was available and stronger.`
+              `${bestMotif.san} was available and stronger.`,
+              `${bestMotif.san} was the better option — a missed opportunity.`
             ]));
       }
     }
@@ -800,12 +1153,15 @@ export function generateMoveExplanation(
         ? pick(ply, [
             `After this, your opponent can play ${opponentSan}, taking advantage of the position.`,
             `This allows ${opponentSan} in response, which puts you in difficulty.`,
-            `Your opponent now has ${opponentSan}, exploiting the weakness.`
+            `Your opponent now has ${opponentSan}, exploiting the weakness.`,
+            `${opponentSan} is now available — and it hurts.`,
+            `Watch out for ${opponentSan}. This move hands your opponent a strong reply.`
           ])
         : pick(ply, [
             `You can now respond with ${opponentSan}, taking advantage of the position.`,
             `This gives you ${opponentSan}, improving your situation.`,
-            `You have ${opponentSan} available, pressing the advantage.`
+            `You have ${opponentSan} available, pressing the advantage.`,
+            `${opponentSan} is on the board for you — a direct improvement.`
           ]));
     }
   }
