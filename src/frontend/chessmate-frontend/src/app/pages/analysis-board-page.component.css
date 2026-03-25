@@ -163,14 +163,16 @@ app-player-bar {
   flex-shrink: 0;
 }
 
-/* Coach panel — fixed height, no shrink */
+/* Coach panel — can shrink when space is tight */
 app-coach-panel {
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Move list — fills remaining space, inner component handles scrolling */
 .move-list-scroll {
-  flex: 1;
+  flex: 1 1 0;
   overflow: hidden;
   min-height: 0;
 }
@@ -203,8 +205,8 @@ app-coach-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--cm-border-strong);
   background: #000000;
@@ -265,6 +267,24 @@ app-coach-panel {
 /* ══════════════════════════════
    RESPONSIVE
 ══════════════════════════════ */
+/* Compact vertical layout — shrink fixed panels to preserve move list space */
+@media (max-height: 780px) {
+  .panel-header {
+    padding: 0.5rem 1rem;
+  }
+
+  app-coach-panel {
+    flex-shrink: 1;
+    max-height: 160px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .panel-dock .nav-controls {
+    padding: 0.4rem 1rem;
+  }
+}
+
 @media (max-width: 960px) {
   .analysis-shell {
     grid-template-columns: 1fr;

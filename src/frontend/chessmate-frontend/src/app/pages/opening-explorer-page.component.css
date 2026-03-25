@@ -41,7 +41,7 @@
 .catalog-container {
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 48px 24px 0;
 }
 
 .catalog-header {
@@ -217,25 +217,30 @@
 }
 
 .page-btn {
-  padding: 0.45rem 1.1rem;
-  background: var(--cm-bg-card);
-  border: 1px solid var(--cm-border);
-  border-radius: var(--cm-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--cm-border-strong);
+  background: #000000;
   color: var(--cm-text);
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .page-btn:hover:not(:disabled) {
   border-color: var(--cm-accent);
   color: var(--cm-accent);
-  background: var(--cm-accent-dim, rgba(212, 168, 67, 0.1));
+  box-shadow: 0 0 12px rgba(212, 168, 67, 0.45), 0 0 4px rgba(212, 168, 67, 0.25);
 }
 
 .page-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -1001,4 +1006,148 @@
   .openings-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
+}
+
+/* ── Decorative Chess Squares ──────────────────────────────────────── */
+
+.chess-deco {
+  position: fixed;
+  top: var(--navbar-height, 0px);
+  bottom: 0;
+  width: clamp(0px, calc((100vw - 960px) / 2), 240px);
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.chess-deco::before {
+  content: '';
+  position: absolute;
+  inset: -46px;
+  background-image: repeating-conic-gradient(
+    rgba(255, 255, 255, 0.26) 0% 25%,
+    rgba(5, 4, 2, 0.50) 0% 50%
+  );
+  background-size: 46px 46px;
+}
+
+.chess-deco--left {
+  left: 0;
+  -webkit-mask-image:
+    radial-gradient(ellipse 140% 52% at 100% 44%, rgba(255,255,255,0.9) 0%, transparent 70%),
+    radial-gradient(circle 30px at 16% 19%, white 55%, transparent 100%),
+    radial-gradient(circle 24px at 44% 64%, white 48%, transparent 100%),
+    radial-gradient(circle 28px at 8%  50%, white 42%, transparent 100%),
+    radial-gradient(circle 20px at 58% 83%, white 44%, transparent 100%);
+  mask-image:
+    radial-gradient(ellipse 140% 52% at 100% 44%, rgba(255,255,255,0.9) 0%, transparent 70%),
+    radial-gradient(circle 30px at 16% 19%, white 55%, transparent 100%),
+    radial-gradient(circle 24px at 44% 64%, white 48%, transparent 100%),
+    radial-gradient(circle 28px at 8%  50%, white 42%, transparent 100%),
+    radial-gradient(circle 20px at 58% 83%, white 44%, transparent 100%);
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+
+.chess-deco--right {
+  right: 0;
+  -webkit-mask-image:
+    radial-gradient(ellipse 140% 52% at 0%   44%, rgba(255,255,255,0.9) 0%, transparent 70%),
+    radial-gradient(circle 30px at 84% 22%, white 55%, transparent 100%),
+    radial-gradient(circle 24px at 56% 62%, white 48%, transparent 100%),
+    radial-gradient(circle 28px at 92% 51%, white 42%, transparent 100%),
+    radial-gradient(circle 20px at 40% 80%, white 44%, transparent 100%);
+  mask-image:
+    radial-gradient(ellipse 140% 52% at 0%   44%, rgba(255,255,255,0.9) 0%, transparent 70%),
+    radial-gradient(circle 30px at 84% 22%, white 55%, transparent 100%),
+    radial-gradient(circle 24px at 56% 62%, white 48%, transparent 100%),
+    radial-gradient(circle 28px at 92% 51%, white 42%, transparent 100%),
+    radial-gradient(circle 20px at 40% 80%, white 44%, transparent 100%);
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+
+/* Featured squares — individual stand-out pieces above the grid */
+
+.feature-sq {
+  position: absolute;
+  border-radius: 3px;
+}
+
+/* Left panel */
+.chess-deco--left .feature-sq:nth-child(1) {
+  width: 52px;
+  height: 52px;
+  top: 14%;
+  right: 18px;
+  background: rgba(230, 222, 192, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.09), inset 0 0 10px rgba(255,255,255,0.04);
+}
+
+.chess-deco--left .feature-sq:nth-child(2) {
+  width: 44px;
+  height: 44px;
+  top: 31%;
+  right: 52px;
+  background: rgba(4, 3, 1, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chess-deco--left .feature-sq:nth-child(3) {
+  width: 64px;
+  height: 64px;
+  top: 51%;
+  right: 6px;
+  background: rgba(230, 222, 192, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.11), inset 0 0 14px rgba(255,255,255,0.05);
+}
+
+.chess-deco--left .feature-sq:nth-child(4) {
+  width: 40px;
+  height: 40px;
+  top: 69%;
+  right: 46px;
+  background: rgba(4, 3, 1, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Right panel */
+.chess-deco--right .feature-sq:nth-child(1) {
+  width: 52px;
+  height: 52px;
+  top: 18%;
+  left: 16px;
+  background: rgba(4, 3, 1, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chess-deco--right .feature-sq:nth-child(2) {
+  width: 50px;
+  height: 50px;
+  top: 35%;
+  left: 50px;
+  background: rgba(230, 222, 192, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08);
+}
+
+.chess-deco--right .feature-sq:nth-child(3) {
+  width: 62px;
+  height: 62px;
+  top: 54%;
+  left: 8px;
+  background: rgba(4, 3, 1, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chess-deco--right .feature-sq:nth-child(4) {
+  width: 46px;
+  height: 46px;
+  top: 72%;
+  left: 44px;
+  background: rgba(230, 222, 192, 0.30);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.09);
 }

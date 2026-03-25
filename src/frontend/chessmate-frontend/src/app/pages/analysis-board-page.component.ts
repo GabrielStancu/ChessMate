@@ -331,6 +331,16 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     return `${minutes}${increment}${rest}`;
   }
 
+  protected getTimeControlCategory(tc: string): string {
+    const match = tc.match(/^(\d+)/);
+    if (!match) return '';
+    const seconds = parseInt(match[1], 10);
+    if (seconds < 180) return 'Bullet';
+    if (seconds < 600) return 'Blitz';
+    if (seconds < 1800) return 'Rapid';
+    return 'Classical';
+  }
+
   protected parseOpening(raw: string | null | undefined): string | null {
     if (!raw) return null;
     let slug = raw.trim();

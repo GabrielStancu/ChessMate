@@ -56,7 +56,7 @@
       <div class="header-title-block">
         <span class="panel-title">Game Analysis</span>
       </div>
-      <span class="move-badge">{{ formatTimeControl(g.timeControl) }}</span>
+      <span class="move-badge">{{ getTimeControlCategory(g.timeControl) }} | {{ formatTimeControl(g.timeControl) }}</span>
       <span class="move-badge">{{ moveLabel() }}</span>
       @if (parseOpening(g.opening); as openingName) {
         <span class="opening-badge" [title]="openingName">{{ openingName }}</span>

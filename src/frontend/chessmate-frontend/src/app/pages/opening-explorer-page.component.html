@@ -1,5 +1,4 @@
 <div class="explorer-layout" [class.catalog-view]="!selectedOpening()">
-
   <!-- ───── CATALOG VIEW ───── -->
   <div class="catalog-container" *ngIf="!selectedOpening()">
     <header class="catalog-header">
@@ -27,10 +26,10 @@
       <div class="gambit-filter-tabs">
         <button class="gambit-tab"
                 [class.active]="catalogGambitFilter() === 'all'"
-                (click)="catalogGambitFilter.set('all')">All</button>
+                (click)="catalogGambitFilter.set('all')"> All</button>
         <button class="gambit-tab"
                 [class.active]="catalogGambitFilter() === 'non-gambit'"
-                (click)="catalogGambitFilter.set('non-gambit')">Non-Gambit</button>
+                (click)="catalogGambitFilter.set('non-gambit')">♞ Non-Gambit</button>
         <button class="gambit-tab"
                 [class.active]="catalogGambitFilter() === 'gambit'"
                 (click)="catalogGambitFilter.set('gambit')">⚔ Gambit</button>
@@ -66,7 +65,7 @@
       <button class="page-btn"
               (click)="prevPage(activeCatalogSide())"
               [disabled]="getCurrentPage(activeCatalogSide()) === 1">
-        ← Prev
+        &#8249;
       </button>
       <span class="page-indicator">
         {{ getCurrentPage(activeCatalogSide()) }} / {{ getTotalPagesForSide(activeCatalogSide()) }}
@@ -74,7 +73,7 @@
       <button class="page-btn"
               (click)="nextPage(activeCatalogSide())"
               [disabled]="getCurrentPage(activeCatalogSide()) === getTotalPagesForSide(activeCatalogSide())">
-        Next →
+        &#8250;
       </button>
     </div>
   </div>

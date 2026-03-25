@@ -39,7 +39,6 @@ import { CoachAvatarComponent } from './coach-avatar.component';
           <ng-container *ngIf="isLineMode(); else normalMode">
             <!-- Line mode display -->
             <div class="coach-line-mode">
-              <p class="coach-line-header">Suggested continuation</p>
               <p class="coach-line-moves">{{ lineMovesDisplay() }}</p>
               <p class="coach-line-motif">{{ lineMotifDescription() }}</p>
 
@@ -78,37 +77,37 @@ import { CoachAvatarComponent } from './coach-avatar.component';
   styles: [`
     .coach-root {
       border-bottom: 1px solid var(--cm-border);
-      padding: 0.85rem 1rem;
+      padding: 0.65rem 0.8rem;
       background: var(--cm-bg-card);
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.6rem;
       flex-shrink: 0;
     }
 
     .coach-header {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 0.65rem;
     }
 
     app-coach-avatar {
-      width: 88px;
-      height: 88px;
+      width: 72px;
+      height: 72px;
       flex-shrink: 0;
     }
 
     .coach-identity {
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.3rem;
       min-width: 0;
       align-items: flex-start;
       justify-content: center;
     }
 
     .coach-name {
-      font-size: 1.1rem;
+      font-size: 0.9rem;
       font-weight: 700;
       color: var(--cm-text-primary);
       line-height: 1.2;
@@ -118,18 +117,18 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     .coach-classification-pill {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0.3rem 0.85rem;
+      gap: 0.3rem;
+      padding: 0.2rem 0.65rem;
       border-radius: 2rem;
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: #ffffff;
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.8rem;
       align-self: flex-start;
     }
 
     .pill-symbol {
-      font-size: 1.1rem;
+      font-size: 0.9rem;
     }
 
     .pill-label {
@@ -166,18 +165,18 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     }
 
     .coach-body {
-      min-height: 155px;
+      min-height: 125px;
       overflow-x: hidden;
       background: var(--cm-bg-panel);
       border: 1px solid var(--cm-border);
       border-radius: var(--cm-radius-md);
-      padding: 0.65rem 0.85rem;
+      padding: 0.5rem 0.65rem;
     }
 
     .coach-explanation {
       margin: 0;
       line-height: 1.6;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       white-space: pre-line;
       color: #ffffff;
     }
@@ -185,13 +184,13 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     .coach-sections {
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.35rem;
     }
 
     .coach-section {
       margin: 0;
       line-height: 1.5;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
     }
 
     .section-label {
@@ -207,26 +206,26 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       color: var(--cm-text-muted);
       font-style: italic;
       margin: 0;
-      font-size: 0.9rem;
+      font-size: 0.82rem;
     }
 
     .coach-unavailable {
       color: #ff6b6b;
       font-weight: 600;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       margin: 0;
     }
 
     /* Show line button */
     .coach-line-show-btn {
       display: inline-block;
-      margin-top: 0.5rem;
-      padding: 0.3rem 0.85rem;
+      margin-top: 0.4rem;
+      padding: 0.2rem 0.65rem;
       border-radius: 2rem;
       border: 1px solid var(--cm-accent, #4fc3f7);
       background: transparent;
       color: var(--cm-accent, #4fc3f7);
-      font-size: 0.82rem;
+      font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
@@ -241,19 +240,19 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     .coach-line-mode {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.25rem;
     }
 
     .coach-line-header {
       margin: 0;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 700;
       color: var(--cm-accent, #4fc3f7);
     }
 
     .coach-line-moves {
       margin: 0;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       font-family: monospace;
       color: #ffffff;
       line-height: 1.5;
@@ -262,7 +261,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
 
     .coach-line-motif {
       margin: 0;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       color: #f5c518;
       font-weight: 600;
     }
@@ -272,22 +271,22 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.35rem;
-      margin-top: 0.25rem;
+      gap: 0.25rem;
+      margin-top: 0.15rem;
     }
 
     .line-nav-btn {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 30px;
-      height: 30px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       border: 1px solid var(--cm-border-strong, rgba(255,255,255,0.14));
       background: #000;
       color: var(--cm-text-secondary, #aaa);
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       padding: 0;
       transition: border-color 0.15s, color 0.15s;
     }
@@ -303,7 +302,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     }
 
     .line-nav-position {
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       font-weight: 600;
       color: var(--cm-text-primary, #fff);
       font-variant-numeric: tabular-nums;
@@ -314,13 +313,13 @@ import { CoachAvatarComponent } from './coach-avatar.component';
     /* Cancel line button */
     .coach-line-cancel-btn {
       display: inline-block;
-      margin-top: 0.25rem;
-      padding: 0.25rem 0.75rem;
+      margin-top: 0.15rem;
+      padding: 0.15rem 0.55rem;
       border-radius: 2rem;
       border: 1px solid #ef5350;
       background: transparent;
       color: #ef5350;
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       font-weight: 600;
       cursor: pointer;
       align-self: center;
