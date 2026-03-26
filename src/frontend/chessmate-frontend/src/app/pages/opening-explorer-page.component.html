@@ -126,51 +126,14 @@
         </div>
       </div>
 
-      <!-- Opening moves strip -->
-      <div class="opening-moves-panel" *ngIf="selectedOpening() && openingMoveTokens().length > 0">
-        <h4 class="opening-moves-title">Opening Moves</h4>
-        <div class="opening-moves-row">
-          @for (token of openingMoveTokens(); track token.uci; let i = $index) {
-            @if (token.isWhite) {
-              <span class="move-number">{{ token.moveNumber }}.</span>
-            }
-            <button class="opening-move-chip"
-                    [class.active]="openingMoveActiveIndex() === i"
-                    (click)="onOpeningMoveClick(i)"
-                    (mouseenter)="onOpeningMoveHover(token.uci)"
-                    (mouseleave)="hoveredMoveUci.set(null)">
-              {{ token.san }}
-            </button>
-          }
-        </div>
-      </div>
-
-      <!-- Key squares & pawn breaks legend (shown only at initial position) -->
-      <div class="squares-legend-panel"
-           *ngIf="isInitialPosition() && (selectedKeySquares().length > 0 || selectedPawnBreaks().length > 0)">
-        <div class="legend-row" *ngIf="selectedKeySquares().length > 0">
-          <span class="legend-dot dot-key-square"></span>
-          <span class="legend-row-label">Key squares</span>
-          <span class="legend-sq-list">
-            @for (sq of selectedKeySquares(); track sq) {
-              <span class="legend-sq-chip chip-key" [class.chip-both]="isKeyAndBreakSquare(sq)">{{ sq }}</span>
-            }
-          </span>
-        </div>
-        <div class="legend-row" *ngIf="selectedPawnBreaks().length > 0">
-          <span class="legend-dot dot-pawn-break"></span>
-          <span class="legend-row-label">Pawn breaks</span>
-          <span class="legend-sq-list">
-            @for (sq of selectedPawnBreaks(); track sq) {
-              <span class="legend-sq-chip chip-break" [class.chip-both]="isKeyAndBreakSquare(sq)">{{ sq }}</span>
-            }
-          </span>
-        </div>
-      </div>
-
-      <!-- Opening meta with tabbed navigation -->
-      <div class="meta-tabs" *ngIf="moveHistory().length <= 1 && selectedOpening()">
+      <!-- Merged tabbed section: Moves / Pros / Cons / Goals — hidden once exploration begins -->
+      <div class="meta-tabs" *ngIf="moveHistory().length === 0 && selectedOpening()">
         <div class="tab-bar">
+          <button class="tab-btn"
+                  [class.active]="activeMetaTab() === 'moves'"
+                  (click)="activeMetaTab.set('moves')">
+            <span class="tab-icon">♟</span> Moves
+          </button>
           <button class="tab-btn"
                   [class.active]="activeMetaTab() === 'advantages'"
                   (click)="activeMetaTab.set('advantages')">
@@ -179,30 +142,80 @@
           <button class="tab-btn"
                   [class.active]="activeMetaTab() === 'drawbacks'"
                   (click)="activeMetaTab.set('drawbacks')">
-            <span class="tab-icon">✦</span> Cons
+            <span class="tab-icon">✧</span> Cons
           </button>
           <button class="tab-btn"
                   [class.active]="activeMetaTab() === 'goals'"
                   (click)="activeMetaTab.set('goals')">
-            <span class="tab-icon">✦</span> Goals
+            <span class="tab-icon">◎</span> Goals
           </button>
         </div>
         <div class="tab-content">
-          <ul class="meta-list" *ngIf="activeMetaTab() === 'advantages'">
-            @for (item of selectedOpening()!.advantages; track item) {
-              <li>{{ item }}</li>
-            }
-          </ul>
-          <ul class="meta-list" *ngIf="activeMetaTab() === 'drawbacks'">
-            @for (item of selectedOpening()!.drawbacks; track item) {
-              <li>{{ item }}</li>
-            }
-          </ul>
-          <ul class="meta-list" *ngIf="activeMetaTab() === 'goals'">
-            @for (item of selectedOpening()!.goals; track item) {
-              <li>{{ item }}</li>
-            }
-          </ul>
+          <div class="tab-panels">
+            <!-- Moves panel -->
+            <div class="tab-panel" [class.active]="activeMetaTab() === 'moves'">
+              <div class="moves-tab-body">
+                <div class="opening-moves-row" *ngIf="openingMoveTokens().length > 0">
+                  @for (token of openingMoveTokens(); track token.uci; let i = $index) {
+                    @if (token.isWhite) {
+                      <span class="move-number">{{ token.moveNumber }}.</span>
+                    }
+                    <button class="opening-move-chip"
+                            [class.active]="openingMoveActiveIndex() === i"
+                            (click)="onOpeningMoveClick(i)"
+                            (mouseenter)="onOpeningMoveHover(token.uci)"
+                            (mouseleave)="hoveredMoveUci.set(null)">
+                      {{ token.san }}
+                    </button>
+                  }
+                </div>
+                <div class="inline-legend" *ngIf="selectedKeySquares().length > 0 || selectedPawnBreaks().length > 0">
+                  <div class="legend-row" *ngIf="selectedKeySquares().length > 0">
+                    <span class="legend-dot dot-key-square"></span>
+                    <span class="legend-row-label">Key squares</span>
+                    <span class="legend-sq-list">
+                      @for (sq of selectedKeySquares(); track sq) {
+                        <span class="legend-sq-chip chip-key" [class.chip-both]="isKeyAndBreakSquare(sq)">{{ sq }}</span>
+                      }
+                    </span>
+                  </div>
+                  <div class="legend-row" *ngIf="selectedPawnBreaks().length > 0">
+                    <span class="legend-dot dot-pawn-break"></span>
+                    <span class="legend-row-label">Pawn breaks</span>
+                    <span class="legend-sq-list">
+                      @for (sq of selectedPawnBreaks(); track sq) {
+                        <span class="legend-sq-chip chip-break" [class.chip-both]="isKeyAndBreakSquare(sq)">{{ sq }}</span>
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Pros panel -->
+            <div class="tab-panel" [class.active]="activeMetaTab() === 'advantages'">
+              <ul class="meta-list">
+                @for (item of selectedOpening()!.advantages; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            <!-- Cons panel -->
+            <div class="tab-panel" [class.active]="activeMetaTab() === 'drawbacks'">
+              <ul class="meta-list">
+                @for (item of selectedOpening()!.drawbacks; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            <!-- Goals panel -->
+            <div class="tab-panel" [class.active]="activeMetaTab() === 'goals'">
+              <ul class="meta-list">
+                @for (item of selectedOpening()!.goals; track item) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 

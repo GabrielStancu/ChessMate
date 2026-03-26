@@ -384,7 +384,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 1rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--cm-border);
   flex-shrink: 0;
 }
@@ -393,8 +393,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid var(--cm-border-strong);
   background: #000000;
@@ -452,10 +452,10 @@
 
 .coach-panel {
   border-bottom: 1px solid var(--cm-border);
-  padding: 0.85rem 1rem;
+  padding: 0.68rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
   flex-shrink: 0;
 }
 
@@ -466,8 +466,8 @@
 }
 
 .coach-header app-coach-avatar {
-  width: 88px;
-  height: 88px;
+  width: 70px;
+  height: 70px;
   flex-shrink: 0;
 }
 
@@ -479,13 +479,13 @@
 
 .coach-name {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.88rem;
   color: var(--cm-text);
   line-height: 1.2;
 }
 
 .coach-context {
-  font-size: 0.8rem;
+  font-size: 0.64rem;
   color: var(--cm-text-muted);
 }
 
@@ -521,16 +521,16 @@
   background: var(--cm-bg-input);
   border: 1px solid var(--cm-border);
   border-radius: var(--cm-radius);
-  padding: 0.65rem 0.85rem;
-  min-height: 48px;
-  max-height: 100px;
+  padding: 0.5rem 0.85rem;
+  min-height: 38px;
+  max-height: 80px;
   overflow-y: auto;
 }
 
 .coach-text {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: var(--cm-text);
 }
 
@@ -553,7 +553,7 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 0.55rem 0.5rem;
+  padding: 0.44rem 0.5rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--cm-text-muted);
@@ -579,7 +579,23 @@
 }
 
 .tab-content {
-  padding: 0.65rem 1rem;
+  padding: 0.5rem 1rem;
+}
+
+/* All panels stack in the same grid cell.
+   The container auto-sizes to whichever panel is tallest,
+   so switching tabs never shifts layout. */
+.tab-panels {
+  display: grid;
+}
+
+.tab-panel {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.tab-panel.active {
+  visibility: visible;
 }
 
 .meta-list {
@@ -590,7 +606,7 @@
 
 .meta-list li {
   font-size: 0.85rem;
-  line-height: 1.6;
+  line-height: 1.3;
   color: var(--cm-text);
   position: relative;
   padding-left: 4px;
@@ -616,8 +632,8 @@
 }
 
 .cont-panel-title {
-  margin: 0.75rem 0 0.5rem;
-  font-size: 1rem;
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.9rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -682,7 +698,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--cm-bg-input);
   border: 1px solid var(--cm-border);
   border-radius: var(--cm-radius-sm);
@@ -777,17 +793,22 @@
 
 /* (removed — win rate is not equivalent to engine best move) */
 
-/* ── Squares Legend Panel ── */
-
-.squares-legend-panel {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--cm-border);
+/* ── Opening moves tab body ─────────────────────────────────── */
+.moves-tab-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: var(--cm-bg-input);
-  flex-shrink: 0;
+  gap: 8px;
 }
+
+.inline-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 4px;
+  border-top: 1px solid var(--cm-border);
+}
+
+/* ── Legend rows (shared by inline-legend) ── */
 
 .legend-row {
   display: flex;
@@ -857,15 +878,15 @@
   border: 1px solid rgba(0, 200, 180, 0.32);
 }
 
-/* ── Opening moves panel ───────────────────────────────────────────── */
+/* ── Opening moves panel (styles shared with moves tab body) ─────── */
 .opening-moves-panel {
-  padding: 10px 12px 8px;
+  padding: 8px 12px 6px;
   border-bottom: 1px solid var(--cm-border);
 }
 
 .opening-moves-title {
-  margin: 0 0 8px;
-  font-size: 0.8rem;
+  margin: 0 0 6px;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -923,7 +944,7 @@
   align-items: center;
   gap: 2px;
   flex-wrap: wrap;
-  padding: 0.5rem 1rem 0;
+  padding: 0.4rem 1rem 0;
   overflow-x: auto;
 }
 
@@ -934,12 +955,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
 }
 
 .nav-btn {
-  width: 44px;
-  height: 44px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   border: 1px solid var(--cm-border-strong);
   background: #000000;

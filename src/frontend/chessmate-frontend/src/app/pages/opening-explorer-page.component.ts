@@ -24,7 +24,7 @@ import {
   OpeningSide
 } from '../models/openings.models';
 
-type MetaTab = 'advantages' | 'drawbacks' | 'goals';
+type MetaTab = 'moves' | 'advantages' | 'drawbacks' | 'goals';
 type CatalogGambitFilter = 'all' | 'gambit' | 'non-gambit';
 
 const PAGE_SIZE = 9;
@@ -90,7 +90,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   protected readonly loadingContinuations = signal(false);
   protected readonly openingName = signal<string | null>(null);
   protected readonly selectedMoveIndex = signal(-1);
-  protected readonly activeMetaTab = signal<MetaTab>('advantages');
+  protected readonly activeMetaTab = signal<MetaTab>('moves');
 
   // hovered move UCI — drives single-arrow hover display (opening moves & continuations)
   protected readonly hoveredMoveUci = signal<string | null>(null);
@@ -378,6 +378,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     this.currentFen.set(this.chess.fen());
     this.selectedMoveIndex.set(-1);
     this.openingMoveActiveIndex.set(-1);
+    this.activeMetaTab.set('moves');
 
     // Re-highlight key squares and pawn breaks
     if (this.chessboard) {
@@ -465,7 +466,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   protected selectOpening(opening: OpeningDefinition): void {
     this.playerColor.set(opening.forSide);
     this.selectedOpening.set(opening);
-    this.activeMetaTab.set('advantages');
+    this.activeMetaTab.set('moves');
     this.chess = new Chess();
     this.replayMoves(opening.moves);
 
