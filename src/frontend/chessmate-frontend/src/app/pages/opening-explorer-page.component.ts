@@ -95,9 +95,16 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   // hovered move UCI — drives single-arrow hover display (opening moves & continuations)
   protected readonly hoveredMoveUci = signal<string | null>(null);
 
+  // index of the opening move chip currently previewed (-1 = full opening / initial position)
+  protected readonly openingMoveActiveIndex = signal<number>(-1);
+
   // UCI of the continuation with the best win rate (shown only when 2+ continuations)
   protected readonly selectedKeySquares = computed(() => this.selectedOpening()?.keySquares ?? []);
   protected readonly selectedPawnBreaks = computed(() => this.selectedOpening()?.pawnBreaks ?? []);
+
+  protected readonly canReset = computed(() =>
+    this.moveHistory().length > 0 || this.openingMoveActiveIndex() >= 0
+  );
 
   // parsed tokens from the opening's defining move sequence
   protected readonly openingMoveTokens = computed(() => {
@@ -112,7 +119,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
       .split(/\s+/)
       .filter(m => m.length > 0);
 
-    const tokens: Array<{ san: string; uci: string; isWhite: boolean; moveNumber: number }> = [];
+    const tokens: Array<{ san: string; uci: string; isWhite: boolean; moveNumber: number; fen: string }> = [];
     for (const san of cleanMoves) {
       const fenParts = chess.fen().split(' ');
       const isWhite = fenParts[1] === 'w';
@@ -127,6 +134,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
           uci: move.from + move.to + (move.promotion ?? ''),
           isWhite,
           moveNumber: fullMove,
+          fen: chess.fen(),
         });
       } catch {
         break;
@@ -137,7 +145,9 @@ export class OpeningExplorerPageComponent implements OnDestroy {
 
   // true when we're on the opening's base position with key squares shown
   protected readonly isInitialPosition = computed(() => {
-    return this.selectedOpening() !== null && this.moveHistory().length === 0;
+    return this.selectedOpening() !== null
+      && this.moveHistory().length === 0
+      && this.openingMoveActiveIndex() === -1;
   });
 
   // ── Coach state ──
@@ -297,6 +307,8 @@ export class OpeningExplorerPageComponent implements OnDestroy {
       this.chessboard.removeMarkers();
     }
 
+    this.openingMoveActiveIndex.set(-1);
+
     this.moveHistory.set([
       ...history,
       { fen: newFen, san: move.san, uci, moveNumber, sideToMove }
@@ -365,6 +377,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     this.moveHistory.set([]);
     this.currentFen.set(this.chess.fen());
     this.selectedMoveIndex.set(-1);
+    this.openingMoveActiveIndex.set(-1);
 
     // Re-highlight key squares and pawn breaks
     if (this.chessboard) {
@@ -423,9 +436,28 @@ export class OpeningExplorerPageComponent implements OnDestroy {
   }
 
   protected onOpeningMoveHover(uci: string): void {
-    if (this.isInitialPosition()) {
+    if (this.moveHistory().length === 0) {
       this.hoveredMoveUci.set(uci);
     }
+  }
+
+  protected async onOpeningMoveClick(tokenIndex: number): Promise<void> {
+    const tokens = this.openingMoveTokens();
+    if (tokenIndex < 0 || tokenIndex >= tokens.length) return;
+
+    const token = tokens[tokenIndex];
+    this.chess = new Chess(token.fen);
+
+    this.moveHistory.set([]);
+    this.currentFen.set(token.fen);
+    this.openingMoveActiveIndex.set(tokenIndex);
+    this.hoveredMoveUci.set(null);
+
+    if (this.chessboard) {
+      this.chessboard.removeMarkers();
+    }
+
+    await this.loadContinuations(token.fen);
   }
 
   // ── Private methods ──
@@ -441,6 +473,7 @@ export class OpeningExplorerPageComponent implements OnDestroy {
     this.currentFen.set(newFen);
     this.moveHistory.set([]);
     this.selectedMoveIndex.set(-1);
+    this.openingMoveActiveIndex.set(-1);
     this.openingName.set(opening.name);
 
     // Wait for *ngIf to render the board host
