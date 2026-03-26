@@ -105,6 +105,39 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
       width: 17px;
       height: 17px;
     }
+
+    @media (max-width: 600px) {
+      .navbar {
+        gap: 0.75rem;
+        padding: 0 1rem;
+        height: 56px;
+      }
+
+      .nav-logo {
+        width: 38px;
+        height: 38px;
+      }
+
+      .brand-text {
+        font-size: 1rem;
+      }
+
+      .nav-links {
+        gap: 0.15rem;
+      }
+
+      .nav-link {
+        padding: 0.4rem 0.55rem;
+        font-size: 0;
+        gap: 0;
+        justify-content: center;
+      }
+
+      .nav-link svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
   `]
 })
 export class NavbarComponent {}

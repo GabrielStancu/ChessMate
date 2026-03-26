@@ -199,6 +199,19 @@ body {
 	fill: #828282 !important;
 }
 
+/* ── Mobile: override navbar height for compact navbar ── */
+@media (max-width: 600px) {
+	:root {
+		--navbar-height: 56px;
+	}
+}
+
+/* ── Ensure chessboard SVG scales responsively ── */
+.cm-chessboard {
+	max-width: 100%;
+	height: auto;
+}
+
 .cm-chessboard.default.border-type-frame .board .border {
 	fill: #2a2a32 !important;
 	stroke: none;

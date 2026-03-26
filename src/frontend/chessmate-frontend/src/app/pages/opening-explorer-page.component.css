@@ -1023,15 +1023,128 @@
 @media (max-width: 860px) {
   .explorer-layout {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 0;
+  }
+
+  .board-column {
+    height: auto;
+    padding: 0.5rem;
   }
 
   .board-wrapper {
     max-width: 100%;
   }
 
+  .info-column {
+    height: auto;
+    overflow: visible;
+    border-left: none;
+    border-top: 1px solid var(--cm-border);
+  }
+
+  .continuations-panel {
+    max-height: 400px;
+  }
+
   .openings-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .catalog-container {
+    padding: 2rem 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .catalog-header {
+    padding: 0;
+  }
+
+  .catalog-title {
+    font-size: 1.5rem;
+  }
+
+  .catalog-tabs {
+    gap: 0;
+    width: 100%;
+  }
+
+  .catalog-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .gambit-filter-tabs {
+    gap: 0;
+    width: 100%;
+  }
+
+  .gambit-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .openings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-header {
+    padding: 0.4rem 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .panel-title-text {
+    font-size: 0.92rem;
+  }
+
+  .coach-panel {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .coach-header app-coach-avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .coach-body {
+    max-height: 60px;
+  }
+
+  .tab-btn {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.35rem;
+  }
+
+  .nav-controls {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .nav-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .continuation-row {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .cont-san {
+    font-size: 0.9rem;
+  }
+
+  .stat-bar-container {
+    max-width: 70px;
+  }
+
+  .win-rate-pill {
+    font-size: 0.68rem;
+    min-width: 55px;
+    padding: 2px 6px;
   }
 }
 
