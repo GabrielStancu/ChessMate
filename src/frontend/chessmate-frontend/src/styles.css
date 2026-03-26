@@ -206,12 +206,6 @@ body {
 	}
 }
 
-/* ── Ensure chessboard SVG scales responsively ── */
-.cm-chessboard {
-	max-width: 100%;
-	height: auto;
-}
-
 .cm-chessboard.default.border-type-frame .board .border {
 	fill: #2a2a32 !important;
 	stroke: none;

@@ -52,7 +52,7 @@ export class GameSearchPageComponent implements OnInit, AfterViewInit {
   });
   protected readonly loading = signal(false);
   protected readonly games = signal<GetGamesItemEnvelope[]>([]);
-  protected readonly displayedGames = computed(() => this.games().slice(0, 9));
+  protected readonly displayedGames = computed(() => this.games().slice(0, 12));
   protected readonly page = signal(1);
   protected readonly hasMore = signal(false);
   protected readonly sourceTimestamp = signal<string | null>(null);
