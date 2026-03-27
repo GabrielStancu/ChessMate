@@ -193,7 +193,7 @@
   <!-- ══ Mobile bottom section (visible on mobile only) ═══════════ -->
   <section class="mobile-bottom-section">
     @if (fullAnalysis(); as analysis) {
-      <div class="mobile-move-strip">
+      <div class="mobile-move-strip" #moveStrip>
         @for (move of analysis.classifiedMoves; track move.ply) {
           @if (move.ply % 2 === 1) {
             <span class="strip-move-num">{{ getMoveNumber(move.ply) }}.</span>

@@ -654,7 +654,7 @@
     top: 0;
     right: 0;
     width: 100%;
-    height: 200px;
+    height: 280px;
     order: -1;
   }
 
@@ -677,7 +677,7 @@
   }
 
   .hero-image {
-    height: 140px;
+    height: 300px;
   }
 
   .brand-area {

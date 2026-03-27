@@ -433,7 +433,7 @@ app-coach-panel {
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-bottom: 9px solid var(--cm-border-strong);
+    border-bottom: 9px solid #3a3a3a;
   }
 
   .mobile-coach-bubble-tail::after {
@@ -445,14 +445,14 @@ app-coach-panel {
     height: 0;
     border-left: 7px solid transparent;
     border-right: 7px solid transparent;
-    border-bottom: 8px solid var(--cm-bg-panel);
+    border-bottom: 8px solid #1e1e1e;
   }
 
   .mobile-coach-dialog {
     flex: 1 1 0;
     min-height: 0;
-    background: var(--cm-bg-panel);
-    border: 1px solid var(--cm-border-strong);
+    background: #1e1e1e;
+    border: 1px solid #3a3a3a;
     border-radius: 8px;
     padding: 0.3rem 0.5rem;
     display: flex;

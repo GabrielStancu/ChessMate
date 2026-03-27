@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
+import { AfterViewChecked, AfterViewInit, Component, DestroyRef, ElementRef, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -38,7 +38,7 @@ interface MoveStep {
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
-export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
+export class AnalysisBoardPageComponent implements AfterViewInit, AfterViewChecked, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -46,6 +46,11 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('boardHost')
   private boardHost?: ElementRef<HTMLDivElement>;
+
+  @ViewChild('moveStrip')
+  private moveStrip?: ElementRef<HTMLDivElement>;
+
+  private lastScrolledStripPly = -1;
 
   private chessboard: Chessboard | null = null;
   private readonly gameId = this.route.snapshot.paramMap.get('gameId') ?? '';
@@ -237,6 +242,15 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  public ngAfterViewChecked(): void {
+    const ply = this.selectedPly();
+    if (ply === this.lastScrolledStripPly) {
+      return;
+    }
+    this.lastScrolledStripPly = ply;
+    this.scrollMobileStripToSelected();
+  }
+
   public ngAfterViewInit(): void {
     if (!this.boardHost) {
       return;
@@ -425,6 +439,19 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     } catch {
       return bestMove;
     }
+  }
+
+  private scrollMobileStripToSelected(): void {
+    if (!this.moveStrip) {
+      return;
+    }
+    const container = this.moveStrip.nativeElement;
+    const selected = container.querySelector('.strip-move--selected') as HTMLElement | null;
+    if (!selected) {
+      return;
+    }
+    const scrollLeft = selected.offsetLeft - container.clientWidth / 2 + selected.offsetWidth / 2;
+    container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
   }
 
   private resolveGame(): GetGamesItemEnvelope | null {

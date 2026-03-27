@@ -149,7 +149,7 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       height: 0;
       border-left: 8px solid transparent;
       border-right: 8px solid transparent;
-      border-bottom: 8px solid var(--cm-border);
+      border-bottom: 8px solid #3a3a3a;
     }
 
     .coach-bubble-tail::after {
@@ -161,14 +161,14 @@ import { CoachAvatarComponent } from './coach-avatar.component';
       height: 0;
       border-left: 7px solid transparent;
       border-right: 7px solid transparent;
-      border-bottom: 7px solid var(--cm-bg-panel);
+      border-bottom: 7px solid #1e1e1e;
     }
 
     .coach-body {
       min-height: 125px;
       overflow-x: hidden;
-      background: var(--cm-bg-panel);
-      border: 1px solid var(--cm-border);
+      background: #1e1e1e;
+      border: 1px solid #3a3a3a;
       border-radius: var(--cm-radius-md);
       padding: 0.5rem 0.65rem;
     }
