@@ -16,13 +16,14 @@ import {
   CLASSIFICATION_SYMBOLS
 } from '../models/classification.models';
 import { GetGamesItemEnvelope } from '../models/games.models';
+import { CoachAvatarComponent } from '../components/coach-avatar.component';
 import { CoachPanelComponent } from '../components/coach-panel.component';
 import { EvaluationBarComponent } from '../components/evaluation-bar.component';
 import { EvaluationChartComponent } from '../components/evaluation-chart.component';
 import { MoveListComponent } from '../components/move-list.component';
 import { PlayerBarComponent } from '../components/player-bar.component';
 import { AnalysisSessionService } from '../services/analysis-session.service';
-import { buildEvaluationTimeline } from '../utils/evaluation.utils';
+import { buildEvaluationTimeline, evalToBarPercent, formatEvalDisplay } from '../utils/evaluation.utils';
 import { generateMoveExplanation } from '../utils/move-explanation.utils';
 
 interface MoveStep {
@@ -33,7 +34,7 @@ interface MoveStep {
 @Component({
   selector: 'app-analysis-board-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachPanelComponent, EvaluationBarComponent, EvaluationChartComponent, MoveListComponent, PlayerBarComponent],
+  imports: [CommonModule, RouterLink, MatButtonModule, MatCardModule, CoachAvatarComponent, CoachPanelComponent, EvaluationBarComponent, EvaluationChartComponent, MoveListComponent, PlayerBarComponent],
   templateUrl: './analysis-board-page.component.html',
   styleUrl: './analysis-board-page.component.css'
 })
@@ -74,6 +75,21 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
 
   protected readonly canGoLinePrevious = computed(() => this.isLineMode() && this.lineStepIndex() > 0);
   protected readonly canGoLineNext = computed(() => this.isLineMode() && this.lineStepIndex() < this.lineSteps().length);
+
+  protected readonly lineMovesDisplayText = computed(() => {
+    const steps = this.lineSteps();
+    if (steps.length === 0) return '';
+    const parts: string[] = [];
+    for (let i = 0; i < steps.length; i++) {
+      const moveNum = Math.floor(i / 2) + 1;
+      if (i % 2 === 0) {
+        parts.push(`${moveNum}. ${steps[i].san}`);
+      } else {
+        parts.push(steps[i].san);
+      }
+    }
+    return parts.join(' ');
+  });
 
   protected readonly currentFen = computed(() => {
     const lineFen = this.currentLineFen();
@@ -124,6 +140,14 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     const index = this.selectedPositionIndex();
     return timeline[Math.min(index, timeline.length - 1)] ?? 0;
   });
+
+  protected readonly mobileEvalBarPercent = computed(() =>
+    evalToBarPercent(this.currentEvaluation())
+  );
+
+  protected readonly mobileEvalDisplayScore = computed(() =>
+    formatEvalDisplay(this.currentEvaluation())
+  );
 
   protected readonly playerColor = computed(() => this.fullAnalysis()?.playerColor ?? 'white');
 
@@ -364,6 +388,15 @@ export class AnalysisBoardPageComponent implements AfterViewInit, OnDestroy {
     }
 
     return `${step.moveNumber}. ${step.san}`;
+  }
+
+  protected getMoveNumber(ply: number): number {
+    return Math.ceil(ply / 2);
+  }
+
+  protected hasCoachLineForCurrentMove(): boolean {
+    const move = this.currentClassifiedMove();
+    return !!move?.coachLine && move.coachLine.steps.length > 0;
   }
 
   protected formatBestMoveForDisplay(bestMove: string | null, fen: string): string {

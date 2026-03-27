@@ -1,5 +1,60 @@
 <main class="analysis-shell" *ngIf="game() as g; else noGame">
 
+  <!-- ══ Mobile coach section (visible on mobile only) ═══════════ -->
+  <section class="mobile-coach-section">
+    <!-- Meta row: opening first, then format + move -->
+    <div class="mobile-meta-row">
+      @if (parseOpening(g.opening); as openingName) {
+        <span class="mobile-meta-badge mobile-opening-badge" [title]="openingName">{{ openingName }}</span>
+      }
+      <span class="mobile-meta-badge">{{ getTimeControlCategory(g.timeControl) }} | {{ formatTimeControl(g.timeControl) }}</span>
+      <span class="mobile-meta-badge">{{ moveLabel() }}</span>
+    </div>
+    <!-- Coach row: avatar on left, identity (name + pill) on right -->
+    <div class="mobile-coach-row">
+      <div class="mobile-avatar-wrapper">
+        <app-coach-avatar />
+      </div>
+      <div class="mobile-coach-identity">
+        <span class="mobile-coach-name">José Capawnblanca</span>
+        @if (currentClassifiedMove(); as move) {
+          <div class="mobile-eval-label"
+            [style.background-color]="classificationColors[move.classification]">
+            <span class="mobile-eval-symbol">{{ classificationSymbols[move.classification] }}</span>
+            <span>{{ move.classification }}</span>
+          </div>
+        }
+      </div>
+    </div>
+    <!-- Coach dialog: speech bubble below the coach row -->
+    <div class="mobile-coach-bubble-wrapper">
+      <div class="mobile-coach-bubble-tail"></div>
+      <div class="mobile-coach-dialog">
+        @if (isLineMode()) {
+          <p class="mobile-line-moves">{{ lineMovesDisplayText() }}</p>
+          <p class="mobile-line-motif">{{ lineMotifDescription() }}</p>
+          <div class="mobile-line-nav">
+            <button class="mobile-line-nav-btn" (click)="goLineFirst()" [disabled]="!canGoLinePrevious()" aria-label="Line start">⏮</button>
+            <button class="mobile-line-nav-btn" (click)="goLinePrevious()" [disabled]="!canGoLinePrevious()" aria-label="Previous line move">◀</button>
+            <span class="mobile-line-pos">{{ lineStepIndex() }} / {{ lineSteps().length }}</span>
+            <button class="mobile-line-nav-btn" (click)="goLineNext()" [disabled]="!canGoLineNext()" aria-label="Next line move">▶</button>
+            <button class="mobile-line-nav-btn" (click)="goLineLast()" [disabled]="!canGoLineNext()" aria-label="Line end">⏭</button>
+          </div>
+          <button class="mobile-line-cancel" (click)="exitLineMode()">Cancel line</button>
+        } @else {
+          @if (currentClassifiedMove(); as move) {
+            <p class="mobile-coach-text">{{ currentExplanation() || (move.san + ' was ' + move.classification + '.') }}</p>
+            @if (hasCoachLineForCurrentMove()) {
+              <button class="mobile-show-line-btn" (click)="onShowLine()">Show line</button>
+            }
+          } @else {
+            <p class="mobile-coach-empty">Navigate to a move to see coaching insights.</p>
+          }
+        }
+      </div>
+    </div>
+  </section>
+
   <!-- ══ Board column ════════════════════════════════════════════════ -->
   <div class="board-column">
 
@@ -37,6 +92,14 @@
         [capturedByColor]="bottomCapturedByColor()"
         position="bottom">
       </app-player-bar>
+
+      <!-- Horizontal evaluation bar (mobile only) -->
+      @if (fullAnalysis()) {
+        <div class="mobile-h-eval-bar">
+          <div class="mobile-h-eval-fill" [style.width.%]="mobileEvalBarPercent()"></div>
+          <span class="mobile-h-eval-score">{{ mobileEvalDisplayScore() }}</span>
+        </div>
+      }
 
     </div>
 
@@ -126,6 +189,39 @@
 
     </div>
   </aside>
+
+  <!-- ══ Mobile bottom section (visible on mobile only) ═══════════ -->
+  <section class="mobile-bottom-section">
+    @if (fullAnalysis(); as analysis) {
+      <div class="mobile-move-strip">
+        @for (move of analysis.classifiedMoves; track move.ply) {
+          @if (move.ply % 2 === 1) {
+            <span class="strip-move-num">{{ getMoveNumber(move.ply) }}.</span>
+          }
+          <button class="strip-move"
+            [class.strip-move--selected]="selectedPly() === move.ply"
+            (click)="onPlySelected(move.ply)">
+            {{ move.san }}
+          </button>
+        }
+      </div>
+    }
+    <div class="mobile-nav-controls">
+      <button class="nav-btn" (click)="goFirst()" [disabled]="!canGoPrevious()" aria-label="First position">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+      </button>
+      <button class="nav-btn" (click)="goPrevious()" [disabled]="!canGoPrevious()" aria-label="Previous move">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 16.59 10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+      </button>
+      <span class="nav-position">{{ selectedPositionIndex() }} / {{ positionTimeline().length - 1 }}</span>
+      <button class="nav-btn" (click)="goNext()" [disabled]="!canGoNext()" aria-label="Next move">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </button>
+      <button class="nav-btn" (click)="goLast()" [disabled]="!canGoNext()" aria-label="Last position">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18 14.5 12 6 6v12zm10-12v12h2V6z"/></svg>
+      </button>
+    </div>
+  </section>
 
 </main>
 

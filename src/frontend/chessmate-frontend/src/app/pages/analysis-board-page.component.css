@@ -123,7 +123,7 @@ app-player-bar {
 }
 
 .panel-title {
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--cm-text-primary);
 }
@@ -265,6 +265,15 @@ app-coach-panel {
 }
 
 /* ══════════════════════════════
+   MOBILE-ONLY SECTIONS — hidden on desktop
+══════════════════════════════ */
+.mobile-coach-section,
+.mobile-bottom-section,
+.mobile-h-eval-bar {
+  display: none;
+}
+
+/* ══════════════════════════════
    RESPONSIVE
 ══════════════════════════════ */
 /* Compact vertical layout — shrink fixed panels to preserve move list space */
@@ -285,101 +294,457 @@ app-coach-panel {
   }
 }
 
+/* ══════════════════════════════
+   MOBILE LAYOUT (≤960px)
+══════════════════════════════ */
 @media (max-width: 960px) {
-  /* Shell fits exactly in viewport — eliminates infinite scroll */
+  /* Show mobile sections, hide desktop panel */
+  .mobile-coach-section,
+  .mobile-bottom-section {
+    display: block;
+  }
+
+  .analysis-panel {
+    display: none !important;
+  }
+
+  /* Shell — full-viewport column */
   .analysis-shell {
     flex-direction: column;
     height: calc(100vh - var(--navbar-height, 0px));
     overflow: hidden;
+    overflow-x: hidden;
   }
 
-  /* Board column grows to fill all space above the analysis panel */
-  .board-column {
-    flex: 1 1 0;
-    min-height: 0;
-    height: auto;
-    padding: 0.5rem;
+  /* ── Mobile coach section ── */
+  .mobile-coach-section {
+    flex-shrink: 0;
+    height: 190px;
+    min-height: 190px;
+    max-height: 190px;
+    padding: 0.3rem 0.5rem 0.2rem;
+    background: var(--cm-bg-card);
+    border-bottom: 1px solid var(--cm-border);
+    box-sizing: border-box;
     overflow: hidden;
-    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
   }
 
-  /* Board inner must span full height and width of column */
-  .board-inner {
-    height: 100%;
-    min-height: 0;
-    width: 100%;
+  .mobile-coach-row {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-shrink: 0;
+    margin-top: 0.3rem;
   }
 
-  .board-area {
-    padding: 0 0.25rem;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* Square board: height fills available space, width = height via aspect-ratio,
-     capped by max-width so it never overflows on narrow screens */
-  .board-host {
-    height: 100%;
-    width: auto;
-    max-width: 100%;
-    aspect-ratio: 1 / 1;
+  .mobile-avatar-wrapper {
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
   }
 
-  /* Analysis panel anchored to bottom, never taller than half the viewport */
-  .analysis-panel {
-    flex: 0 0 auto;
-    width: 100%;
-    height: auto;
-    max-height: 50vh;
+  .mobile-coach-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobile-coach-name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cm-text-primary);
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .mobile-meta-row {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+    align-items: center;
     overflow: hidden;
-    border-left: none;
+    flex-shrink: 0;
+  }
+
+  .mobile-meta-badge {
+    font-size: 0.6rem;
+    color: var(--cm-accent);
+    background: var(--cm-bg-panel);
+    border: 1px solid var(--cm-accent);
+    border-radius: 2rem;
+    padding: 0.05rem 0.4rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Opening badge: same pill as meta-badge but yellow */
+  .mobile-opening-badge {
+    color: #f5c518 !important;
+    border-color: #f5c518 !important;
+    background: var(--cm-bg-panel) !important;
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-eval-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.65rem;
+    align-self: flex-start;
+    flex-shrink: 0;
+  }
+
+  .mobile-eval-symbol {
+    font-size: 0.75rem;
+  }
+
+  .mobile-coach-bubble-wrapper {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-coach-bubble-tail {
+    flex-shrink: 0;
+    position: relative;
+    height: 9px;
+  }
+
+  .mobile-coach-bubble-tail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 9px solid var(--cm-border-strong);
+  }
+
+  .mobile-coach-bubble-tail::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 21px;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 8px solid var(--cm-bg-panel);
+  }
+
+  .mobile-coach-dialog {
+    flex: 1 1 0;
+    min-height: 0;
+    background: var(--cm-bg-panel);
+    border: 1px solid var(--cm-border-strong);
+    border-radius: 8px;
+    padding: 0.3rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .mobile-coach-text {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: #fff;
+  }
+
+  .mobile-coach-empty {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--cm-text-muted);
+    font-style: italic;
+  }
+
+  .mobile-show-line-btn {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 0.2rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 2rem;
+    border: 1px solid var(--cm-accent, #4fc3f7);
+    background: transparent;
+    color: var(--cm-accent, #4fc3f7);
+    font-size: 0.6rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Line mode in mobile coach */
+  .mobile-line-moves {
+    margin: 0;
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: #fff;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .mobile-line-motif {
+    margin: 0;
+    font-size: 0.65rem;
+    color: #f5c518;
+    font-weight: 600;
+  }
+
+  .mobile-line-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    margin-top: 0.1rem;
+  }
+
+  .mobile-line-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--cm-border-strong);
+    background: #000;
+    color: var(--cm-text-secondary);
+    cursor: pointer;
+    font-size: 0.6rem;
+    padding: 0;
+  }
+
+  .mobile-line-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .mobile-line-pos {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--cm-text-primary);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.5rem;
+    text-align: center;
+  }
+
+  .mobile-line-cancel {
+    display: inline-block;
+    margin-top: 0.1rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 2rem;
+    border: 1px solid #ef5350;
+    background: transparent;
+    color: #ef5350;
+    font-size: 0.6rem;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: center;
+  }
+
+  /* ── Board column — fills remaining space, board-inner expands to fill it ── */
+  .board-column {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.25rem 0.5rem 0.4rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  /* board-inner: grows to fill board-column so no floating space below board */
+  .board-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Hide vertical evaluation bar on mobile */
+  app-evaluation-bar {
+    display: none !important;
+  }
+
+  /* board-area: content-sized so it wraps the square board tightly.
+     flex: 0 0 auto clears desktop flex-grow:1 so the area does not expand
+     beyond the board, which would leave dead space below the board square. */
+  .board-area {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+  }
+
+  /* Board — width-driven square; surplus height collects below eval bar */
+  .board-host {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    box-sizing: border-box;
+  }
+
+  app-player-bar {
+    align-self: stretch;
+    padding: 0.15rem 0;
+  }
+
+  /* ── Horizontal eval bar (mobile only) ── */
+  .mobile-h-eval-bar {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 8px;
+    background: #111111;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+  }
+
+  .mobile-h-eval-fill {
+    height: 100%;
+    background: #f0f0f0;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+    max-width: 100%;
+  }
+
+  .mobile-h-eval-score {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 0 3px rgba(0, 0, 0, 1);
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
+  }
+
+  /* ── Mobile bottom section ── */
+  .mobile-bottom-section {
+    flex-shrink: 0;
+    background: var(--cm-bg-card);
     border-top: 1px solid var(--cm-border);
   }
 
-  app-coach-panel {
-    flex-shrink: 1;
-    min-height: 0;
-    max-height: 120px;
-    overflow: hidden;
+  .mobile-move-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.35rem 0.5rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--cm-border);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  .move-list-scroll {
-    flex: 1 1 0;
-    min-height: 0;
-    max-height: 130px;
-    overflow-y: auto;
+  .mobile-move-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .strip-move-num {
+    font-size: 0.7rem;
+    color: var(--cm-text-muted);
+    margin-left: 0.3rem;
+    flex-shrink: 0;
+  }
+
+  .strip-move {
+    background: none;
+    border: none;
+    color: var(--cm-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.15rem 0.3rem;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .strip-move:hover {
+    background: var(--cm-bg-card-hover);
+  }
+
+  .strip-move--selected {
+    background: var(--cm-accent-dim, rgba(79, 195, 247, 0.15));
+    color: var(--cm-accent, #4fc3f7);
+  }
+
+  .mobile-nav-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
   }
 }
 
+/* ── Narrow mobile (≤600px) ── */
 @media (max-width: 600px) {
-  .board-column {
-    padding: 0.35rem;
+  .mobile-coach-section {
+    height: 145px;
+    min-height: 145px;
+    max-height: 145px;
+    padding: 0.25rem 0.4rem 0.15rem;
   }
 
-  .panel-header {
-    padding: 0.5rem 0.75rem;
-    gap: 0.35rem 0.5rem;
+  .mobile-avatar-wrapper {
+    width: 38px;
+    height: 38px;
   }
 
-  .panel-title {
-    font-size: 1rem;
+  .mobile-meta-badge {
+    font-size: 0.55rem;
+    padding: 0.05rem 0.3rem;
   }
 
-  .move-badge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.5rem;
-  }
-
-  .opening-badge {
+  .mobile-eval-label {
     font-size: 0.6rem;
-    padding: 0.1rem 0.5rem;
+    padding: 0.05rem 0.4rem;
   }
 
-  .nav-controls {
+  .mobile-coach-text {
+    font-size: 0.68rem;
+    -webkit-line-clamp: 2;
+  }
+
+  .board-column {
+    padding: 0.15rem 0.35rem 0.3rem;
+  }
+
+  .mobile-nav-controls {
     gap: 0.35rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.75rem;
   }
 
   .nav-btn {
@@ -389,13 +754,5 @@ app-coach-panel {
 
   .nav-position {
     font-size: 0.85rem;
-  }
-
-  app-coach-panel {
-    max-height: 100px;
-  }
-
-  .move-list-scroll {
-    max-height: 100px;
   }
 }
